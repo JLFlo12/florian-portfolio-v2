@@ -1,12 +1,12 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Florian G.L</title>
     <meta name="description" content="Portfolio de Florian GIRARDOT LAHOGUE - Étudiant en BUT Réseaux & Télécommunications">
     <meta name="author" content="Florian GIRARDOT LAHOGUE" />
+    <meta name="theme-color" content="#0b0907" />
 
     <meta property="og:title" content="My Portfolio - Florian" />
     <meta property="og:description" content="Portfolio de Florian GIRARDOT LAHOGUE - Étudiant en BUT Réseaux & Télécommunications" />
@@ -17,7 +17,22 @@
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/HVqOa43gaQdvExMBzYpHPSqYUWs2/uploads/1758102657537-unnamed.png">
-</head>
+
+    <!-- Polices : Hubot Sans (titres), Mona Sans (texte), Geist Mono (HUD), Doto (chiffres LED), Instrument Serif (accents) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@600..900&family=Geist+Mono:wght@400..600&family=Hubot+Sans:ital,wdth,wght@0,75..125,400..900;1,75..125,400..900&family=Instrument+Serif:ital@1&family=Mona+Sans:wdth,wght@75..125,400..700&display=swap">
+
+    <!-- Écran de chargement : affiché seulement si JS actif et animations autorisées -->
+    <script>
+      (function () {
+        var r = document.documentElement;
+        try { if (localStorage.getItem('theme') === 'light') r.classList.remove('dark'); } catch (e) {}
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) r.classList.add('is-loading');
+        setTimeout(function () { r.classList.remove('is-loading'); }, 6000);
+      })();
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>

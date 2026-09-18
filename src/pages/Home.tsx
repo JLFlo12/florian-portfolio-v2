@@ -1,247 +1,194 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Linkedin, Mail, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, Github, Linkedin, Mail, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ToolsSection from '@/components/ToolsSection';
-import RotatingGlobe from '@/components/RotatingGlobe';
+import HeroPlanet from '@/components/three/HeroPlanet';
+import Marquee from '@/components/Marquee';
+import SectionHeading from '@/components/SectionHeading';
+import { useReunionTime } from '@/components/Footer';
+import { gsap, magnetic, prefersReducedMotion, useReveal } from '@/lib/motion';
+import { onReady } from '@/lib/ready';
+
+type Level = 'maitrise' | 'avance' | 'base' | 'fragile';
+const LEVEL_LEDS: Record<Level, number> = { fragile: 1, base: 2, avance: 3, maitrise: 4 };
+
+const technicalSkills: { name: string; level: Level }[] = [
+  { name: 'Réseaux & GNS3', level: 'maitrise' },
+  { name: 'Linux/Windows Server', level: 'maitrise' },
+  { name: 'JavaScript/TypeScript', level: 'base' },
+  { name: 'PHP & SQL', level: 'base' },
+  { name: 'Cybersécurité', level: 'fragile' },
+  { name: 'Virtualisation', level: 'maitrise' }
+];
+
+const softSkills: { name: string; level: Level }[] = [
+  { name: 'Leadership', level: 'base' },
+  { name: 'Communication', level: 'avance' },
+  { name: 'Travail d\'équipe', level: 'maitrise' },
+  { name: 'Discipline', level: 'maitrise' },
+  { name: 'Esprit critique', level: 'avance' }
+];
 
 const Home = () => {
   const { t } = useTranslation();
+  const hero = useRef<HTMLElement>(null);
+  const skills = useRef<HTMLElement>(null);
+  const cta = useRef<HTMLAnchorElement>(null);
+  const time = useReunionTime();
+  useReveal(skills);
 
-  const getLevelLabel = (level: string) => {
-    const labels: Record<string, { text: string; color: string }> = {
-      'maitrise': { text: 'Maîtrisé', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
-      'avance': { text: 'Avancé', color: 'bg-primary/20 text-primary border-primary/30' },
-      'base': { text: 'Base', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-      'fragile': { text: 'Fragile', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' }
-    };
-    return labels[level] || labels['base'];
-  };
+  /* ——— Intro du hero (après l'écran de chargement) + sortie au scroll ——— */
+  useEffect(() => {
+    const root = hero.current;
+    if (!root || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      const chars = root.querySelectorAll('.hero-name .split-char');
+      const intro = root.querySelectorAll('[data-intro]');
+      gsap.set(chars, { yPercent: 115, rotationX: -80, transformPerspective: 800, transformOrigin: '50% 100%' });
+      gsap.set(intro, { autoAlpha: 0, y: 26 });
+      const off = onReady(() => {
+        gsap.timeline({ defaults: { ease: 'expo.out' } })
+          .to(chars, { yPercent: 0, rotationX: 0, duration: 1.5, stagger: 0.06 })
+          .to(intro, { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.07 }, 0.3);
+      });
+      gsap.to('[data-hero-part]', {
+        y: () => window.innerHeight * 0.12, opacity: 0.15, ease: 'none',
+        scrollTrigger: { trigger: root, start: 'top top', end: 'bottom top', scrub: true, invalidateOnRefresh: true },
+      });
+      return off;
+    }, root);
+    return () => ctx.revert();
+  }, []);
 
-  const technicalSkills = [
-    { name: 'Réseaux & GNS3', level: 'maitrise' },
-    { name: 'Linux/Windows Server', level: 'maitrise' },
-    { name: 'JavaScript/TypeScript', level: 'base' },
-    { name: 'PHP & SQL', level: 'base' },
-    { name: 'Cybersécurité', level: 'fragile' },
-    { name: 'Virtualisation', level: 'maitrise' }
+  useEffect(() => magnetic(cta.current, 0.2), []);
+
+  const socials = [
+    { href: 'mailto:f.girardot--lahogue@rt-iut.re', icon: Mail, label: 'Email' },
+    { href: 'https://github.com/JLFlo12', icon: Github, label: 'GitHub' },
+    { href: 'https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/', icon: Linkedin, label: 'LinkedIn' },
   ];
 
-  const softSkills = [
-    { name: 'Leadership', level: 'base' },
-    { name: 'Communication', level: 'avance' },
-    { name: 'Travail d\'équipe', level: 'maitrise' },
-    { name: 'Discipline', level: 'maitrise' },
-    { name: 'Esprit critique', level: 'avance' }
-  ];
+  const marqueeItems = ['Réseaux & GNS3', 'Cybersécurité', 'Linux / Windows Server', 'Virtualisation', 'Unreal Engine 5', 'Raspberry Pi', 'TypeScript', 'Wireshark', 'pfSense'];
+
+  const SkillList = ({ title, list, index }: { title: string; list: typeof technicalSkills; index: string }) => (
+    <div>
+      <p className="eyebrow mb-6" data-reveal>
+        <span className="eyebrow__index">{index}</span>
+        <span className="eyebrow__rule" data-rule aria-hidden="true" />
+      </p>
+      <h3 className="mb-8 font-display text-[clamp(1.8rem,3.4vw,2.8rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-reveal>
+        {title}
+      </h3>
+      <ul className="divide-y divide-border border-y border-border" data-stagger>
+        {list.map((skill) => (
+          <li key={skill.name} className="group flex items-center justify-between gap-6 py-4">
+            <span className="text-lg font-medium transition-transform duration-500 group-hover:translate-x-2">{skill.name}</span>
+            <span className="flex items-center gap-4">
+              <span className="label-mono hidden sm:inline">{t(`home.levels.${skill.level}`)}</span>
+              <span className="led-bar" role="img" aria-label={t(`home.levels.${skill.level}`)}>
+                {[1, 2, 3, 4].map((n) => <i key={n} className={n <= LEVEL_LEDS[skill.level] ? 'is-on' : ''} />)}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="min-h-screen flex items-center px-6">
-        <div className="max-w-7xl mx-auto w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Text Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
-              <div className="space-y-1">
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.8 }}
-                  className="text-6xl lg:text-8xl font-black leading-none text-foreground"
-                >
-                  FLORIAN
-                </motion.h1>
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.8 }}
-                  className="text-2xl lg:text-3xl font-light tracking-[0.3em] text-muted-foreground"
-                >
-                  GIRARDOT LAHOGUE
-                </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.8 }}
-                  className="text-xl lg:text-2xl text-primary font-medium"
-                  style={{ textShadow: '0 0 10px rgba(249, 115, 22, 0.3)' }}
-                >
-                  {t('home.role')}
-                </motion.p>
+    <div>
+      {/* ═══════════════ HERO + PLANÈTE 3D ═══════════════ */}
+      <section ref={hero} className="relative min-h-[100svh] overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_72%_45%,hsl(var(--primary)/.14),transparent_70%)]" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[.35] [mask-image:radial-gradient(75%_65%_at_50%_50%,#000,transparent)]"
+          style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/.06) 1px, transparent 1px)', backgroundSize: '64px 64px' }}
+          aria-hidden="true"
+        />
+        <HeroPlanet section={hero} />
+        <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-hero-part><i /><i /><i /><i /></div>
+
+        <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]">
+          {/* Ligne du haut : statut + télémétrie */}
+          <div className="flex flex-wrap items-start justify-between gap-4" data-hero-part>
+            <p className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-border bg-background/60 px-4 py-2 text-sm font-medium backdrop-blur" data-intro>
+              <span className="status-dot" /> {t('ui.online')} · <span className="text-muted-foreground">{t('home.location')}</span>
+            </p>
+            <div className="hud-panel hidden min-w-[250px] md:block" data-intro>
+              <p className="mb-2 flex justify-between gap-6 border-b border-dashed border-primary/30 pb-2 tracking-[.08em] text-primary">
+                <span>SYS://FLORIAN.GL</span><span>v{new Date().getFullYear()}</span>
+              </p>
+              <dl className="grid gap-0.5">
+                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.status')}</dt><dd className="text-[hsl(var(--online))]">BUT R&T</dd></div>
+                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.localTime')}</dt><dd className="tabular-nums text-foreground">{time}</dd></div>
+                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.coords')}</dt><dd className="text-foreground">-21.11 · 55.53</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          {/* Bas du hero : nom, rôle, bio, liens */}
+          <div data-hero-part>
+            <h1 className="hero-name display-xl text-[clamp(3.6rem,14vw,13.5rem)]" aria-label="FLORIAN GIRARDOT LAHOGUE">
+              <span className="block overflow-hidden pb-[.04em]" aria-hidden="true">
+                {'FLORIAN'.split('').map((c, i) => <span key={i} className="split-char">{c}</span>)}
+              </span>
+            </h1>
+            <p className="mt-3 font-display text-[clamp(1rem,2.4vw,1.9rem)] font-light uppercase tracking-[.32em] text-muted-foreground [font-stretch:125%]" data-intro>
+              Girardot Lahogue
+            </p>
+            <p className="mt-3 text-[clamp(1.1rem,2vw,1.6rem)] font-semibold text-primary" data-intro>
+              {t('home.role')}
+            </p>
+
+            <div className="mt-10 flex flex-wrap items-end justify-between gap-8">
+              <div className="max-w-md space-y-4" data-intro>
+                <p className="text-lg leading-relaxed text-foreground/85">
+                  {t('home.bio').split(' ').slice(0, -1).join(' ')}{' '}
+                  <span className="serif-accent text-[1.2em]">{t('home.bio').split(' ').slice(-1)}</span>
+                </p>
+                <p className="flex items-center gap-2 font-mono text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 text-primary" /> {t('home.location')}
+                </p>
               </div>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
-                className="text-lg text-muted-foreground max-w-md leading-relaxed"
-              >
-                {t('home.bio')}
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.8 }}
-                className="flex items-center space-x-2 text-muted-foreground"
-              >
-                <MapPin className="h-5 w-5" />
-                <span>{t('home.location')}</span>
-              </motion.div>
-
-              {/* Social Links */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1, duration: 0.8 }}
-                className="flex items-center space-x-4"
-              >
-                <a
-                  href="mailto:f.girardot--lahogue@rt-iut.re"
-                  className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors"
-                >
-                  <Mail className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://github.com/JLFlo12"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded-full transition-colors"
-                >
-                  <Github className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-colors"
-                >
-                  <Linkedin className="h-5 w-5" />
-                </a>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2, duration: 0.8 }}
-              >
-                <Link to="/projects">
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg">
-                    {t('home.cta')}
-                  </Button>
+              <div className="pointer-events-auto flex flex-wrap items-center gap-3" data-intro>
+                {socials.map(({ href, icon: Icon, label }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target={href.startsWith('http') ? '_blank' : undefined}
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="glass inline-flex h-12 w-12 items-center justify-center rounded-full text-foreground transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:text-primary"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </a>
+                ))}
+                <Link ref={cta} to="/projects" className="btn-neon ml-1">
+                  {t('home.cta')} <ArrowRight className="h-4 w-4" />
                 </Link>
-              </motion.div>
-            </motion.div>
-
-            {/* Rotating Globe */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-              className="flex justify-center"
-            >
-              <RotatingGlobe />
-            </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Tools Section */}
+      <Marquee items={marqueeItems} />
+
+      {/* ═══════════════ OUTILS ═══════════════ */}
       <ToolsSection />
 
-      {/* Skills Section */}
-      <section className="py-20 px-6 bg-muted/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16">
-            {/* Technical Skills */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl font-bold mb-8 text-primary">
-                {t('home.skillsTitle')}
-              </h2>
-              <div className="space-y-4">
-                {technicalSkills.map((skill, index) => {
-                  const levelInfo = getLevelLabel(skill.level);
-                  return (
-                    <motion.div
-                      key={skill.name}
-                      initial={{ opacity: 0, x: -50 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.6 }}
-                      viewport={{ once: true }}
-                      className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/50"
-                    >
-                      <span className="text-foreground font-medium">{skill.name}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${levelInfo.color}`}>
-                        {levelInfo.text}
-                      </span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-
-            {/* Soft Skills */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl font-bold mb-8 text-primary">
-                {t('home.softSkillsTitle')}
-              </h2>
-              <div className="space-y-4">
-                {softSkills.map((skill, index) => {
-                  const levelInfo = getLevelLabel(skill.level);
-                  return (
-                    <motion.div
-                      key={skill.name}
-                      initial={{ opacity: 0, x: 50 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.6 }}
-                      viewport={{ once: true }}
-                      className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/50"
-                    >
-                      <span className="text-foreground font-medium">{skill.name}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${levelInfo.color}`}>
-                        {levelInfo.text}
-                      </span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
+      {/* ═══════════════ COMPÉTENCES ═══════════════ */}
+      <section ref={skills} className="section-y relative">
+        <div className="container-x">
+          <SectionHeading index="02" label="skills" title={t('home.skillsHeading')} />
+          <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-24">
+            <SkillList title={t('home.skillsTitle')} list={technicalSkills} index="2.1" />
+            <SkillList title={t('home.softSkillsTitle')} list={softSkills} index="2.2" />
           </div>
         </div>
       </section>
-
-      {/* Copyright Footer */}
-      <footer className="py-8 px-6 bg-muted/10 border-t border-border/50">
-        <div className="max-w-6xl mx-auto">
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center text-muted-foreground text-sm"
-          >
-            © 2025 GIRARDOT LAHOGUE Florian. Tous droits réservés.
-          </motion.p>
-        </div>
-      </footer>
     </div>
   );
 };

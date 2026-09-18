@@ -1,16 +1,15 @@
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Plus, Trash2, Lock, LogOut, Pencil } from 'lucide-react';
+import { ArrowUpRight, ExternalLink, Plus, Trash2, Lock, LogOut, Pencil } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useDynamicProjects, useCreateProject, useUpdateProject, useDeleteProject, DynamicProject } from '@/hooks/useDynamicProjects';
 import AdminLoginDialog from '@/components/admin/AdminLoginDialog';
 import ProjectFormDialog from '@/components/admin/ProjectFormDialog';
+import SectionHeading from '@/components/SectionHeading';
+import { useReveal } from '@/lib/motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +22,9 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Projects = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAdmin, adminPassword, login, logout } = useAdminAuth();
-  const { data: dynamicProjects = [] } = useDynamicProjects();
+  const { data: dynamicProjects = [], isLoading } = useDynamicProjects();
   const createProject = useCreateProject(adminPassword);
   const updateProject = useUpdateProject(adminPassword);
   const deleteProject = useDeleteProject(adminPassword);
@@ -35,66 +34,84 @@ const Projects = () => {
   const [editingProject, setEditingProject] = useState<DynamicProject | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
+  const page = useRef<HTMLDivElement>(null);
+  useReveal(page, [dynamicProjects.length, isAdmin]);
+
   const inProgressProjects = dynamicProjects.filter(p => p.status === 'inProgress');
   const completedProjects = dynamicProjects.filter(p => p.status === 'completed');
+  const description = (p: DynamicProject) => (i18n.language === 'en' && p.description_en ? p.description_en : p.description_fr);
 
-  const ProjectCard = ({ project, index, delay = 0 }: { project: DynamicProject; index: number; delay?: number }) => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.6, delay: index * 0.1 + delay }}
-      whileHover={{ scale: 1.02, y: -5 }}
-      className="group relative"
-    >
-      <Link to={`/projects/dynamic-${project.id}`} className="block h-full">
-        <Card className="bg-card border-border hover:border-primary/50 transition-all duration-300 h-full cursor-pointer group-hover:shadow-lg overflow-hidden">
-          {project.thumbnail_url && (
-            <div className="w-full h-48 overflow-hidden">
-              <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+  /* ——— Carte projet ——— */
+  const ProjectCard = ({ project, number }: { project: DynamicProject; number: number }) => {
+    const done = project.status === 'completed';
+    return (
+      <article className="panel group relative flex h-full flex-col" data-cursor={t('ui.view')}>
+        {/* Visuel : image du projet, ou couverture générée */}
+        <div className="relative aspect-[16/10] overflow-hidden border-b border-border">
+          {project.thumbnail_url ? (
+            <img
+              src={project.thumbnail_url}
+              alt={project.title}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition-transform duration-[1.2s] [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
+            />
+          ) : (
+            <div className="relative flex h-full w-full items-end overflow-hidden bg-[radial-gradient(80%_90%_at_80%_10%,hsl(var(--primary)/.35),transparent_60%),hsl(var(--card))] p-6">
+              <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/.08) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/.08) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+              <span className="relative font-display text-[clamp(2.2rem,5vw,3.6rem)] font-black uppercase leading-[.85] tracking-tight text-foreground/90 [font-stretch:125%] transition-transform duration-700 group-hover:-translate-y-1">
+                {project.tags[0] ?? project.title.split(' ')[0]}
+              </span>
             </div>
           )}
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <CardTitle className="text-card-foreground group-hover:text-primary transition-colors pr-2">{project.title}</CardTitle>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                <Badge variant="outline" className={project.status === 'completed' ? "bg-green-600/20 text-green-400 border-green-500/50" : "bg-orange-600/20 text-orange-400 border-orange-500/50"}>
-                  {project.status === 'completed' ? '✓' : '⏳'}
-                </Badge>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </div>
-            <CardDescription className="text-muted-foreground">
-              {t('lng') === 'en' ? project.description_en : project.description_fr}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {project.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="bg-secondary text-secondary-foreground hover:bg-secondary/80">{tag}</Badge>
-              ))}
-            </div>
-            {project.slideshow_url && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <a href={project.slideshow_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:text-primary/80 transition-colors" onClick={(e) => e.stopPropagation()}>
-                  <ExternalLink className="h-3 w-3 mr-1" />Voir la présentation
-                </a>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
-      {isAdmin && (
-        <div className="absolute top-2 right-2 flex gap-1 z-10">
-          <Button size="icon" variant="secondary" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProject(project); setShowFormDialog(true); }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="destructive" className="h-8 w-8" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingProjectId(project.id); }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+          <span className="led absolute left-4 top-4 rounded-md bg-background/70 px-2 py-1 text-sm text-primary backdrop-blur">{String(number).padStart(2, '0')}</span>
+          <span className={`absolute right-4 top-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[.68rem] uppercase tracking-wider backdrop-blur ${done ? 'border-[hsl(var(--online)/.4)] bg-background/70 text-[hsl(var(--online))]' : 'border-primary/50 bg-background/70 text-primary'}`}>
+            {done ? '✓' : <span className="status-dot !bg-primary" />} {done ? t('projects.completed') : t('projects.inProgress')}
+          </span>
         </div>
-      )}
-    </motion.div>
-  );
+
+        <div className="flex flex-1 flex-col gap-4 p-6">
+          <h3 className="font-display text-[clamp(1.25rem,2vw,1.6rem)] font-extrabold leading-tight tracking-tight [font-stretch:110%] transition-colors group-hover:text-primary">
+            {/* Lien étendu : toute la carte est cliquable */}
+            <Link to={`/projects/dynamic-${project.id}`} className="after:absolute after:inset-0 after:z-[1] after:content-['']">
+              {project.title}
+            </Link>
+          </h3>
+          <p className="text-sm leading-relaxed text-muted-foreground">{description(project)}</p>
+          <div className="flex flex-wrap gap-2">
+            {project.tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}
+          </div>
+          <div className="mt-auto flex items-center justify-between gap-4 border-t border-border pt-4">
+            {project.slideshow_url ? (
+              <a
+                href={project.slideshow_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative z-[2] inline-flex items-center gap-2 text-sm text-primary transition-colors hover:text-primary/80"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> {t('projects.viewSlides')}
+              </a>
+            ) : <span />}
+            <span className="inline-flex items-center gap-1 font-mono text-xs uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-foreground">
+              {t('projects.viewProject')} <ArrowUpRight className="h-4 w-4 transition-transform duration-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </span>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <div className="absolute right-4 top-14 z-[3] flex gap-1">
+            <Button size="icon" variant="secondary" className="h-8 w-8" aria-label="Modifier" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProject(project); setShowFormDialog(true); }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="destructive" className="h-8 w-8" aria-label="Supprimer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingProjectId(project.id); }}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </article>
+    );
+  };
 
   const handleCreateOrUpdate = async (data: Partial<DynamicProject>) => {
     if (editingProject) {
@@ -113,61 +130,58 @@ const Projects = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen px-6 py-20 bg-background">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-6xl lg:text-8xl font-black mb-4 text-foreground">{t('projects.title')}</h1>
-          <div className="w-24 h-1 bg-primary mx-auto mb-8"></div>
+  const Group = ({ title, index, list, offset }: { title: string; index: string; list: DynamicProject[]; offset: number }) => (
+    <section className="container-x pt-16 lg:pt-24">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5" data-reveal>
+        <h2 className="flex items-baseline gap-4 font-display text-[clamp(1.8rem,4vw,3.2rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]">
+          <span className="led text-base text-primary">{index}</span> {title}
+        </h2>
+        <span className="label-mono"><span className="led text-lg text-foreground">{String(list.length).padStart(2, '0')}</span> {t('projects.count')}</span>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2" data-stagger="flip">
+        {list.map((project, i) => <ProjectCard key={project.id} project={project} number={offset + i + 1} />)}
+      </div>
+    </section>
+  );
 
-          {/* Admin controls */}
-          <div className="flex justify-center gap-3">
+  return (
+    <div ref={page} className="pb-24 pt-[calc(var(--nav-h)+56px)]">
+      <div className="container-x">
+        <SectionHeading
+          as="h1"
+          index="//"
+          label="projects"
+          title={t('projects.title')}
+          lede={<span><span className="led text-3xl text-foreground">{String(dynamicProjects.length).padStart(2, '0')}</span> <span className="label-mono">{t('projects.count')}</span></span>}
+        >
+          {/* Contrôles administrateur */}
+          <div className="mt-5 flex flex-wrap gap-3">
             {!isAdmin ? (
-              <Button variant="outline" size="sm" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                <Lock className="h-4 w-4" /> Mode admin
+              <Button variant="outline" size="sm" onClick={() => setShowLoginDialog(true)} className="gap-2 rounded-full">
+                <Lock className="h-4 w-4" /> {t('projects.adminMode')}
               </Button>
             ) : (
               <>
-                <Button size="sm" onClick={() => { setEditingProject(null); setShowFormDialog(true); }} className="gap-2">
-                  <Plus className="h-4 w-4" /> Ajouter un projet
+                <Button size="sm" onClick={() => { setEditingProject(null); setShowFormDialog(true); }} className="gap-2 rounded-full">
+                  <Plus className="h-4 w-4" /> {t('projects.addProject')}
                 </Button>
-                <Button variant="outline" size="sm" onClick={logout} className="gap-2">
-                  <LogOut className="h-4 w-4" /> Déconnexion
+                <Button variant="outline" size="sm" onClick={logout} className="gap-2 rounded-full">
+                  <LogOut className="h-4 w-4" /> {t('projects.logout')}
                 </Button>
               </>
             )}
           </div>
-        </motion.div>
-
-        {/* In Progress Projects */}
-        {inProgressProjects.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="mb-16">
-            <h2 className="text-4xl font-bold text-orange-500 mb-8">{t('projects.inProgress')}</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {inProgressProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Completed Projects */}
-        {completedProjects.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-8">{t('projects.completed')}</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {completedProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index} delay={0.2} />
-              ))}
-            </div>
-          </motion.div>
-        )}
+        </SectionHeading>
       </div>
+
+      {isLoading && (
+        <div className="container-x mt-16 grid gap-5 md:grid-cols-2">
+          {[0, 1].map((i) => <div key={i} className="panel aspect-[16/12] animate-pulse" />)}
+        </div>
+      )}
+
+      {inProgressProjects.length > 0 && <Group title={t('projects.inProgress')} index="01" list={inProgressProjects} offset={0} />}
+      {completedProjects.length > 0 && <Group title={t('projects.completed')} index="02" list={completedProjects} offset={inProgressProjects.length} />}
 
       {/* Dialogs */}
       <AdminLoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} onLogin={login} />
@@ -181,12 +195,12 @@ const Projects = () => {
       <AlertDialog open={!!deletingProjectId} onOpenChange={(open) => { if (!open) setDeletingProjectId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce projet ?</AlertDialogTitle>
-            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+            <AlertDialogTitle>{t('projects.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('projects.deleteText')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
+            <AlertDialogCancel>{t('projects.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('projects.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

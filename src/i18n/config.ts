@@ -14,11 +14,39 @@ const resources = {
         chatbot: 'Jarvis',
         games: 'Games'
       },
+      // Interface générale (menu, pied de page, effets)
+      ui: {
+        menu: 'Menu',
+        close: 'Fermer',
+        language: 'Langue',
+        theme: 'Changer de thème',
+        games: 'Mini-jeux',
+        scroll: 'Défiler',
+        backTop: 'Retour en haut',
+        rights: 'Tous droits réservés.',
+        localTime: 'Heure locale',
+        status: 'Statut',
+        online: 'En ligne',
+        coords: 'Coordonnées',
+        session: 'Session',
+        explore: 'Explorer',
+        open: 'Ouvrir',
+        view: 'Voir',
+        read: 'Lire',
+        play: 'Jouer',
+        loaderLines: ['initialisation de florian.sys', 'chargement des projets', 'connexion au réseau', 'planète en orbite'],
+        footerTitle: 'Construisons quelque chose',
+        footerAccent: 'ensemble',
+        homeBeacon: 'La Réunion · point de départ'
+      },
       chatbot: {
         subtitle: 'Assistant IA — Posez-moi vos questions sur Florian',
         welcome: 'Bienvenue. Je suis Jarvis, votre assistant cybersécurité.',
         hint: 'Posez-moi une question sur Florian, ses compétences ou ses projets.',
-        placeholder: 'Tapez votre message...'
+        placeholder: 'Tapez votre message...',
+        send: 'Envoyer',
+        tooMany: 'Trop de requêtes, réessayez dans un instant.',
+        noCredits: 'Crédits IA épuisés.'
       },
       // Home page
       home: {
@@ -26,9 +54,17 @@ const resources = {
         bio: 'Étudiant passionné par l\'informatique, le développement et la cyber.',
         location: 'La Réunion, France',
         cta: 'Découvrir mes projets',
+        skillsHeading: 'Mes compétences',
         skillsTitle: 'Compétences techniques',
         softSkillsTitle: 'Soft Skills',
-        toolsTitle: 'Outils que j\'utilise'
+        toolsTitle: 'Outils que j\'utilise',
+        toolsHint: 'Clique sur un outil pour voir à quoi il me sert.',
+        allTools: 'Tous',
+        levels: { maitrise: 'Maîtrisé', avance: 'Avancé', base: 'Base', fragile: 'Fragile' },
+        categories: {
+          security: 'Cybersécurité', network: 'Réseau', gamedev: 'Game Dev', virtualization: 'Virtualisation',
+          development: 'Développement', server: 'Serveurs', telecom: 'Télécom', hardware: 'Hardware', os: 'OS', tools: 'Outils'
+        }
       },
       // Projects page
       projects: {
@@ -36,6 +72,15 @@ const resources = {
         completed: 'Terminés',
         inProgress: 'En cours',
         viewProject: 'Voir le projet',
+        count: 'projets',
+        adminMode: 'Mode admin',
+        addProject: 'Ajouter un projet',
+        logout: 'Déconnexion',
+        viewSlides: 'Voir la présentation',
+        deleteTitle: 'Supprimer ce projet ?',
+        deleteText: 'Cette action est irréversible.',
+        cancel: 'Annuler',
+        delete: 'Supprimer',
         // Titres de projets traduits
         projectTitles: {
           'the-forgotten-survival-horror': 'The Forgotten - Survival Horror',
@@ -61,6 +106,24 @@ const resources = {
           'site-suivi-commande': 'Développement d\'une web app permettant la gestion et le suivi de commandes, triées par statut, type et fournisseur'
         }
       },
+      // Page détail d'un projet
+      gallery: {
+        back: 'Retour aux projets',
+        admin: 'Admin',
+        edit: 'Modifier le contenu',
+        cancel: 'Annuler',
+        logout: 'Déco',
+        details: 'Détails du projet',
+        plan: 'Plan d\'action du projet',
+        images: 'Images du projet',
+        image: 'Image du projet',
+        files: 'Fichiers du projet',
+        slides: 'Voir la présentation',
+        canva: 'Voir sur Canva',
+        soon: 'Image à venir',
+        empty: 'Aucun contenu disponible pour ce projet.',
+        notFound: 'Projet non trouvé'
+      },
       // About page
       about: {
         title: 'À propos',
@@ -85,7 +148,29 @@ const resources = {
         subtitle: 'Discutons de vos projets',
         email: 'Email',
         github: 'GitHub',
-        linkedin: 'LinkedIn'
+        linkedin: 'LinkedIn',
+        location: 'Localisation',
+        collabTitle: 'Prêt à collaborer ?',
+        collabText: 'N\'hésitez pas à me contacter pour discuter de vos projets ou opportunités.',
+        collabButton: 'Envoyer un message',
+        copy: 'Copier l\'adresse',
+        copied: 'Adresse copiée',
+        stackEmail: 'E-mail',
+        write: 'Écrire',
+        cvValue: 'mon-cv.pdf — à consulter ou télécharger'
+      },
+      // Games page
+      games: {
+        title: 'Mini Games',
+        subtitle: 'Quelques mini-jeux cachés dans mon portfolio.',
+        play: 'Play',
+        soon: 'Bientôt',
+        back: 'Retour aux jeux'
+      },
+      notFound: {
+        title: 'Page introuvable',
+        text: 'Ce signal ne mène nulle part. La page demandée n\'existe pas.',
+        back: 'Retour à l\'accueil'
       }
     }
   },
@@ -100,11 +185,38 @@ const resources = {
         chatbot: 'Jarvis',
         games: 'Games'
       },
+      ui: {
+        menu: 'Menu',
+        close: 'Close',
+        language: 'Language',
+        theme: 'Toggle theme',
+        games: 'Mini games',
+        scroll: 'Scroll',
+        backTop: 'Back to top',
+        rights: 'All rights reserved.',
+        localTime: 'Local time',
+        status: 'Status',
+        online: 'Online',
+        coords: 'Coordinates',
+        session: 'Session',
+        explore: 'Explore',
+        open: 'Open',
+        view: 'View',
+        read: 'Read',
+        play: 'Play',
+        loaderLines: ['booting florian.sys', 'loading projects', 'connecting to the network', 'planet in orbit'],
+        footerTitle: 'Let\'s build something',
+        footerAccent: 'together',
+        homeBeacon: 'La Réunion · home base'
+      },
       chatbot: {
         subtitle: 'AI Assistant — Ask me anything about Florian',
         welcome: 'Welcome. I am Jarvis, your cybersecurity assistant.',
         hint: 'Ask me about Florian, his skills or his projects.',
-        placeholder: 'Type your message...'
+        placeholder: 'Type your message...',
+        send: 'Send',
+        tooMany: 'Too many requests, please try again shortly.',
+        noCredits: 'AI credits exhausted.'
       },
       // Home page
       home: {
@@ -112,9 +224,17 @@ const resources = {
         bio: 'Computer science, development and cybersecurity enthusiast.',
         location: 'La Réunion, France',
         cta: 'Discover my projects',
+        skillsHeading: 'My skills',
         skillsTitle: 'Technical Skills',
         softSkillsTitle: 'Soft Skills',
-        toolsTitle: 'My Tools'
+        toolsTitle: 'My Tools',
+        toolsHint: 'Click a tool to see what I use it for.',
+        allTools: 'All',
+        levels: { maitrise: 'Mastered', avance: 'Advanced', base: 'Basic', fragile: 'Fragile' },
+        categories: {
+          security: 'Cybersecurity', network: 'Network', gamedev: 'Game Dev', virtualization: 'Virtualization',
+          development: 'Development', server: 'Servers', telecom: 'Telecom', hardware: 'Hardware', os: 'OS', tools: 'Tools'
+        }
       },
       // Projects page
       projects: {
@@ -122,6 +242,15 @@ const resources = {
         completed: 'Completed',
         inProgress: 'In Progress',
         viewProject: 'View project',
+        count: 'projects',
+        adminMode: 'Admin mode',
+        addProject: 'Add a project',
+        logout: 'Log out',
+        viewSlides: 'View presentation',
+        deleteTitle: 'Delete this project?',
+        deleteText: 'This action cannot be undone.',
+        cancel: 'Cancel',
+        delete: 'Delete',
         // Titres de projets traduits
         projectTitles: {
           'the-forgotten-survival-horror': 'The Forgotten - Survival Horror',
@@ -147,6 +276,23 @@ const resources = {
           'site-suivi-commande': 'Web app development for order management and tracking, sorted by status, type and supplier'
         }
       },
+      gallery: {
+        back: 'Back to projects',
+        admin: 'Admin',
+        edit: 'Edit content',
+        cancel: 'Cancel',
+        logout: 'Log out',
+        details: 'Project details',
+        plan: 'Project action plan',
+        images: 'Project images',
+        image: 'Project image',
+        files: 'Project files',
+        slides: 'View presentation',
+        canva: 'View on Canva',
+        soon: 'Image coming soon',
+        empty: 'No content available for this project.',
+        notFound: 'Project not found'
+      },
       // About page
       about: {
         title: 'About',
@@ -171,7 +317,28 @@ const resources = {
         subtitle: "Let's discuss your projects",
         email: 'Email',
         github: 'GitHub',
-        linkedin: 'LinkedIn'
+        linkedin: 'LinkedIn',
+        location: 'Location',
+        collabTitle: 'Ready to collaborate?',
+        collabText: 'Feel free to reach out to discuss your projects or opportunities.',
+        collabButton: 'Send a message',
+        copy: 'Copy address',
+        copied: 'Address copied',
+        stackEmail: 'Email',
+        write: 'Write',
+        cvValue: 'mon-cv.pdf — view or download'
+      },
+      games: {
+        title: 'Mini Games',
+        subtitle: 'A few mini games hidden in my portfolio.',
+        play: 'Play',
+        soon: 'Soon',
+        back: 'Back to games'
+      },
+      notFound: {
+        title: 'Page not found',
+        text: 'This signal leads nowhere. The page you asked for does not exist.',
+        back: 'Back to home'
       }
     }
   }

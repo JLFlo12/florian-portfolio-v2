@@ -1,10 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Sun, Moon, Globe, ChevronDown, Gamepad2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,15 +11,29 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
+import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
+import Cursor from '@/components/fx/Cursor';
+import Preloader from '@/components/fx/Preloader';
+import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+/* ─────────────── Contenu du layout (a besoin du contexte Lenis) ─────────────── */
+const Shell: React.FC<LayoutProps> = ({ children }) => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const lenis = useLenis();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const hudBar = useRef<HTMLElement>(null);
+  const hudPct = useRef<HTMLSpanElement>(null);
+  const curtain = useRef<HTMLDivElement>(null);
+  const firstRoute = useRef(true);
 
   const navItems = [
     { path: '/', label: t('nav.home') },
@@ -31,146 +43,199 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/chatbot', label: t('nav.chatbot') }
   ];
 
+  const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
+  const currentLabel = navItems.find((i) => isActive(i.path))?.label ?? (location.pathname.startsWith('/games') ? t('nav.games') : '404');
+
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
+    document.documentElement.lang = lng;
   };
 
+  /* Changement de page : retour en haut + rideau orange qui balaie l'écran */
+  useLayoutEffect(() => {
+    setMenuOpen(false);
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+    else window.scrollTo(0, 0);
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    if (!curtain.current || prefersReducedMotion()) return;
+    // y: 0 => ignore le translateY(100%) du CSS de départ
+    gsap.fromTo(curtain.current, { y: 0, yPercent: 0 }, { yPercent: -100, duration: 0.95, ease: 'expo.inOut', delay: 0.12 });
+    gsap.fromTo(curtain.current.firstElementChild, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -40, duration: 0.5, ease: 'power2.in', delay: 0.1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  /* Barre de navigation : masquée quand on descend, visible quand on remonte */
+  useEffect(() => {
+    let last = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setScrolled(y > 30);
+      // Indicateur de défilement mis à jour directement (sans re-rendu React à chaque image)
+      const p = max > 0 ? Math.min(1, y / max) : 0;
+      if (hudBar.current) hudBar.current.style.transform = `scaleX(${p})`;
+      if (hudPct.current) hudPct.current.textContent = `${String(Math.round(p * 100)).padStart(3, '0')}%`;
+      if (hudBar.current) hudBar.current.closest<HTMLElement>('[data-scroll-hud]')!.style.opacity = y > window.innerHeight * 0.5 && p < 0.96 ? '1' : '0';
+      if (Math.abs(y - last) > 6) { setHidden(y > last && y > window.innerHeight * 0.5); last = y; }
+      ticking = false;
+    };
+    const onScroll = () => { if (!ticking) { requestAnimationFrame(update); ticking = true; } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  /* Menu mobile : bloque le défilement pendant qu'il est ouvert */
+  useEffect(() => {
+    if (!lenis) return;
+    if (menuOpen) lenis.stop(); else lenis.start();
+  }, [menuOpen, lenis]);
+
+  const controls = (
+    <>
+      {/* Langue */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" aria-label={t('ui.language')} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 font-mono text-xs text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground">
+            <Globe className="h-4 w-4" />
+            {i18n.language === 'fr' ? 'FR' : 'EN'}
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="border-border bg-popover">
+          <DropdownMenuItem onClick={() => changeLanguage('fr')} className="cursor-pointer">Français</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => changeLanguage('en')} className="cursor-pointer">English</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Mini-jeux */}
+      <Link
+        to="/games"
+        aria-label={t('ui.games')}
+        className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-foreground/5 ${isActive('/games') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        <Gamepad2 className="h-4 w-4" />
+      </Link>
+
+      {/* Thème */}
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={t('ui.theme')}
+        className="group inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+      >
+        <span className="transition-transform duration-500 group-hover:rotate-180">
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </span>
+      </button>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      {/* Navigation */}
-      <motion.nav 
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border transition-colors duration-300"
+    <div className="min-h-screen bg-background text-foreground">
+      <Preloader />
+      <Cursor />
+      <div className="grain" aria-hidden="true" />
+
+      {/* Rideau de transition entre les pages */}
+      <div ref={curtain} className="curtain" aria-hidden="true">
+        <span className="curtain__label">{currentLabel}</span>
+      </div>
+
+      {/* ─────────────── Navigation ─────────────── */}
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-transform duration-700 [transition-timing-function:var(--ease-out)] ${hidden && !menuOpen ? '-translate-y-full' : ''}`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link to="/" className="text-primary hover:text-primary/80 transition-colors">
-                <Logo />
+        <div className={`pointer-events-none absolute inset-0 border-b border-border/60 bg-background/70 backdrop-blur-xl transition-opacity duration-500 md:hidden ${scrolled ? 'opacity-100' : 'opacity-0'}`} />
+        <nav className="container-x relative flex h-[var(--nav-h)] max-w-[1800px] items-center justify-between gap-4" aria-label="Navigation principale">
+          <Link to="/" className="relative z-[2] flex items-center gap-3 text-primary" aria-label="Florian G.L — accueil">
+            <Logo />
+            <span className="hidden font-display text-[.95rem] font-extrabold uppercase tracking-tight text-foreground sm:inline [font-stretch:125%]">
+              Florian<span className="text-primary">.</span>G.L
+            </span>
+          </Link>
+
+          {/* Pilule de navigation (ordinateur) */}
+          <div className="glass hidden items-center gap-1 rounded-full p-1.5 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive(item.path) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
+                }`}
+              >
+                {item.label}
               </Link>
-            </motion.div>
-
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-8">
-              {navItems.map((item, index) => (
-                <motion.div
-                  key={item.path}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
-                >
-                  <Link
-                    to={item.path}
-                    className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 hover:scale-105 ${
-                      location.pathname === item.path
-                        ? 'text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {item.label}
-                    {location.pathname === item.path && (
-                      <motion.div
-                        layoutId="activeTab"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                      />
-                    )}
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Controls */}
-            <motion.div 
-              className="flex items-center space-x-4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              {/* Language Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
-                    >
-                      <Globe className="h-4 w-4 mr-2" />
-                      {i18n.language === 'fr' ? 'FR' : 'EN'}
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </Button>
-                  </motion.div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-popover border-border animate-in fade-in-0 zoom-in-95">
-                  <DropdownMenuItem 
-                    onClick={() => changeLanguage('fr')}
-                    className="text-popover-foreground hover:bg-accent cursor-pointer transition-colors duration-200"
-                  >
-                    Français
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => changeLanguage('en')}
-                    className="text-popover-foreground hover:bg-accent cursor-pointer transition-colors duration-200"
-                  >
-                    English
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Games Button */}
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                <Link to="/games">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`transition-all duration-300 ${
-                      location.pathname === '/games'
-                        ? 'text-primary'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    <Gamepad2 className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Theme Toggle */}
-              <motion.div whileHover={{ scale: 1.05, rotate: 180 }} whileTap={{ scale: 0.95 }} transition={{ duration: 0.3 }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleTheme}
-                  className="text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
-                >
-                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              </motion.div>
-            </motion.div>
+            ))}
           </div>
-        </div>
-      </motion.nav>
 
-      {/* Main Content */}
-      <motion.main 
-        key={location.pathname}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.4, ease: "easeInOut" }}
-        className="pt-20"
-      >
-        {children}
-      </motion.main>
+          <div className="relative z-[2] flex items-center gap-1">
+            <div className="hidden items-center gap-1 md:flex">{controls}</div>
+            {/* Bouton menu (mobile) */}
+            <button
+              type="button"
+              className="relative h-11 w-11 md:hidden"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              aria-label={menuOpen ? t('ui.close') : t('ui.menu')}
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              <span className={`absolute left-3 right-3 top-[15px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? 'translate-y-[6px] rotate-45' : ''}`} />
+              <span className={`absolute left-3 right-3 top-[21px] h-0.5 rounded bg-foreground transition-opacity ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`absolute left-3 right-3 top-[27px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? '-translate-y-[6px] -rotate-45' : ''}`} />
+            </button>
+          </div>
+        </nav>
+
+        {/* Menu plein écran (mobile) */}
+        <div
+          id="mobile-menu"
+          className={`fixed inset-0 -z-[1] flex flex-col justify-between bg-background px-[var(--gutter)] pb-10 pt-[calc(var(--nav-h)+24px)] transition-[opacity,visibility] duration-500 md:hidden ${menuOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}
+        >
+          <ul className="space-y-1">
+            {[...navItems, { path: '/games', label: t('nav.games') }].map((item, i) => (
+              <li
+                key={item.path}
+                className={`transition-all duration-700 [transition-timing-function:var(--ease-out)] ${menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+                style={{ transitionDelay: menuOpen ? `${i * 50}ms` : '0ms' }}
+              >
+                <Link to={item.path} className={`flex items-baseline gap-4 py-1 font-display text-[clamp(2rem,10vw,3.2rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%] ${isActive(item.path) ? 'text-primary' : 'text-foreground'}`}>
+                  <span className="led text-sm text-primary">{String(i + 1).padStart(2, '0')}</span>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="flex items-center gap-2">{controls}</div>
+        </div>
+      </header>
+
+      {/* ─────────────── Contenu ─────────────── */}
+      <main className="relative">{children}</main>
+
+      {location.pathname !== '/chatbot' && <Footer />}
+
+      {/* Indicateur de défilement façon télémétrie (grand écran) */}
+      <div data-scroll-hud className="pointer-events-none fixed bottom-6 left-[var(--gutter)] z-40 hidden items-center gap-3 font-mono text-[.68rem] uppercase tracking-[.1em] text-muted-foreground opacity-0 transition-opacity duration-500 lg:flex" aria-hidden="true">
+        <span className="text-primary">FLORIAN.SYS</span>
+        <span>/ {currentLabel}</span>
+        <span className="relative h-0.5 w-20 overflow-hidden bg-foreground/15">
+          <i ref={hudBar} className="absolute inset-0 origin-left scale-x-0 bg-primary" />
+        </span>
+        <span ref={hudPct} className="led text-foreground">000%</span>
+      </div>
     </div>
   );
 };
+
+const Layout: React.FC<LayoutProps> = ({ children }) => (
+  <SmoothScroll>
+    <Shell>{children}</Shell>
+  </SmoothScroll>
+);
 
 export default Layout;

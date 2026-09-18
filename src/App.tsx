@@ -1,4 +1,5 @@
 
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,15 +10,23 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import Layout from "@/components/Layout";
 import Home from "./pages/Home";
-import Projects from "./pages/Projects";
-import ProjectGallery from "./pages/ProjectGallery";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Chatbot from "./pages/Chatbot";
-import Games from "./pages/Games";
-import NotFound from "./pages/NotFound";
+
+// Les autres pages sont chargées à la demande (site plus rapide au premier affichage)
+const Projects = lazy(() => import("./pages/Projects"));
+const ProjectGallery = lazy(() => import("./pages/ProjectGallery"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Chatbot = lazy(() => import("./pages/Chatbot"));
+const Games = lazy(() => import("./pages/Games"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="flex min-h-[100svh] items-center justify-center" aria-hidden="true">
+    <span className="led animate-pulse text-2xl text-primary">···</span>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -28,16 +37,18 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/projects/:projectId" element={<ProjectGallery />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/chatbot" element={<Chatbot />} />
-                <Route path="/games" element={<Games />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageFallback />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:projectId" element={<ProjectGallery />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/chatbot" element={<Chatbot />} />
+                  <Route path="/games" element={<Games />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </Layout>
           </BrowserRouter>
         </TooltipProvider>

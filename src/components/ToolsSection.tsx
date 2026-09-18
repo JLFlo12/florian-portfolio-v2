@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Code, Database, Shield, Server, Globe, Terminal, FileText, Wifi, HardDrive, Monitor, X, Gamepad2, Cpu, Lock, Bug } from 'lucide-react';
+import { Code, Database, Shield, Server, Globe, Terminal, FileText, Wifi, HardDrive, Monitor, Gamepad2, Cpu, Lock, Bug, ArrowUpRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import SectionHeading from '@/components/SectionHeading';
+import { gsap, prefersReducedMotion, useReveal } from '@/lib/motion';
 
 interface Tool {
   name: string;
@@ -13,6 +15,10 @@ interface Tool {
 const ToolsSection = () => {
   const { t } = useTranslation();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [filter, setFilter] = useState<string>('all');
+  const section = useRef<HTMLElement>(null);
+  const grid = useRef<HTMLDivElement>(null);
+  useReveal(section);
 
   const tools: Tool[] = [
     // ── Cybersécurité (Base) ──
@@ -165,120 +171,87 @@ const ToolsSection = () => {
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
+  // Catégories présentes, dans l'ordre d'apparition
+  const categories = useMemo(() => Array.from(new Set(tools.map((tool) => tool.category))), []);
+  const visible = filter === 'all' ? tools : tools.filter((tool) => tool.category === filter);
 
-  const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 20,
-      scale: 0.9
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut" as const
-      }
-    }
+  // Petite animation quand on change de filtre
+  const applyFilter = (value: string) => {
+    if (value === filter) return;
+    setFilter(value);
+    if (prefersReducedMotion()) return;
+    requestAnimationFrame(() => {
+      const items = grid.current?.children;
+      if (items) gsap.fromTo(items, { autoAlpha: 0, y: 24, rotationX: -25 }, { autoAlpha: 1, y: 0, rotationX: 0, duration: 0.7, ease: 'expo.out', stagger: 0.03, overwrite: true });
+    });
   };
 
   return (
-    <section className="py-20 px-6 bg-muted/20 relative">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-4xl font-bold mb-4 text-primary">
-            {t('home.toolsTitle')}
-          </h2>
-          <div className="w-24 h-1 bg-primary mx-auto"></div>
-        </motion.div>
+    <section ref={section} className="section-y relative">
+      <div className="container-x">
+        <SectionHeading index="01" label="tools" title={t('home.toolsTitle')} lede={t('home.toolsHint')} />
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-        >
-          {tools.map((tool, index) => (
-            <motion.div
-              key={tool.name}
-              variants={itemVariants}
-              whileHover={{ 
-                scale: 1.05,
-                y: -5,
-                transition: { duration: 0.2 }
-              }}
-              className="group cursor-pointer"
-              onClick={() => setSelectedTool(tool)}
+        {/* Filtres par catégorie */}
+        <div className="mt-12 flex flex-wrap gap-2" data-reveal>
+          {['all', ...categories].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => applyFilter(cat)}
+              className={`rounded-full border px-4 py-2 font-mono text-xs transition-colors ${
+                filter === cat ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'
+              }`}
             >
-              <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 text-center hover:bg-accent/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
-                <div className="flex justify-center mb-3 text-muted-foreground group-hover:text-primary transition-colors duration-300">
-                  {tool.icon}
-                </div>
-                <h3 className="text-sm font-medium text-card-foreground group-hover:text-foreground transition-colors duration-300">
-                  {tool.name}
-                </h3>
-              </div>
-            </motion.div>
+              {cat === 'all' ? t('home.allTools') : t(`home.categories.${cat}`)}
+              <span className="ml-2 opacity-60">{cat === 'all' ? tools.length : tools.filter((tool) => tool.category === cat).length}</span>
+            </button>
           ))}
-        </motion.div>
+        </div>
+
+        {/* Grille des outils */}
+        <div ref={grid} className="mt-8 grid grid-cols-2 gap-3 [perspective:1200px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" data-stagger>
+          {visible.map((tool) => (
+            <button
+              key={tool.name}
+              type="button"
+              onClick={() => setSelectedTool(tool)}
+              data-cursor={t('ui.open')}
+              className="panel group flex min-h-[150px] flex-col justify-between p-4 text-left transition-transform duration-500 [transition-timing-function:var(--ease-out)] hover:-translate-y-1"
+            >
+              <span className="flex items-start justify-between gap-2">
+                <span className="led text-xs text-muted-foreground">{String(tools.indexOf(tool) + 1).padStart(2, '0')}</span>
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
+              </span>
+              <span className="text-muted-foreground transition-colors duration-300 group-hover:text-primary">{tool.icon}</span>
+              <span>
+                <span className="block font-display text-[.95rem] font-bold leading-tight [font-stretch:110%]">{tool.name}</span>
+                <span className="label-mono mt-1 block !text-[.62rem]">{t(`home.categories.${tool.category}`)}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Modal de description */}
-      {selectedTool && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedTool(null)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="text-primary">
-                  {selectedTool.icon}
-                </div>
-                <h3 className="text-xl font-bold text-foreground">
+      {/* Fenêtre de description */}
+      <Dialog open={!!selectedTool} onOpenChange={(open) => { if (!open) setSelectedTool(null); }}>
+        <DialogContent className="panel max-w-md border-primary/30 p-0 sm:rounded-[22px]">
+          {selectedTool && (
+            <div className="relative p-7">
+              <div className="hud-frame inset-3" aria-hidden="true"><i /><i /><i /><i /></div>
+              <DialogHeader className="space-y-4 text-left">
+                <p className="label-mono">{t(`home.categories.${selectedTool.category}`)}</p>
+                <DialogTitle className="flex items-center gap-3 font-display text-2xl font-extrabold uppercase [font-stretch:118%]">
+                  <span className="text-primary">{selectedTool.icon}</span>
                   {selectedTool.name}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedTool(null)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted"
-              >
-                <X className="h-5 w-5" />
-              </button>
+                </DialogTitle>
+                <DialogDescription className="text-base leading-relaxed text-muted-foreground">
+                  {selectedTool.description}
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
-              {selectedTool.description}
-            </p>
-          </motion.div>
-        </motion.div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

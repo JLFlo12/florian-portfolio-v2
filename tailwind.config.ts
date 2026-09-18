@@ -19,6 +19,13 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				display: ['"Hubot Sans"', '"Arial Black"', 'system-ui', 'sans-serif'],
+				sans: ['"Mona Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
+				mono: ['"Geist Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
+				dot: ['Doto', '"Geist Mono"', 'ui-monospace', 'monospace'],
+				serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+			},
 			colors: {
 				// Couleurs orange personnalisées
 				'orange-primary': {

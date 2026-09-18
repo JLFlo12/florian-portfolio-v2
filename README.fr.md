@@ -1,17 +1,19 @@
 <div align="center">
 
-# Florian G.L · Portfolio
+# Florian G.L · Portfolio v2
 
 **Mon portfolio personnel : projets, compétences, assistant IA et mini-jeux**
 
 [🇬🇧 English](README.md) · 🇫🇷 Français
 
-[![Site en ligne](https://img.shields.io/badge/Site%20en%20ligne-florian--portfolio--zeta.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://florian-portfolio-zeta.vercel.app/)
+[![Site en ligne](https://img.shields.io/badge/Site%20en%20ligne-florian--portfolio--v2.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://florian-portfolio-v2.vercel.app/)
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white)
+![three.js](https://img.shields.io/badge/three.js-000000?logo=threedotjs&logoColor=white)
+![GSAP](https://img.shields.io/badge/GSAP-88CE02?logo=greensock&logoColor=black)
 ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)
 ![Licence : MIT](https://img.shields.io/badge/Licence-MIT-yellow.svg)
@@ -24,9 +26,12 @@
 
 Voici le code source de mon portfolio. Je suis étudiant en BUT Réseaux & Télécommunications, parcours cybersécurité, à La Réunion. Le site présente mes projets, mes compétences et mon CV, et propose aussi un assistant IA et quelques mini-jeux.
 
+Voici la **version 2** : une refonte complète avec une planète 3D sur l'accueil, des animations soignées et une nouvelle identité visuelle. Tout le contenu de la [version précédente](https://github.com/JLFlo12/florian-portfolio) est conservé.
+
 ## Fonctionnalités
 
-- 🏠 **Accueil** : présentation, compétences techniques et soft skills, et les outils que j'utilise (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…)
+- 🪐 **Accueil** : présentation avec une planète 3D interactive (continents en points lumineux, liaisons réseau, anneau, balise sur La Réunion), compétences techniques et soft skills, et les outils que j'utilise (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…)
+- ✨ **Animations** : écran de chargement façon démarrage système, défilement fluide, titres qui apparaissent en 3D, transitions entre les pages, curseur personnalisé et détails façon HUD (désactivés si le système demande de réduire les animations)
 - 📁 **Projets** : projets classés en *En cours* et *Terminés*, avec une page de détail pour chacun (description, galerie d'images, diaporama Canva)
 - 👤 **À propos** : formation, domaines d'expertise (réseaux, systèmes, cybersécurité) et CV consultable en ligne ou téléchargeable en PDF
 - ✉️ **Contact** : e-mail, GitHub et LinkedIn
@@ -42,7 +47,10 @@ Voici le code source de mon portfolio. Je suis étudiant en BUT Réseaux & Tél�
 | --- | --- |
 | Framework | React 18 + TypeScript |
 | Outil de build | Vite 5 (SWC) |
-| Interface | Tailwind CSS, shadcn/ui (Radix UI), Framer Motion, lucide-react |
+| Interface | Tailwind CSS, shadcn/ui (Radix UI), lucide-react |
+| Animations | GSAP + ScrollTrigger, Lenis (défilement fluide), Framer Motion (mini-jeux) |
+| 3D | three.js + React Three Fiber (planète de l'accueil, chargée à la demande) |
+| Polices | Hubot Sans, Mona Sans, Geist Mono, Doto, Instrument Serif (Google Fonts) |
 | Routage | React Router 6 |
 | Traductions | i18next / react-i18next |
 | Données | Supabase (PostgreSQL, Storage, Edge Functions) + TanStack React Query |
@@ -75,8 +83,8 @@ flowchart LR
 ### Lancer le projet
 
 ```bash
-git clone https://github.com/JLFlo12/florian-portfolio.git
-cd florian-portfolio
+git clone https://github.com/JLFlo12/florian-portfolio-v2.git
+cd florian-portfolio-v2
 npm install
 npm run dev
 ```
@@ -121,7 +129,7 @@ supabase functions deploy cyberbot-chat
 ## Structure du projet
 
 ```
-florian-portfolio/
+florian-portfolio-v2/
 ├── public/
 │   ├── buildings/             # Images du jeu « Guess the Building »
 │   ├── portfolio-v1/          # Première version du portfolio (HTML/CSS/JS)
@@ -129,14 +137,18 @@ florian-portfolio/
 ├── src/
 │   ├── components/
 │   │   ├── admin/             # Connexion admin, formulaire de projet, éditeur de galerie
+│   │   ├── fx/                # Défilement fluide, écran de chargement, curseur personnalisé
 │   │   ├── games/             # Les 5 mini-jeux
-│   │   ├── Layout.tsx         # En-tête, navigation, choix du thème et de la langue
+│   │   ├── three/             # Planète 3D de l'accueil (React Three Fiber)
+│   │   ├── Layout.tsx         # En-tête, navigation, transitions entre les pages, choix du thème et de la langue
+│   │   ├── Footer.tsx         # Pied de page (liens de contact, heure locale à La Réunion)
 │   │   └── ui/                # Composants shadcn/ui
 │   ├── contexts/              # Thème (sombre/clair)
 │   ├── data/                  # Galeries des projets
 │   ├── hooks/                 # Authentification admin, projets (React Query)
 │   ├── i18n/                  # Traductions français et anglais
 │   ├── integrations/supabase/ # Client Supabase et types générés
+│   ├── lib/                   # Outils d'animation (GSAP) et utilitaires
 │   └── pages/                 # Accueil, Projets, À propos, Contact, Jarvis, Jeux
 ├── supabase/
 │   ├── functions/             # admin-projects, cyberbot-chat
@@ -146,7 +158,7 @@ florian-portfolio/
 
 ## Déploiement
 
-Le site est déployé sur **Vercel**. `vercel.json` renvoie toutes les routes vers `index.html`, pour que les liens comme `/projects` fonctionnent quand on recharge la page.
+Le site est déployé sur **Vercel** à l'adresse [florian-portfolio-v2.vercel.app](https://florian-portfolio-v2.vercel.app/). `vercel.json` renvoie toutes les routes vers `index.html`, pour que les liens comme `/projects` fonctionnent quand on recharge la page.
 
 ## Licence
 

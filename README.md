@@ -30,12 +30,12 @@ This is **version 2**: a complete redesign with a 3D planet on the home page, mo
 
 ## Features
 
-- 🪐 **Home**: introduction with an interactive 3D planet (dotted continents, network links, ring, beacon on Réunion), technical skills and soft skills, and the tools I use (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…)
+- 🪐 **Home**: introduction with an interactive 3D planet (dotted continents, network links, ring, beacon on Réunion), technical skills and soft skills, and the tools I use (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…) shown as a Jarvis-style 3D hologram ring you can grab and spin
 - ✨ **Motion design**: boot-style loading screen, smooth scrolling, 3D text reveals, page transitions, custom cursor and HUD details (disabled when the system asks for reduced motion)
 - 📁 **Projects**: projects grouped into *In progress* and *Completed*, with a detail page for each (description, image gallery, Canva slideshow)
-- 👤 **About**: education, areas of expertise (networks, systems, cybersecurity) and a CV you can view online or download as a PDF
-- ✉️ **Contact**: email, GitHub and LinkedIn
-- 🤖 **Jarvis**: an AI assistant that answers questions about my profile, skills and projects, as well as general questions, with streamed replies formatted in Markdown
+- 👤 **About**: education, areas of expertise (networks, systems, cybersecurity) and a CV available as a printable web page (`/cv`, one A4 page) or as a PDF
+- ✉️ **Contact**: a contact form (messages are delivered by email through FormSubmit, with a spam trap), plus email, GitHub and LinkedIn
+- 🤖 **Jarvis**: an AI assistant that answers questions about my profile, skills and projects, as well as general questions, with streamed replies formatted in Markdown. It stays up to date: the site sends it today's date, the projects from the database and the profile shown on the site
 - 🎮 **Games**: Dino Runner, Flappy Bird, Snake, Guess the Building and Tower Crane Challenge
 - 🌗 **Dark and light theme**, remembered by the browser
 - 🌍 **French and English** (i18next)
@@ -50,12 +50,14 @@ This is **version 2**: a complete redesign with a 3D planet on the home page, mo
 | UI | Tailwind CSS, shadcn/ui (Radix UI), lucide-react |
 | Animation | GSAP + ScrollTrigger, Lenis (smooth scroll), Framer Motion (mini-games) |
 | 3D | three.js + React Three Fiber (home page planet, loaded on demand) |
-| Fonts | Hubot Sans, Mona Sans, Geist Mono, Doto, Instrument Serif (Google Fonts) |
+| Fonts | Hubot Sans, Mona Sans, Geist Mono, Doto, Instrument Serif (self-hosted in `public/fonts`, SIL Open Font License) |
 | Routing | React Router 6 |
 | Translations | i18next / react-i18next |
 | Data | Supabase (PostgreSQL, Storage, Edge Functions) + TanStack React Query |
 | AI chatbot | Supabase Edge Function → Lovable AI Gateway (streaming) |
+| Contact form | [FormSubmit](https://formsubmit.co) |
 | Hosting | Vercel |
+| Analytics | Vercel Web Analytics (no cookies) |
 | Scaffolding | [Lovable](https://lovable.dev) |
 
 ## How it works
@@ -67,6 +69,7 @@ flowchart LR
     S -->|chat messages| F1[Edge Function: cyberbot-chat]
     F1 --> AI[Lovable AI Gateway]
     S -->|admin password| F2[Edge Function: admin-projects]
+    S -->|contact form| FS[FormSubmit] --> M[My inbox]
     F2 -->|service role| DB
 ```
 
@@ -144,12 +147,12 @@ florian-portfolio-v2/
 │   │   ├── Footer.tsx         # Footer (contact links, local time in Réunion)
 │   │   └── ui/                # shadcn/ui components
 │   ├── contexts/              # Theme (dark/light)
-│   ├── data/                  # Project galleries
+│   ├── data/                  # Project galleries, profile, tools and CV (shared with Jarvis)
 │   ├── hooks/                 # Admin authentication, projects (React Query)
 │   ├── i18n/                  # French and English translations
 │   ├── integrations/supabase/ # Supabase client and generated types
 │   ├── lib/                   # Animation helpers (GSAP) and utilities
-│   └── pages/                 # Home, Projects, About, Contact, Jarvis, Games
+│   └── pages/                 # Home, Projects, About, CV, Contact, Jarvis, Games
 ├── supabase/
 │   ├── functions/             # admin-projects, cyberbot-chat
 │   └── migrations/            # projects table, storage bucket

@@ -1,7 +1,8 @@
 
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, Download, FileText, GraduationCap, Network, Server, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Download, FileText, GraduationCap, Network, Server, ShieldCheck } from 'lucide-react';
 import SectionHeading from '@/components/SectionHeading';
 import { useReveal } from '@/lib/motion';
 
@@ -93,9 +94,9 @@ const About = () => {
               <a href="/mon-cv.pdf" target="_blank" rel="noopener noreferrer" className="btn-neon">
                 <Download className="h-4 w-4" /> {t('about.downloadCV')}
               </a>
-              <a href="/mon-cv.pdf" target="_blank" rel="noopener noreferrer" className="btn-ghost liquid">
-                <FileText className="h-4 w-4" /> {t('about.viewCV')} <ArrowUpRight className="h-4 w-4" />
-              </a>
+              <Link to="/cv" className="btn-ghost liquid">
+                <FileText className="h-4 w-4" /> {t('about.viewCV')} <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>

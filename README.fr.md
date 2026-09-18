@@ -30,12 +30,12 @@ Voici la **version 2** : une refonte complète avec une planète 3D sur l'accuei
 
 ## Fonctionnalités
 
-- 🪐 **Accueil** : présentation avec une planète 3D interactive (continents en points lumineux, liaisons réseau, anneau, balise sur La Réunion), compétences techniques et soft skills, et les outils que j'utilise (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…)
+- 🪐 **Accueil** : présentation avec une planète 3D interactive (continents en points lumineux, liaisons réseau, anneau, balise sur La Réunion), compétences techniques et soft skills, et les outils que j'utilise (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…) présentés sur une toile holographique 3D façon Jarvis, qu'on attrape et fait pivoter
 - ✨ **Animations** : écran de chargement façon démarrage système, défilement fluide, titres qui apparaissent en 3D, transitions entre les pages, curseur personnalisé et détails façon HUD (désactivés si le système demande de réduire les animations)
 - 📁 **Projets** : projets classés en *En cours* et *Terminés*, avec une page de détail pour chacun (description, galerie d'images, diaporama Canva)
-- 👤 **À propos** : formation, domaines d'expertise (réseaux, systèmes, cybersécurité) et CV consultable en ligne ou téléchargeable en PDF
-- ✉️ **Contact** : e-mail, GitHub et LinkedIn
-- 🤖 **Jarvis** : un assistant IA qui répond aux questions sur mon profil, mes compétences et mes projets, mais aussi aux questions générales, avec des réponses affichées au fil de l'eau et mises en forme en Markdown
+- 👤 **À propos** : formation, domaines d'expertise (réseaux, systèmes, cybersécurité) et CV disponible en page web imprimable (`/cv`, une page A4) ou en PDF
+- ✉️ **Contact** : un formulaire de contact (les messages arrivent par e-mail via FormSubmit, avec un piège anti-robots), ainsi que l'e-mail, GitHub et LinkedIn
+- 🤖 **Jarvis** : un assistant IA qui répond aux questions sur mon profil, mes compétences et mes projets, mais aussi aux questions générales, avec des réponses affichées au fil de l'eau et mises en forme en Markdown. Il reste à jour : le site lui transmet la date du jour, les projets de la base et le profil affiché sur le site
 - 🎮 **Jeux** : Dino Runner, Flappy Bird, Snake, Guess the Building et Tower Crane Challenge
 - 🌗 **Thème sombre et clair**, mémorisé par le navigateur
 - 🌍 **Français et anglais** (i18next)
@@ -50,12 +50,14 @@ Voici la **version 2** : une refonte complète avec une planète 3D sur l'accuei
 | Interface | Tailwind CSS, shadcn/ui (Radix UI), lucide-react |
 | Animations | GSAP + ScrollTrigger, Lenis (défilement fluide), Framer Motion (mini-jeux) |
 | 3D | three.js + React Three Fiber (planète de l'accueil, chargée à la demande) |
-| Polices | Hubot Sans, Mona Sans, Geist Mono, Doto, Instrument Serif (Google Fonts) |
+| Polices | Hubot Sans, Mona Sans, Geist Mono, Doto, Instrument Serif (hébergées dans `public/fonts`, licence SIL Open Font License) |
 | Routage | React Router 6 |
 | Traductions | i18next / react-i18next |
 | Données | Supabase (PostgreSQL, Storage, Edge Functions) + TanStack React Query |
 | Chatbot IA | Edge Function Supabase → Lovable AI Gateway (streaming) |
+| Formulaire de contact | [FormSubmit](https://formsubmit.co) |
 | Hébergement | Vercel |
+| Statistiques | Vercel Web Analytics (sans cookies) |
 | Génération initiale | [Lovable](https://lovable.dev) |
 
 ## Fonctionnement
@@ -67,6 +69,7 @@ flowchart LR
     S -->|messages du chat| F1[Edge Function : cyberbot-chat]
     F1 --> AI[Lovable AI Gateway]
     S -->|mot de passe admin| F2[Edge Function : admin-projects]
+    S -->|formulaire de contact| FS[FormSubmit] --> M[Ma boîte mail]
     F2 -->|service role| DB
 ```
 
@@ -144,12 +147,12 @@ florian-portfolio-v2/
 │   │   ├── Footer.tsx         # Pied de page (liens de contact, heure locale à La Réunion)
 │   │   └── ui/                # Composants shadcn/ui
 │   ├── contexts/              # Thème (sombre/clair)
-│   ├── data/                  # Galeries des projets
+│   ├── data/                  # Galeries des projets, profil, outils et CV (partagés avec Jarvis)
 │   ├── hooks/                 # Authentification admin, projets (React Query)
 │   ├── i18n/                  # Traductions français et anglais
 │   ├── integrations/supabase/ # Client Supabase et types générés
 │   ├── lib/                   # Outils d'animation (GSAP) et utilitaires
-│   └── pages/                 # Accueil, Projets, À propos, Contact, Jarvis, Jeux
+│   └── pages/                 # Accueil, Projets, À propos, CV, Contact, Jarvis, Jeux
 ├── supabase/
 │   ├── functions/             # admin-projects, cyberbot-chat
 │   └── migrations/            # Table projects, bucket de stockage

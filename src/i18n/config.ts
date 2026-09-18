@@ -31,6 +31,7 @@ const resources = {
         session: 'Session',
         explore: 'Explorer',
         open: 'Ouvrir',
+        drag: 'Glisser',
         view: 'Voir',
         read: 'Lire',
         play: 'Jouer',
@@ -50,6 +51,17 @@ const resources = {
       },
       // Home page
       home: {
+        dive: {
+          altitude: 'Altitude',
+          speed: 'Vitesse',
+          target: 'Cible',
+          progress: 'Descente',
+          locked: 'Cible verrouillée',
+          phases: ['Approche', 'Cible verrouillée', 'Descente', 'Entrée atmosphérique', 'Contact'],
+          words: ['Réseaux', 'Systèmes', 'Cybersécurité'],
+          line1: 'Voici avec quoi',
+          line2: 'je travaille'
+        },
         role: 'Étudiant en BUT Réseaux & Télécommunications',
         bio: 'Étudiant passionné par l\'informatique, le développement et la cyber.',
         location: 'La Réunion, France',
@@ -59,6 +71,15 @@ const resources = {
         softSkillsTitle: 'Soft Skills',
         toolsTitle: 'Outils que j\'utilise',
         toolsHint: 'Clique sur un outil pour voir à quoi il me sert.',
+        toolsWheelHint: 'Attrape la toile et fais-la pivoter, façon Jarvis.',
+        toolsCarousel: 'Toile des outils en 3D',
+        toolsPrev: 'Outil précédent',
+        toolsNext: 'Outil suivant',
+        toolsStatsTools: 'Outils',
+        toolsStatsCategories: 'Catégories',
+        toolsStatsRotation: 'Rotation',
+        toolsPause: 'Mettre la rotation en pause',
+        toolsPlay: 'Relancer la rotation',
         allTools: 'Tous',
         levels: { maitrise: 'Maîtrisé', avance: 'Avancé', base: 'Base', fragile: 'Fragile' },
         categories: {
@@ -125,6 +146,10 @@ const resources = {
         notFound: 'Projet non trouvé'
       },
       // About page
+      cv: {
+        print: 'Imprimer / enregistrer en PDF',
+        pdf: 'PDF original'
+      },
       about: {
         title: 'À propos',
         intro: 'Étudiant passionné par les technologies réseau et la cybersécurité',
@@ -157,7 +182,24 @@ const resources = {
         copied: 'Adresse copiée',
         stackEmail: 'E-mail',
         write: 'Écrire',
-        cvValue: 'mon-cv.pdf — à consulter ou télécharger'
+        cvValue: 'version web imprimable + PDF',
+        orDirect: 'Ou écris-moi directement',
+        form: {
+          name: 'Nom',
+          email: 'E-mail',
+          message: 'Message',
+          namePh: 'Ton nom',
+          emailPh: 'ton@email.com',
+          messagePh: "Parle-moi de ton projet, d'un stage, d'une question…",
+          send: 'Envoyer le message',
+          sending: 'Envoi…',
+          sentTitle: 'Message envoyé',
+          sentText: 'Merci ! Je te réponds dès que possible.',
+          again: 'Envoyer un autre message',
+          error: "Le message n'a pas pu être envoyé.",
+          errorText: "L'envoi a échoué. Tu peux m'écrire directement :",
+          privacy: 'Ton message est transmis par FormSubmit et arrive directement dans ma boîte mail.'
+        }
       },
       // Games page
       games: {
@@ -201,6 +243,7 @@ const resources = {
         session: 'Session',
         explore: 'Explore',
         open: 'Open',
+        drag: 'Drag',
         view: 'View',
         read: 'Read',
         play: 'Play',
@@ -220,6 +263,17 @@ const resources = {
       },
       // Home page
       home: {
+        dive: {
+          altitude: 'Altitude',
+          speed: 'Speed',
+          target: 'Target',
+          progress: 'Descent',
+          locked: 'Target locked',
+          phases: ['Approach', 'Target locked', 'Descent', 'Atmospheric entry', 'Touchdown'],
+          words: ['Networks', 'Systems', 'Cybersecurity'],
+          line1: "Here's what",
+          line2: 'I work with'
+        },
         role: 'Student in Networks & Telecommunications',
         bio: 'Computer science, development and cybersecurity enthusiast.',
         location: 'La Réunion, France',
@@ -229,6 +283,15 @@ const resources = {
         softSkillsTitle: 'Soft Skills',
         toolsTitle: 'My Tools',
         toolsHint: 'Click a tool to see what I use it for.',
+        toolsWheelHint: 'Grab the hologram and spin it, Jarvis-style.',
+        toolsCarousel: '3D tools hologram',
+        toolsPrev: 'Previous tool',
+        toolsNext: 'Next tool',
+        toolsStatsTools: 'Tools',
+        toolsStatsCategories: 'Categories',
+        toolsStatsRotation: 'Rotation',
+        toolsPause: 'Pause the rotation',
+        toolsPlay: 'Resume the rotation',
         allTools: 'All',
         levels: { maitrise: 'Mastered', avance: 'Advanced', base: 'Basic', fragile: 'Fragile' },
         categories: {
@@ -294,6 +357,10 @@ const resources = {
         notFound: 'Project not found'
       },
       // About page
+      cv: {
+        print: 'Print / save as PDF',
+        pdf: 'Original PDF'
+      },
       about: {
         title: 'About',
         intro: 'Student passionate about network technologies and cybersecurity',
@@ -326,7 +393,24 @@ const resources = {
         copied: 'Address copied',
         stackEmail: 'Email',
         write: 'Write',
-        cvValue: 'mon-cv.pdf — view or download'
+        cvValue: 'printable web version + PDF',
+        orDirect: 'Or write to me directly',
+        form: {
+          name: 'Name',
+          email: 'Email',
+          message: 'Message',
+          namePh: 'Your name',
+          emailPh: 'you@email.com',
+          messagePh: 'Tell me about your project, an internship, a question…',
+          send: 'Send message',
+          sending: 'Sending…',
+          sentTitle: 'Message sent',
+          sentText: 'Thanks! I will get back to you as soon as possible.',
+          again: 'Send another message',
+          error: 'The message could not be sent.',
+          errorText: 'Sending failed. You can email me directly:',
+          privacy: 'Your message is delivered by FormSubmit straight to my inbox.'
+        }
       },
       games: {
         title: 'Mini Games',

@@ -44,7 +44,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
-  const currentLabel = navItems.find((i) => isActive(i.path))?.label ?? (location.pathname.startsWith('/games') ? t('nav.games') : '404');
+  const currentLabel = navItems.find((i) => isActive(i.path))?.label ?? (location.pathname.startsWith('/games') ? t('nav.games') : location.pathname === '/cv' ? 'CV' : '404');
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);

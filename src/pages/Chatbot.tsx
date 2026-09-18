@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { AccentTitle, useReveal } from '@/lib/motion';
+import { buildJarvisContext } from '@/lib/jarvisContext';
+import { useDynamicProjects } from '@/hooks/useDynamicProjects';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
+type ApiMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cyberbot-chat`;
 
@@ -15,7 +18,7 @@ async function streamChat({
   onDone,
   errors,
 }: {
-  messages: Msg[];
+  messages: ApiMsg[];
   onDelta: (text: string) => void;
   onDone: () => void;
   errors: { tooMany: string; noCredits: string };
@@ -95,7 +98,8 @@ async function streamChat({
 }
 
 const Chatbot = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { data: projects = [] } = useDynamicProjects();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -133,7 +137,8 @@ const Chatbot = () => {
 
     try {
       await streamChat({
-        messages: [...messages, userMsg],
+        // Le contexte à jour (date, projets, profil) précède la conversation, sans être affiché
+        messages: [{ role: 'system', content: buildJarvisContext({ projects, lang: i18n.language }) }, ...messages, userMsg],
         onDelta: (chunk) => upsertAssistant(chunk),
         onDone: () => setIsLoading(false),
         errors: { tooMany: t('chatbot.tooMany'), noCredits: t('chatbot.noCredits') },

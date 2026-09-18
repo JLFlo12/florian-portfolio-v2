@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { gsap, prefersReducedMotion, scrambleText } from '@/lib/motion';
 
 /* ───────────────────────────────────────────────────────────────
@@ -95,6 +96,14 @@ const TrackLine = ({ on }: { on: boolean }) => {
   );
 };
 
+// Lien interne (/cv…) = navigation du site ; sinon lien classique
+const LinkTag = ({ to, href, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }) =>
+  to ? <Link to={to} {...rest} /> : <a href={href} {...rest} />;
+const linkProps = (item: TrackItem) =>
+  item.href.startsWith('/') && !item.external
+    ? { to: item.href }
+    : { href: item.href, target: item.external ? '_blank' : undefined, rel: item.external ? 'noopener noreferrer' : undefined };
+
 const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
   // Lien survolé ou sélectionné au clavier (aucun = pas de tracé)
   const [active, setActive] = useState<number | null>(null);
@@ -115,10 +124,8 @@ const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
       <ul className="track-list font-display">
         {items.map((item, i) => (
           <li key={item.id}>
-            <a
-              href={item.href}
-              target={item.external ? '_blank' : undefined}
-              rel={item.external ? 'noopener noreferrer' : undefined}
+            <LinkTag
+              {...linkProps(item)}
               className={`track-link${i === active ? ' is-active' : ''}`}
               aria-label={`${item.label} — ${item.value}`}
               data-cursor={item.cursor}
@@ -137,7 +144,7 @@ const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
                 </span>
               </span>
               <TrackLine on={live && i === active} />
-            </a>
+            </LinkTag>
           </li>
         ))}
       </ul>

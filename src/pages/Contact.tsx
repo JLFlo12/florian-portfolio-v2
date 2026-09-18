@@ -1,16 +1,18 @@
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Mail, Copy } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import Logo from '@/components/Logo';
+import ContactForm from '@/components/ContactForm';
+import { CONTACT } from '@/data/profile';
 import TrackLinks, { TrackItem } from '@/components/TrackLinks';
 import TopoLines from '@/components/fx/TopoLines';
 import { useReunionTime } from '@/components/Footer';
 import { gsap, hasFinePointer, prefersReducedMotion, useReveal } from '@/lib/motion';
 import { isReady, onReady } from '@/lib/ready';
 
-const EMAIL = 'f.girardot--lahogue@rt-iut.re';
+const EMAIL = CONTACT.email;
 
 /* Emblème : logo dans une bague graduée qui tourne lentement */
 const Emblem = () => (
@@ -36,9 +38,9 @@ const Contact = () => {
 
   const items = useMemo<TrackItem[]>(() => [
     { id: 'email', label: t('contact.stackEmail'), value: EMAIL, href: `mailto:${EMAIL}`, cursor: t('contact.write') },
-    { id: 'linkedin', label: t('contact.linkedin'), value: 'linkedin.com/in/florian-girardot-lahogue-4aa367341', href: 'https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/', external: true, cursor: t('ui.open') },
-    { id: 'github', label: t('contact.github'), value: 'github.com/JLFlo12', href: 'https://github.com/JLFlo12', external: true, cursor: t('ui.open') },
-    { id: 'cv', label: 'CV', value: t('contact.cvValue'), href: '/mon-cv.pdf', external: true, cursor: t('ui.view') },
+    { id: 'linkedin', label: t('contact.linkedin'), value: 'linkedin.com/in/florian-girardot-lahogue-4aa367341', href: CONTACT.linkedin, external: true, cursor: t('ui.open') },
+    { id: 'github', label: t('contact.github'), value: 'github.com/JLFlo12', href: CONTACT.github, external: true, cursor: t('ui.open') },
+    { id: 'cv', label: 'CV', value: t('contact.cvValue'), href: '/cv', cursor: t('ui.view') },
   ], [t]);
 
   // Intro : les courbes de niveau se dessinent, puis les mots se déroulent l'un après l'autre.
@@ -118,21 +120,18 @@ const Contact = () => {
         <div className="panel relative overflow-hidden p-8 lg:p-14" data-reveal>
           <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-[60%] rounded-full bg-primary/20 blur-[110px]" aria-hidden="true" />
           <div className="hud-frame inset-4" aria-hidden="true"><i /><i /><i /><i /></div>
-          <div className="relative grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:items-end">
+          <div className="relative grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:gap-14">
             <div>
               <h2 className="font-display text-[clamp(2.2rem,5.4vw,4.6rem)] font-black uppercase leading-[.92] tracking-[-.04em] [font-stretch:125%]">
                 {t('contact.collabTitle')}
               </h2>
               <p className="mt-5 max-w-lg text-lg text-muted-foreground">{t('contact.collabText')}</p>
-            </div>
-            <div className="flex flex-wrap gap-3 lg:justify-end">
-              <a href={`mailto:${EMAIL}`} className="btn-neon">
-                <Mail className="h-4 w-4" /> {t('contact.collabButton')}
-              </a>
-              <button type="button" onClick={copyEmail} className="btn-ghost liquid">
-                <Copy className="h-4 w-4" /> {t('contact.copy')}
+              <p className="label-mono mt-10">{t('contact.orDirect')}</p>
+              <button type="button" onClick={copyEmail} className="btn-ghost liquid mt-3 max-w-full !py-2.5 text-sm" aria-label={t('contact.copy')}>
+                <Copy className="h-4 w-4 flex-none" /> <span className="email-text truncate">{EMAIL}</span>
               </button>
             </div>
+            <ContactForm />
           </div>
         </div>
       </section>

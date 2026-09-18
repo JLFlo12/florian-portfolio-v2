@@ -3,6 +3,62 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
+   POLICES hébergées sur le site (public/fonts, licence SIL OFL : public/fonts/OFL.txt)
+   Sous-ensemble latin (couvre le français). Pas de requête vers Google Fonts.
+   ═══════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'Hubot Sans';
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+  src: url('/fonts/hubot-sans.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Hubot Sans';
+  font-style: italic;
+  font-weight: 400 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+  src: url('/fonts/hubot-sans-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Mona Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 75% 125%;
+  font-display: swap;
+  src: url('/fonts/mona-sans.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/geist-mono.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Doto';
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+  src: url('/fonts/doto.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    DESIGN SYSTEM — "FLORIAN.SYS"
    Fond noir chaud, orange néon, typographie étirée, détails HUD.
    Les variables HSL gardent les noms shadcn/ui (tous les composants UI suivent).
@@ -328,6 +384,124 @@
     font-family: "Geist Mono", monospace; font-size: clamp(.8rem, 2.6vw, 1rem); color: hsl(var(--foreground) / .85);
   }
 
+  /* ——— CV (version web, imprimable) ——— */
+  .cv-sheet {
+    display: grid; overflow: hidden; border-radius: 28px;
+    border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+    box-shadow: 0 40px 80px -40px rgb(0 0 0 / .5);
+  }
+  @media (min-width: 820px) { .cv-sheet { grid-template-columns: 310px 1fr; } }
+  /* minmax(0, 1fr) : les textes longs passent à la ligne au lieu de déborder de la colonne */
+  .cv-side { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; align-content: start; gap: 2rem; padding: 2rem; background: hsl(var(--muted) / .6); border-right: 1px solid hsl(var(--border)); }
+  .cv-main { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; align-content: start; gap: 2rem; padding: 2rem clamp(1.5rem, 4vw, 3rem) 2.5rem; }
+  .cv-block__title {
+    margin-bottom: .9rem; padding-bottom: .5rem; border-bottom: 1px solid hsl(var(--primary) / .35);
+    font-family: "Geist Mono", monospace; font-size: .75rem; letter-spacing: .22em; text-transform: uppercase; color: hsl(var(--primary));
+  }
+  .cv-head { padding-bottom: .5rem; }
+  .cv-first { font-family: "Hubot Sans", system-ui, sans-serif; font-weight: 400; font-stretch: 118%; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; text-transform: uppercase; letter-spacing: .04em; }
+  .cv-name { font-family: "Hubot Sans", system-ui, sans-serif; font-weight: 900; font-stretch: 125%; font-size: clamp(2.3rem, 6.4vw, 4.4rem); line-height: .9; text-transform: uppercase; letter-spacing: -.04em; }
+  .cv-title { margin-top: .9rem; font-family: "Geist Mono", monospace; font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+  .cv-years { margin-top: .15rem; font-family: "Geist Mono", monospace; font-size: .75rem; color: hsl(var(--primary)); }
+  .cv-chip { padding: .3rem .7rem; border-radius: 999px; border: 1px solid hsl(var(--foreground) / .14); font-size: .8rem; }
+  .cv-bullet { position: relative; padding-left: .9rem; }
+  .cv-bullet::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--primary)); }
+
+  /* Adresse e-mail : police monospace, sinon les deux tirets de « girardot--lahogue » se touchent */
+  .email-text { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; letter-spacing: 0; }
+
+  /* ——— Plongée vers les outils : télémétrie, réticule, typographie ——— */
+  .dive-chip {
+    display: inline-flex; align-items: center; gap: .6rem; padding: .5rem 1rem; border-radius: 999px;
+    font-family: "Geist Mono", monospace; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: hsl(var(--foreground) / .9); border: 1px solid hsl(var(--primary) / .35);
+    background: hsl(var(--background) / .35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .dive-reticle { position: relative; width: min(38vw, 240px); aspect-ratio: 1; will-change: transform, opacity; }
+  .dive-reticle > i { position: absolute; width: 24%; height: 24%; border: 0 solid hsl(var(--primary)); transition: border-color .4s; }
+  .dive-reticle > i:nth-child(1) { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+  .dive-reticle > i:nth-child(2) { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+  .dive-reticle > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+  .dive-reticle > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+  .dive-reticle::before, .dive-reticle::after { content: ""; position: absolute; left: 50%; top: 50%; background: hsl(var(--primary) / .8); transform: translate(-50%, -50%); }
+  .dive-reticle::before { width: 18%; height: 1px; }
+  .dive-reticle::after { width: 1px; height: 18%; }
+  .dive-reticle__label {
+    position: absolute; top: 100%; left: 50%; margin-top: 14px; transform: translateX(-50%); white-space: nowrap;
+    font-family: "Geist Mono", monospace; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase;
+    color: hsl(var(--primary)); opacity: 0; transition: opacity .3s;
+  }
+  .dive-reticle.is-locked > i { border-color: hsl(var(--online)); }
+  .dive-reticle.is-locked .dive-reticle__label { opacity: 1; color: hsl(var(--online)); }
+  .dive-word {
+    font-family: "Hubot Sans", system-ui, sans-serif; font-weight: 900; font-stretch: 112%; text-transform: uppercase;
+    font-size: clamp(2rem, 7.2vw, 8.5rem); line-height: .9; letter-spacing: -.04em; white-space: nowrap;
+    color: hsl(var(--foreground)); text-shadow: 0 0 60px hsl(var(--primary) / .5);
+    will-change: transform, opacity;
+  }
+  .dive-char { display: inline-block; opacity: 0; will-change: transform, opacity; }
+
+  /* ——— Toile 3D des outils : anneau de cartes qu'on fait pivoter (accueil, section Outils) ———
+     --radius : rayon de l'anneau (calculé en JS) · --rot : rotation · --fly : recul pendant l'arrivée.
+     L'anneau est reculé de son rayon : la carte de face garde sa taille réelle. */
+  .tools-stage {
+    position: relative;
+    perspective: 1900px;
+    touch-action: pan-y;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .tools-stage:active { cursor: grabbing; }
+  .has-cursor .tools-stage { cursor: none; }
+  .tools-ring {
+    position: relative;
+    height: clamp(250px, 25vw, 320px);
+    transform-style: preserve-3d;
+    transform: translateZ(calc(var(--radius, 320px) * -1 - var(--fly, 0px))) rotateX(6deg) rotateY(var(--rot, 0deg));
+  }
+  .tool-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(146px, 40vw, 188px);
+    transform: rotateY(var(--card-angle, 0deg)) translateZ(var(--radius, 320px)) scale(var(--s, 1)) translate(-50%, -50%);
+    backface-visibility: hidden;
+    background: linear-gradient(180deg, hsl(var(--card) / .82) 0%, hsl(var(--background) / .74) 100%);
+  }
+  .tool-card[data-focused="true"] .tool-card__icon { color: hsl(var(--primary)); }
+  /* Socle du projecteur holographique, sous l'anneau */
+  .tools-base {
+    position: absolute; left: 50%; top: 82%; width: min(90vw, 820px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+    transform: translate(-50%, -50%) rotateX(80deg);
+    border: 1px solid hsl(var(--primary) / .3);
+    background: radial-gradient(closest-side, hsl(var(--primary) / .26), hsl(var(--primary) / .07) 55%, transparent 72%);
+  }
+  .tools-base::before, .tools-base::after { content: ""; position: absolute; border-radius: 50%; }
+  .tools-base::before { inset: 11%; border: 1px dashed hsl(var(--primary) / .5); animation: tools-spin 60s linear infinite; }
+  .tools-base::after { inset: 31%; border: 2px solid hsl(var(--primary) / .28); box-shadow: inset 0 0 50px hsl(var(--primary) / .35); }
+  @keyframes tools-spin { to { transform: rotate(360deg); } }
+  .tool-card .card-frame { position: absolute; inset: 6px; opacity: 0; transition: opacity .35s; }
+  .tool-card[data-focused="true"] .card-frame { opacity: 1; }
+  .tool-card .card-frame > i { position: absolute; width: 12px; height: 12px; border: 0 solid hsl(var(--primary)); }
+  .tool-card .card-frame > i:nth-child(1) { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+  .tool-card .card-frame > i:nth-child(2) { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+  .tool-card .card-frame > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+  .tool-card .card-frame > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+  .tool-card[data-focused="true"] { box-shadow: 0 0 0 1px hsl(var(--primary) / .55), 0 24px 60px -22px hsl(var(--primary) / .6); }
+
+  /* Champs de formulaire */
+  .field { display: grid; gap: .5rem; }
+  .field__input {
+    width: 100%; border-radius: 14px; padding: .85rem 1rem;
+    border: 1px solid hsl(var(--foreground) / .14); background: hsl(var(--background) / .45);
+    color: hsl(var(--foreground)); font: inherit;
+    transition: border-color .3s, box-shadow .3s, background-color .3s;
+  }
+  .field__input::placeholder { color: hsl(var(--muted-foreground) / .75); }
+  .field__input:hover { border-color: hsl(var(--foreground) / .26); }
+  .field__input:focus { outline: none; border-color: hsl(var(--primary)); background: hsl(var(--background) / .7); box-shadow: 0 0 0 4px hsl(var(--primary) / .16); }
+
   /* Courbes de niveau en fond */
   .topo path { stroke: hsl(var(--foreground) / .075); stroke-width: 1.1; }
   .topo g:nth-child(2n) path { stroke: hsl(var(--primary) / .12); }
@@ -401,4 +575,28 @@
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IMPRESSION (page CV) : une page A4 propre, sans l'habillage du site
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  @page { size: A4; margin: 10mm; }
+  html, body, #root > div, main { background: #fff !important; }
+  header, footer, .no-print, .cursor, .grain, .curtain, .loader, [data-scroll-hud] { display: none !important; }
+  .cv-page { padding: 0 !important; }
+  .cv-page .container-x { max-width: none; padding: 0; }
+  .cv-page [data-reveal] { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+  .cv-sheet {
+    --foreground: 24 22% 8%; --muted-foreground: 25 9% 36%; --primary: 20 95% 45%; --border: 30 16% 82%; --muted: 34 24% 93%; --card: 0 0% 100%;
+    color: hsl(var(--foreground)); grid-template-columns: 70mm minmax(0, 1fr); border-radius: 0; border: 0; box-shadow: none; font-size: 10.5pt;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .cv-side { gap: 7mm; padding: 8mm 6mm; }
+  .cv-main { gap: 7mm; padding: 8mm 0 0 8mm; }
+  .cv-first { font-size: 22pt; }
+  .cv-name { font-size: 30pt; }
+  .cv-block { break-inside: avoid; }
+  .cv-side .email-text { font-size: 8.2pt; }
+  a { text-decoration: none; color: inherit; }
 }

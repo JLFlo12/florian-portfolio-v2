@@ -6,30 +6,14 @@ import ToolsSection from '@/components/ToolsSection';
 import HeroPlanet from '@/components/three/HeroPlanet';
 import Marquee from '@/components/Marquee';
 import SectionHeading from '@/components/SectionHeading';
+import DiveOverlay from '@/components/DiveOverlay';
 import { useReunionTime } from '@/components/Footer';
 import { gsap, ScrollTrigger, magnetic, prefersReducedMotion, useReveal } from '@/lib/motion';
 import { planetState } from '@/components/three/planetState';
+import { SOFT_SKILLS, TECHNICAL_SKILLS, type Level } from '@/data/profile';
 import { onReady } from '@/lib/ready';
 
-type Level = 'maitrise' | 'avance' | 'base' | 'fragile';
 const LEVEL_LEDS: Record<Level, number> = { fragile: 1, base: 2, avance: 3, maitrise: 4 };
-
-const technicalSkills: { name: string; level: Level }[] = [
-  { name: 'Réseaux & GNS3', level: 'maitrise' },
-  { name: 'Linux/Windows Server', level: 'maitrise' },
-  { name: 'JavaScript/TypeScript', level: 'base' },
-  { name: 'PHP & SQL', level: 'base' },
-  { name: 'Cybersécurité', level: 'fragile' },
-  { name: 'Virtualisation', level: 'maitrise' }
-];
-
-const softSkills: { name: string; level: Level }[] = [
-  { name: 'Leadership', level: 'base' },
-  { name: 'Communication', level: 'avance' },
-  { name: 'Travail d\'équipe', level: 'maitrise' },
-  { name: 'Discipline', level: 'maitrise' },
-  { name: 'Esprit critique', level: 'avance' }
-];
 
 const Home = () => {
   const { t } = useTranslation();
@@ -86,7 +70,7 @@ const Home = () => {
 
   const marqueeItems = ['Réseaux & GNS3', 'Cybersécurité', 'Linux / Windows Server', 'Virtualisation', 'Unreal Engine 5', 'Raspberry Pi', 'TypeScript', 'Wireshark', 'pfSense'];
 
-  const SkillList = ({ title, list, index }: { title: string; list: typeof technicalSkills; index: string }) => (
+  const SkillList = ({ title, list, index }: { title: string; list: typeof TECHNICAL_SKILLS; index: string }) => (
     <div>
       <p className="eyebrow mb-6" data-reveal>
         <span className="eyebrow__index">{index}</span>
@@ -125,6 +109,8 @@ const Home = () => {
         <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-dive-ui><i /><i /><i /><i /></div>
         {/* Voile de fin de plongée : même lueur que le haut de la section Outils */}
         <div className="pointer-events-none invisible absolute inset-0 z-[3] bg-background bg-[radial-gradient(70%_48%_at_50%_48%,hsl(var(--primary)/.24),transparent_70%)] opacity-0" aria-hidden="true" data-dive-flash />
+        {/* Télémétrie et typographie pendant la plongée */}
+        <DiveOverlay />
 
         <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]" data-dive-ui>
           {/* Ligne du haut : statut + télémétrie */}
@@ -201,8 +187,8 @@ const Home = () => {
         <div className="container-x">
           <SectionHeading index="02" label="skills" title={t('home.skillsHeading')} />
           <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-24">
-            <SkillList title={t('home.skillsTitle')} list={technicalSkills} index="2.1" />
-            <SkillList title={t('home.softSkillsTitle')} list={softSkills} index="2.2" />
+            <SkillList title={t('home.skillsTitle')} list={TECHNICAL_SKILLS} index="2.1" />
+            <SkillList title={t('home.softSkillsTitle')} list={SOFT_SKILLS} index="2.2" />
           </div>
         </div>
       </section>

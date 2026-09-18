@@ -1,8 +1,5 @@
 
 import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -16,9 +13,12 @@ const Projects = lazy(() => import("./pages/Projects"));
 const ProjectGallery = lazy(() => import("./pages/ProjectGallery"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
+const Cv = lazy(() => import("./pages/Cv"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const Games = lazy(() => import("./pages/Games"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+// Notifications (formulaire, Jarvis, admin) : chargées juste après le premier affichage
+const Sonner = lazy(() => import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })));
 
 const queryClient = new QueryClient();
 
@@ -32,26 +32,26 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
+        <Suspense fallback={null}>
           <Sonner />
-          <BrowserRouter>
-            <Layout>
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<ProjectGallery />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/chatbot" element={<Chatbot />} />
-                  <Route path="/games" element={<Games />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </Layout>
-          </BrowserRouter>
-        </TooltipProvider>
+        </Suspense>
+        <BrowserRouter>
+          <Layout>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<ProjectGallery />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/cv" element={<Cv />} />
+                <Route path="/chatbot" element={<Chatbot />} />
+                <Route path="/games" element={<Games />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </Layout>
+        </BrowserRouter>
       </ThemeProvider>
     </I18nextProvider>
   </QueryClientProvider>

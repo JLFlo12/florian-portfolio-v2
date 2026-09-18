@@ -3,6 +3,6 @@
 export const planetState = {
   px: 0,        // souris horizontale (-1 → 1)
   py: 0,        // souris verticale (-1 → 1)
-  scroll: 0,    // sortie du hero (0 → 1)
+  dive: 0,      // plongée vers la section Outils (0 → 1, piloté par le scroll)
   ready: false, // intro lancée (fin de l'écran de chargement)
 };

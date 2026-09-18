@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Code, Database, Shield, Server, Globe, Terminal, FileText, Wifi, HardDrive, Monitor, Gamepad2, Cpu, Lock, Bug, ArrowUpRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -18,7 +18,42 @@ const ToolsSection = () => {
   const [filter, setFilter] = useState<string>('all');
   const section = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
+  const finishArrival = useRef<() => void>(() => {});
   useReveal(section);
+
+  /* Arrivée en 3D (suite de la plongée dans la planète) : les tuiles surgissent
+     des profondeurs, depuis le centre, et s'assemblent en grille au rythme du scroll. */
+  useLayoutEffect(() => {
+    const el = grid.current;
+    if (!el || prefersReducedMotion()) return;
+    const items = Array.from(el.children) as HTMLElement[];
+    const box = el.getBoundingClientRect();
+    const from = items.map((item) => {
+      const r = item.getBoundingClientRect();
+      return { dx: r.left + r.width / 2 - (box.left + box.width / 2), dy: r.top + r.height / 2 - box.top };
+    });
+    const tween = gsap.fromTo(items, {
+      x: (i: number) => -from[i].dx * 0.8,
+      y: (i: number) => -from[i].dy * 0.55 - 140,
+      z: -1600,
+      rotationX: 62,
+      rotationY: (i: number) => (from[i].dx / box.width) * -70,
+      autoAlpha: 0,
+    }, {
+      x: 0, y: 0, z: 0, rotationX: 0, rotationY: 0, autoAlpha: 1,
+      ease: 'power3.out',
+      stagger: { each: 0.035, from: 'center', grid: 'auto' },
+      scrollTrigger: { trigger: el, start: 'top 100%', end: 'top 22%', scrub: 0.8, onLeave: () => finishArrival.current() },
+    });
+    // Une fois assemblées, les tuiles redeviennent des éléments normaux (filtres, survol)
+    finishArrival.current = () => {
+      tween.scrollTrigger?.kill();
+      tween.progress(1).kill();
+      gsap.set(items, { clearProps: 'transform,opacity,visibility' });
+      finishArrival.current = () => {};
+    };
+    return () => { tween.scrollTrigger?.kill(); tween.kill(); gsap.set(items, { clearProps: 'all' }); };
+  }, []);
 
   const tools: Tool[] = [
     // ── Cybersécurité (Base) ──
@@ -178,6 +213,7 @@ const ToolsSection = () => {
   // Petite animation quand on change de filtre
   const applyFilter = (value: string) => {
     if (value === filter) return;
+    finishArrival.current();
     setFilter(value);
     if (prefersReducedMotion()) return;
     requestAnimationFrame(() => {
@@ -188,7 +224,9 @@ const ToolsSection = () => {
 
   return (
     <section ref={section} className="section-y relative">
-      <div className="container-x">
+      {/* Lueur d'arrivée : prolonge le voile orange de la fin de plongée */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[90vh] bg-[radial-gradient(70%_45%_at_50%_42%,hsl(var(--primary)/.12),transparent_70%)] [mask-image:linear-gradient(to_bottom,transparent,#000_35%)]" aria-hidden="true" />
+      <div className="container-x relative">
         <SectionHeading index="01" label="tools" title={t('home.toolsTitle')} lede={t('home.toolsHint')} />
 
         {/* Filtres par catégorie */}
@@ -209,14 +247,14 @@ const ToolsSection = () => {
         </div>
 
         {/* Grille des outils */}
-        <div ref={grid} className="mt-8 grid grid-cols-2 gap-3 [perspective:1200px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" data-stagger>
+        <div ref={grid} className="mt-8 grid grid-cols-2 gap-3 [perspective-origin:50%_0%] [perspective:1400px] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((tool) => (
+            <div key={tool.name}>
             <button
-              key={tool.name}
               type="button"
               onClick={() => setSelectedTool(tool)}
               data-cursor={t('ui.open')}
-              className="panel group flex min-h-[150px] flex-col justify-between p-4 text-left transition-transform duration-500 [transition-timing-function:var(--ease-out)] hover:-translate-y-1"
+              className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left transition-transform duration-500 [transition-timing-function:var(--ease-out)] hover:-translate-y-1"
             >
               <span className="flex items-start justify-between gap-2">
                 <span className="led text-xs text-muted-foreground">{String(tools.indexOf(tool) + 1).padStart(2, '0')}</span>
@@ -228,6 +266,7 @@ const ToolsSection = () => {
                 <span className="label-mono mt-1 block !text-[.62rem]">{t(`home.categories.${tool.category}`)}</span>
               </span>
             </button>
+            </div>
           ))}
         </div>
       </div>

@@ -7,7 +7,8 @@ import HeroPlanet from '@/components/three/HeroPlanet';
 import Marquee from '@/components/Marquee';
 import SectionHeading from '@/components/SectionHeading';
 import { useReunionTime } from '@/components/Footer';
-import { gsap, magnetic, prefersReducedMotion, useReveal } from '@/lib/motion';
+import { gsap, ScrollTrigger, magnetic, prefersReducedMotion, useReveal } from '@/lib/motion';
+import { planetState } from '@/components/three/planetState';
 import { onReady } from '@/lib/ready';
 
 type Level = 'maitrise' | 'avance' | 'base' | 'fragile';
@@ -38,7 +39,7 @@ const Home = () => {
   const time = useReunionTime();
   useReveal(skills);
 
-  /* ——— Intro du hero (après l'écran de chargement) + sortie au scroll ——— */
+  /* ——— Intro du hero (après l'écran de chargement) + plongée vers les outils au scroll ——— */
   useEffect(() => {
     const root = hero.current;
     if (!root || prefersReducedMotion()) return;
@@ -52,10 +53,24 @@ const Home = () => {
           .to(chars, { yPercent: 0, rotationX: 0, duration: 1.5, stagger: 0.06 })
           .to(intro, { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.07 }, 0.3);
       });
-      gsap.to('[data-hero-part]', {
-        y: () => window.innerHeight * 0.12, opacity: 0.15, ease: 'none',
-        scrollTrigger: { trigger: root, start: 'top top', end: 'bottom top', scrub: true, invalidateOnRefresh: true },
-      });
+      // Plongée : le hero reste épinglé pendant qu'on scrolle ; la caméra fonce vers La Réunion,
+      // le texte passe de part et d'autre, puis un voile orange fait le raccord avec les outils.
+      gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: {
+          trigger: root,
+          start: 'top top',
+          end: () => `+=${window.innerHeight * (window.innerWidth < 768 ? 1.1 : 1.3)}`,
+          pin: true,
+          scrub: 0.6,
+          refreshPriority: 1, // calculé avant les animations placées plus bas dans la page
+          invalidateOnRefresh: true,
+          onUpdate: (self) => { planetState.dive = self.progress; },
+        },
+      })
+        .to('[data-dive-ui]', { scale: 1.9, autoAlpha: 0, ease: 'power2.in', duration: 0.36 }, 0)
+        .to('[data-dive-flash]', { autoAlpha: 1, ease: 'power1.in', duration: 0.32 }, 0.68);
+      ScrollTrigger.refresh();
       return off;
     }, root);
     return () => ctx.revert();
@@ -107,11 +122,13 @@ const Home = () => {
           aria-hidden="true"
         />
         <HeroPlanet section={hero} />
-        <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-hero-part><i /><i /><i /><i /></div>
+        <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-dive-ui><i /><i /><i /><i /></div>
+        {/* Voile de fin de plongée : même lueur que le haut de la section Outils */}
+        <div className="pointer-events-none invisible absolute inset-0 z-[3] bg-background bg-[radial-gradient(70%_48%_at_50%_48%,hsl(var(--primary)/.24),transparent_70%)] opacity-0" aria-hidden="true" data-dive-flash />
 
-        <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]">
+        <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]" data-dive-ui>
           {/* Ligne du haut : statut + télémétrie */}
-          <div className="flex flex-wrap items-start justify-between gap-4" data-hero-part>
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <p className="pointer-events-auto liquid inline-flex items-center gap-3 rounded-full px-4 py-2 text-sm font-medium" data-intro>
               <span className="status-dot" /> {t('ui.online')} · <span className="text-muted-foreground">{t('home.location')}</span>
             </p>
@@ -128,7 +145,7 @@ const Home = () => {
           </div>
 
           {/* Bas du hero : nom, rôle, bio, liens */}
-          <div data-hero-part>
+          <div>
             <h1 className="hero-name display-xl text-[clamp(3.6rem,14vw,13.5rem)]" aria-label="FLORIAN GIRARDOT LAHOGUE">
               <span className="block overflow-hidden pb-[.04em]" aria-hidden="true">
                 {'FLORIAN'.split('').map((c, i) => <span key={i} className="split-char">{c}</span>)}
@@ -174,10 +191,10 @@ const Home = () => {
         </div>
       </section>
 
-      <Marquee items={marqueeItems} />
-
-      {/* ═══════════════ OUTILS ═══════════════ */}
+      {/* ═══════════════ OUTILS (arrivée de la plongée) ═══════════════ */}
       <ToolsSection />
+
+      <Marquee items={marqueeItems} />
 
       {/* ═══════════════ COMPÉTENCES ═══════════════ */}
       <section ref={skills} className="section-y relative">

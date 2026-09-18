@@ -53,6 +53,10 @@ const latLon = (lat: number, lon: number, r = 1) => {
   return new THREE.Vector3(-Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta)).multiplyScalar(r);
 };
 const REUNION = latLon(-21.11, 55.53, 1.012);
+// Rotations qui placent La Réunion face à la caméra (utilisées pendant la plongée)
+const REUNION_YAW = -Math.atan2(REUNION.x, REUNION.z);
+const REUNION_PITCH = Math.atan2(REUNION.y, Math.hypot(REUNION.x, REUNION.z));
+const DIVE_SCALE = 3.3; // taille finale : la planète remplit l'écran, continents et bord orange encore visibles
 
 /* ——— Noyau de la planète ——— */
 function Core() {
@@ -178,23 +182,27 @@ function Links() {
       const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
       const material = new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-        uniforms: { uTime: { value: 0 }, uOffset: { value: rand(i + 3.3) }, uColor: { value: i < 6 ? CREAM : ACCENT } },
+        uniforms: { uTime: { value: 0 }, uOffset: { value: rand(i + 3.3) }, uColor: { value: i < 6 ? CREAM : ACCENT }, uFade: { value: 1 } },
         vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
         fragmentShader: /* glsl */ `
-          uniform float uTime; uniform float uOffset; uniform vec3 uColor; varying vec2 vUv;
+          uniform float uTime; uniform float uOffset; uniform vec3 uColor; uniform float uFade; varying vec2 vUv;
           void main(){
             float head = fract(uTime * .22 + uOffset);
             float d = vUv.x - head;
             float trail = smoothstep(-.22, 0., d) * (1. - smoothstep(0., .015, d));
             float a = .1 + trail * 1.3;
-            gl_FragColor = vec4(uColor * (.6 + trail), a);
+            gl_FragColor = vec4(uColor * (.6 + trail) * uFade, a * uFade);
           }`,
       });
       list.push({ geometry: new THREE.TubeGeometry(curve, 72, 0.0045, 6, false), material });
     }
     return list;
   }, []);
-  useFrame((state) => { arcs.forEach(({ material }) => { material.uniforms.uTime.value = state.clock.elapsedTime; }); });
+  useFrame((state) => {
+    // Les liaisons s'effacent pendant la plongée (sinon elles deviennent d'énormes faisceaux)
+    const fade = 1 - THREE.MathUtils.smoothstep(planetState.dive, 0.18, 0.42);
+    arcs.forEach(({ material }) => { material.uniforms.uTime.value = state.clock.elapsedTime; material.uniforms.uFade.value = fade; });
+  });
   return <group>{arcs.map((arc, i) => <mesh key={i} geometry={arc.geometry} material={arc.material} />)}</group>;
 }
 
@@ -216,6 +224,8 @@ function Beacon({ label }: { label: React.RefObject<HTMLDivElement> }) {
       (pulse.current.material as THREE.MeshBasicMaterial).opacity = (1 - k) * 0.9;
     }
     if (!group.current || !label.current) return;
+    // La balise disparaît quand on fonce dessus
+    group.current.scale.setScalar(Math.max(0.001, 1 - THREE.MathUtils.smoothstep(planetState.dive, 0.18, 0.4)));
     group.current.getWorldPosition(tmp.world);
     group.current.parent!.getWorldPosition(tmp.center);
     tmp.normal.copy(tmp.world).sub(tmp.center).normalize();
@@ -223,7 +233,8 @@ function Beacon({ label }: { label: React.RefObject<HTMLDivElement> }) {
     const facing = THREE.MathUtils.smoothstep(tmp.normal.dot(tmp.toCam), 0.05, 0.35);
     const v = tmp.world.clone().project(camera);
     label.current.style.transform = `translate3d(${(v.x * 0.5 + 0.5) * size.width}px, ${(-v.y * 0.5 + 0.5) * size.height}px, 0)`;
-    label.current.style.opacity = String(facing * (planetState.ready ? 1 : 0));
+    const diveFade = 1 - THREE.MathUtils.smoothstep(planetState.dive, 0.02, 0.18);
+    label.current.style.opacity = String(facing * diveFade * (planetState.ready ? 1 : 0));
   });
 
   return (
@@ -283,6 +294,7 @@ function Moon() {
   useFrame((state) => {
     const t = state.clock.elapsedTime * 0.18;
     ref.current?.position.set(Math.cos(t) * 3.1, Math.sin(t) * 0.55, Math.sin(t) * 3.1);
+    ref.current?.scale.setScalar(Math.max(0.001, 1 - THREE.MathUtils.smoothstep(planetState.dive, 0, 0.3)));
   });
   return (
     <mesh ref={ref}>
@@ -306,7 +318,11 @@ function Stars() {
     return g;
   }, []);
   const ref = useRef<THREE.Points>(null);
-  useFrame((_, dt) => { if (ref.current) ref.current.rotation.y += dt * 0.004; });
+  useFrame((_, dt) => {
+    if (!ref.current) return;
+    ref.current.rotation.y += dt * 0.004;
+    ref.current.position.z = THREE.MathUtils.damp(ref.current.position.z, Math.pow(planetState.dive, 1.6) * 14, 6, dt);
+  });
   return (
     <points ref={ref} geometry={geometry}>
       <pointsMaterial color={CREAM} size={1.2} sizeAttenuation={false} transparent opacity={0.55} depthWrite={false} />
@@ -319,23 +335,37 @@ function System({ label, reduced }: { label: React.RefObject<HTMLDivElement>; re
   const system = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
   const intro = useRef(reduced ? 1 : 0);
+  const dive = useRef(0);
+  const freeSpin = useRef(0);
   const size = useThree((s) => s.size);
 
   useFrame((_, dt) => {
     if (!system.current || !spin.current) return;
-    const { damp, clamp } = THREE.MathUtils;
+    const { damp, clamp, lerp, smoothstep } = THREE.MathUtils;
     if (planetState.ready && intro.current < 1) intro.current = Math.min(1, intro.current + dt / 2.2);
     const i = 1 - Math.pow(1 - intro.current, 3);
     const aspect = size.width / size.height;
     const fit = clamp(aspect / 1.15, 0.62, 1);
-    const s = planetState.scroll;
 
-    if (!reduced) spin.current.rotation.y += dt * 0.07;
-    system.current.rotation.x = damp(system.current.rotation.x, 0.18 + planetState.py * 0.22, 3, dt);
-    system.current.rotation.y = damp(system.current.rotation.y, planetState.px * 0.35 + s * 1.3 - (1 - i) * 1.2, 3, dt);
-    system.current.position.x = aspect > 1 ? 1.25 * fit : 0;
-    system.current.position.y = (aspect < 0.9 ? 0.55 : 0) + s * 1.3;
-    system.current.scale.setScalar(Math.max(0.001, (0.55 + i * 0.45) * fit * (1 - s * 0.25)));
+    // Plongée : 0 = hero normal, 1 = surface de La Réunion juste devant la caméra
+    dive.current = damp(dive.current, planetState.dive, 7, dt);
+    const d = dive.current;
+    const center = smoothstep(d, 0, 0.32);             // la planète vient au centre, La Réunion face à nous
+    const zoom = Math.pow(smoothstep(d, 0.1, 0.92), 1.8); // puis on fonce dessus (accélération)
+
+    // Rotation libre, qui converge vers La Réunion pendant la plongée
+    if (!reduced) freeSpin.current += dt * 0.07 * (1 - center);
+    const target = REUNION_YAW + Math.round((freeSpin.current - REUNION_YAW) / (Math.PI * 2)) * Math.PI * 2;
+    spin.current.rotation.y = lerp(freeSpin.current, target, center);
+
+    const free = 1 - center;
+    system.current.rotation.x = damp(system.current.rotation.x, lerp(0.18 + planetState.py * 0.22, REUNION_PITCH, center), 3 + center * 5, dt);
+    system.current.rotation.y = damp(system.current.rotation.y, (planetState.px * 0.35 - (1 - i) * 1.2) * free, 3 + center * 5, dt);
+    system.current.rotation.z = -0.32 * free;
+    system.current.position.x = (aspect > 1 ? 1.25 * fit : 0) * free;
+    system.current.position.y = (aspect < 0.9 ? 0.55 : 0) * free;
+    const base = (0.55 + i * 0.45) * fit;
+    system.current.scale.setScalar(Math.max(0.001, lerp(base, DIVE_SCALE, zoom)));
   });
 
   return (

@@ -15,8 +15,9 @@ const hasWebGL = () => {
   } catch { return false; }
 };
 
-/* Conteneur de la planète 3D du hero : charge la scène, lui transmet souris / scroll,
-   met le rendu en pause quand le hero n'est plus visible. */
+/* Conteneur de la planète 3D du hero : charge la scène, lui transmet la souris,
+   met le rendu en pause quand le hero n'est plus visible.
+   (La plongée au scroll est pilotée par la page d'accueil via planetState.dive.) */
 const HeroPlanet = ({ section }: { section: React.RefObject<HTMLElement> }) => {
   const { t } = useTranslation();
   const label = useRef<HTMLDivElement>(null);
@@ -30,19 +31,13 @@ const HeroPlanet = ({ section }: { section: React.RefObject<HTMLElement> }) => {
       planetState.px = (e.clientX / window.innerWidth) * 2 - 1;
       planetState.py = (e.clientY / window.innerHeight) * 2 - 1;
     };
-    const scroll = () => {
-      const h = section.current?.offsetHeight || window.innerHeight;
-      planetState.scroll = Math.min(1, Math.max(0, window.scrollY / h));
-    };
     window.addEventListener('pointermove', move, { passive: true });
-    window.addEventListener('scroll', scroll, { passive: true });
-    scroll();
     return () => {
       window.removeEventListener('pointermove', move);
-      window.removeEventListener('scroll', scroll);
       planetState.ready = false;
+      planetState.dive = 0;
     };
-  }, [section]);
+  }, []);
 
   useEffect(() => {
     const el = section.current;

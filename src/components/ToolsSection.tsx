@@ -8,19 +8,25 @@ import { gsap, prefersReducedMotion, scrambleText, useReveal } from '@/lib/motio
 
 /* ───────────────────────────────────────────────────────────────
    Section Outils : une toile holographique façon Jarvis.
-   Les outils forment un anneau 3D qu'on attrape pour le faire pivoter
+   Les 23 outils forment un anneau 3D qu'on attrape pour le faire pivoter
    (souris, doigt, pavé tactile, flèches du clavier ou boutons).
-   Au repos il tourne lentement ; relâché, il se cale sur la carte la plus
-   proche. Il surgit des profondeurs en tournant, à la suite de la plongée.
-   Filtre avec peu d'outils, ou animations réduites : grille simple.
+   - Entrée : le projecteur s'allume, un faisceau monte, un balayage passe,
+     l'anneau surgit des profondeurs en tournant et les cartes s'allument une à une.
+   - Au repos, il tourne lentement ; relâché, il se cale sur la carte la plus proche.
+   - Un filtre garde l'anneau entier : ses outils restent allumés, les autres
+     s'estompent, et la roue passe d'un outil du filtre à l'autre.
+   Animations réduites : grille simple.
    ─────────────────────────────────────────────────────────────── */
 
-const MIN_WHEEL = 6;       // en dessous, trop peu de cartes pour fermer l'anneau
+const COUNT = TOOLS.length;
+const STEP = 360 / COUNT;  // angle entre deux cartes (°)
 const FADE_SPAN = 76;      // angle depuis le centre (°) où une carte a fini de s'effacer
 const AUTO_SPEED = 4.5;    // rotation automatique (°/s)
 const IDLE_DELAY = 2600;   // reprise de la rotation après une interaction (ms)
+const HOP_DELAY = 2800;    // filtre actif : temps passé sur chaque outil avant le suivant (ms)
 const CARD_GAP = 22;       // écart entre deux cartes voisines (px)
-const ARRIVE_SPIN = 150;   // tour effectué pendant l'arrivée (°)
+const DIM = 0.14;          // opacité des outils hors du filtre
+const ARRIVE_SPIN = 150;   // tour effectué pendant l'entrée (°)
 const ARRIVE_DEPTH = 1800; // profondeur d'où surgit l'anneau (px)
 const FLICK = 0.4;         // élan conservé quand on lance l'anneau (s)
 const DEG = 180 / Math.PI;
@@ -28,14 +34,16 @@ const DEG = 180 / Math.PI;
 const wrap = (a: number) => ((a % 360) + 540) % 360 - 180; // angle ramené dans [-180, 180[
 const smooth = (x: number) => x * x * (3 - 2 * x);
 const pad = (n: number) => String(n).padStart(2, '0');
+// Scintillement d'hologramme pendant l'allumage d'une carte
+const flicker = (p: number) => (p >= 1 ? 1 : p * (Math.random() < 0.35 ? 0.2 : 1));
 
 type Drag = { id: number; x0: number; r0: number; moved: boolean; samples: { x: number; t: number }[] };
 
 /* Contenu d'une carte (anneau et grille) */
-const CardBody = ({ tool, category }: { tool: Tool; category: string }) => (
+const CardBody = ({ tool, index, category }: { tool: Tool; index: number; category: string }) => (
   <>
     <span className="flex items-start justify-between gap-2">
-      <span className="led text-xs text-muted-foreground">{pad(TOOLS.indexOf(tool) + 1)}</span>
+      <span className="led text-xs text-muted-foreground">{pad(index + 1)}</span>
       <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
     </span>
     <span className="tool-card__icon text-muted-foreground transition-colors duration-300 group-hover:text-primary">{tool.icon}</span>
@@ -53,31 +61,32 @@ const ToolsSection = () => {
   const [focused, setFocused] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [reduced] = useState(prefersReducedMotion);
+  const wheel = !reduced;
   const section = useRef<HTMLElement>(null);
-  const grid = useRef<HTMLDivElement>(null);
   useReveal(section);
 
-  // Catégories présentes, dans l'ordre d'apparition
+  // Catégories présentes, dans l'ordre d'apparition ; outils retenus par le filtre (indices dans TOOLS)
   const categories = useMemo(() => Array.from(new Set(TOOLS.map((tool) => tool.category))), []);
-  const visible = useMemo(() => (filter === 'all' ? TOOLS : TOOLS.filter((tool) => tool.category === filter)), [filter]);
-  const count = visible.length;
-  const wheel = !reduced && count >= MIN_WHEEL;
-  const step = 360 / count;
-  const current = visible[Math.min(focused, count - 1)];
+  const targets = useMemo(() => TOOLS.flatMap((tool, i) => (filter === 'all' || tool.category === filter ? [i] : [])), [filter]);
+  const inFilter = useMemo(() => new Set(targets), [targets]);
+  const current = TOOLS[focused];
+  const position = Math.max(0, targets.indexOf(focused));
 
   // ——— État de l'anneau, hors React (modifié à chaque image) ———
   const stage = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
+  const controls = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLButtonElement | null)[]>([]);
   const nameEl = useRef<HTMLSpanElement>(null);
   const rotEl = useRef<HTMLSpanElement>(null);
-  const live = useRef({ rot: 0, arrive: 1, intro: 1, radius: 600 }).current;
-  const hold = useRef({ hover: false, focus: false, inView: false, until: 0 }).current;
-  const focusedRef = useRef(0);
+  const live = useRef({ rot: 0, arrive: 0, pulse: 0, radius: 600 }).current;
+  const fx = useRef({ dim: TOOLS.map(() => ({ v: 1 })), appear: TOOLS.map(() => ({ v: 0 })) }).current;
+  const hold = useRef({ hover: false, focus: false, inView: false, booted: false, ready: false, until: 0, hop: 0 }).current;
+  const targetsRef = useRef(targets);
+  targetsRef.current = targets;
+  const focusedRef = useRef(-1);
   const drag = useRef<Drag | null>(null);
   const tween = useRef<ReturnType<typeof gsap.to> | null>(null);
-  const arrived = useRef(false);
-  const finishArrival = useRef<() => void>(() => {});
   const suppressClick = useRef(false);
   const autoplayRef = useRef(autoplay);
   autoplayRef.current = autoplay;
@@ -88,115 +97,117 @@ const ToolsSection = () => {
   const render = useCallback(() => {
     const el = ring.current;
     if (!el) return;
-    const fadeSpan = Math.max(FADE_SPAN, step * 1.9); // peu de cartes : les voisines restent visibles
-    const rot = live.rot + (1 - live.arrive) * ARRIVE_SPIN + (1 - live.intro) * 70;
+    const rot = live.rot + (1 - live.arrive) * ARRIVE_SPIN;
     el.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
-    el.style.setProperty('--fly', `${((1 - live.arrive) * ARRIVE_DEPTH + (1 - live.intro) * 500).toFixed(1)}px`);
-    let best = 0;
-    let bestDist = 360;
-    for (let i = 0; i < count; i++) {
+    el.style.setProperty('--fly', `${((1 - live.arrive) * ARRIVE_DEPTH + live.pulse * 320).toFixed(1)}px`);
+    for (let i = 0; i < COUNT; i++) {
       const card = cards.current[i];
       if (!card) continue;
-      const dist = Math.abs(wrap(rot + i * step));
-      if (dist < bestDist) { bestDist = dist; best = i; }
-      const k = Math.min(1, dist / fadeSpan);
-      const hidden = k >= 1;
-      card.style.opacity = hidden ? '0' : (live.intro * (1 - smooth(Math.max(0, (k - 0.55) / 0.45)))).toFixed(3);
-      card.style.setProperty('--s', (1.08 - 0.22 * k).toFixed(3));
+      const k = Math.min(1, Math.abs(wrap(rot + i * STEP)) / FADE_SPAN);
+      const on = fx.appear[i].v;
+      const hidden = k >= 1 || on <= 0.001;
+      card.style.opacity = hidden ? '0' : (on * fx.dim[i].v * (1 - smooth(Math.max(0, (k - 0.55) / 0.45)))).toFixed(3);
+      card.style.setProperty('--s', ((1.08 - 0.22 * k) * (0.82 + 0.18 * Math.min(1, on))).toFixed(3));
       const visibility = hidden ? 'hidden' : '';
       if (card.style.visibility !== visibility) card.style.visibility = visibility;
+    }
+    // Carte de face : l'outil du filtre le plus proche du centre
+    let best = targetsRef.current[0] ?? 0;
+    let bestDist = 360;
+    for (const i of targetsRef.current) {
+      const dist = Math.abs(wrap(rot + i * STEP));
+      if (dist < bestDist) { bestDist = dist; best = i; }
     }
     if (rotEl.current) {
       const deg = `${String(Math.round(((-rot % 360) + 360) % 360)).padStart(3, '0')}°`;
       if (rotEl.current.textContent !== deg) rotEl.current.textContent = deg;
     }
     if (best !== focusedRef.current) { focusedRef.current = best; setFocused(best); }
-  }, [count, step, live]);
+  }, [live, fx]);
 
-  /* Rayon de l'anneau : deux cartes voisines ne se chevauchent jamais,
-     et un petit anneau garde la même courbure qu'un grand */
+  /* Rayon de l'anneau : deux cartes voisines ne se chevauchent jamais */
   const measure = useCallback(() => {
     const width = cards.current[0]?.offsetWidth || 180;
-    live.radius = Math.round(Math.max(width * 3.2, (width + CARD_GAP) / (2 * Math.sin(Math.PI / count))));
+    live.radius = Math.round((width + CARD_GAP) / (2 * Math.sin(Math.PI / COUNT)));
     ring.current?.style.setProperty('--radius', `${live.radius}px`);
-  }, [count, live]);
+  }, [live]);
 
-  const spinTo = useCallback((target: number, duration = 0.7) => {
+  const spinTo = useCallback((target: number, duration = 0.7, ease = 'power3.out') => {
     tween.current?.kill();
-    tween.current = gsap.to(live, { rot: target, duration, ease: 'power3.out', onUpdate: render });
+    tween.current = gsap.to(live, { rot: target, duration, ease, onUpdate: render });
   }, [live, render]);
 
-  /* Amène la carte i face à soi, par le chemin le plus court */
-  const goTo = useCallback((i: number) => {
-    hold.until = performance.now() + IDLE_DELAY;
-    const base = -i * step;
-    spinTo(base + 360 * Math.round((live.rot - base) / 360));
-  }, [hold, live, spinTo, step]);
+  /* Amène la carte i face à soi : par le plus court (0), en avançant (1) ou en reculant (-1) */
+  const spinToCard = useCallback((i: number, dir: -1 | 0 | 1 = 0, duration = 0.7, ease?: string) => {
+    const base = -i * STEP;
+    const turns = (live.rot - base) / 360;
+    const k = dir > 0 ? Math.floor(turns + 1e-6) : dir < 0 ? Math.ceil(turns - 1e-6) : Math.round(turns);
+    spinTo(base + 360 * k, duration, ease);
+  }, [live, spinTo]);
 
-  const snap = useCallback((rot: number, duration = 0.9) => spinTo(Math.round(rot / step) * step, duration), [spinTo, step]);
+  // Toute interaction suspend la rotation automatique un moment
+  const interact = useCallback(() => { hold.until = performance.now() + IDLE_DELAY; hold.hop = 0; }, [hold]);
 
-  // Mise en place (et à chaque filtre) : rayon, rotation remise à zéro
+  const goTo = useCallback((i: number, dir: -1 | 0 | 1 = 0) => { interact(); spinToCard(i, dir); }, [interact, spinToCard]);
+
+  /* Se cale sur l'outil du filtre le plus proche */
+  const snap = useCallback((rot: number, duration = 0.9) => {
+    let target = rot;
+    let bestDist = Infinity;
+    for (const i of targetsRef.current) {
+      const d = wrap(rot + i * STEP);
+      if (Math.abs(d) < bestDist) { bestDist = Math.abs(d); target = rot - d; }
+    }
+    spinTo(target, duration);
+  }, [spinTo]);
+
+  // Relance le balayage lumineux sur l'anneau
+  const scan = useCallback(() => {
+    const el = stage.current;
+    if (!el) return;
+    el.classList.remove('is-scan');
+    void el.offsetWidth;
+    el.classList.add('is-scan');
+  }, []);
+
+  /* ——— Entrée : allumage de l'hologramme (une seule fois) ——— */
+  const boot = useCallback(() => {
+    if (hold.booted || !stage.current) return;
+    hold.booted = true;
+    // 1. le socle s'allume et le faisceau monte (CSS, .is-on)
+    stage.current.classList.add('is-on');
+    // 2. le balayage "dessine" les cartes, qui s'allument du centre vers l'arrière en scintillant
+    // 3. pendant ce temps l'anneau remonte des profondeurs en tournant, puis les commandes arrivent
+    const rank: number[] = [];
+    TOOLS.map((_, i) => i)
+      .sort((a, b) => Math.abs(wrap(live.rot + a * STEP)) - Math.abs(wrap(live.rot + b * STEP)))
+      .forEach((i, r) => { rank[i] = r; });
+    gsap.timeline({ onUpdate: render, onComplete: () => { hold.ready = true; hold.until = performance.now() + 800; } })
+      .to(live, { arrive: 1, duration: 2.8, ease: 'power3.out' }, 0.45)
+      .call(scan, [], 0.6)
+      .to(fx.appear, { v: 1, duration: 0.7, ease: flicker, stagger: (i: number) => 0.7 + rank[i] * 0.07 }, 0)
+      .fromTo(controls.current, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 1.8);
+  }, [hold, live, fx, render, scan]);
+
+  // Mise en place : rayon, anneau éteint en attendant l'entrée
   useLayoutEffect(() => {
     if (!wheel) return;
-    live.rot = 0;
-    focusedRef.current = -1;
     measure();
     render();
+    if (!hold.booted) gsap.set(controls.current, { autoAlpha: 0 });
     const onResize = () => { measure(); render(); };
     window.addEventListener('resize', onResize);
     return () => { window.removeEventListener('resize', onResize); tween.current?.kill(); };
-  }, [wheel, measure, render, live]);
+  }, [wheel, measure, render, hold]);
 
-  /* Arrivée (suite de la plongée dans la planète) : l'anneau surgit des profondeurs
-     en tournant, au rythme du scroll. Une seule fois : ensuite il reste en place. */
-  useLayoutEffect(() => {
+  // L'entrée démarre quand le haut de l'anneau passe aux trois quarts de l'écran
+  useEffect(() => {
     const el = stage.current;
     if (!wheel || !el) return;
-    if (arrived.current) { live.arrive = 1; render(); return; }
-    const tl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: { trigger: el, start: 'top 98%', end: 'top 30%', scrub: 0.8, onLeave: () => finishArrival.current() },
-    });
-    tl.fromTo(el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, 0)
-      .fromTo(live, { arrive: 0 }, { arrive: 1, duration: 1, ease: 'power2.out', onUpdate: render }, 0);
-    render();
-    finishArrival.current = () => {
-      arrived.current = true;
-      tl.scrollTrigger?.kill();
-      tl.progress(1).kill();
-      finishArrival.current = () => {};
-    };
-    return () => { tl.scrollTrigger?.kill(); tl.kill(); };
-  }, [wheel, render, live]);
-
-  // Changement de filtre : l'anneau se reforme, ou les cartes de la grille basculent
-  const firstFilter = useRef(true);
-  useLayoutEffect(() => {
-    if (firstFilter.current) { firstFilter.current = false; return; }
-    if (reduced) return;
-    if (wheel) {
-      gsap.fromTo(live, { intro: 0 }, { intro: 1, duration: 1.1, ease: 'expo.out', overwrite: 'auto', onUpdate: render });
-      render();
-    } else if (grid.current) {
-      gsap.fromTo(grid.current.children, { autoAlpha: 0, y: 24, rotationX: -25 }, {
-        autoAlpha: 1, y: 0, rotationX: 0, duration: 0.7, ease: 'expo.out', stagger: 0.03, overwrite: true, clearProps: 'transform',
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
-
-  // Rotation automatique au repos (en pause hors écran, au survol d'une carte, au clavier, fenêtre ouverte)
-  useEffect(() => {
-    if (!wheel) return;
-    const tick = (_time: number, deltaMs: number) => {
-      if (!autoplayRef.current || !hold.inView || hold.hover || hold.focus || drag.current || dialogRef.current) return;
-      if (performance.now() < hold.until || tween.current?.isActive()) return;
-      live.rot -= (AUTO_SPEED * Math.min(deltaMs, 64)) / 1000;
-      render();
-    };
-    gsap.ticker.add(tick);
-    return () => gsap.ticker.remove(tick);
-  }, [wheel, render, hold, live]);
+    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) boot(); }, { rootMargin: '0px 0px -22% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [wheel, boot]);
 
   useEffect(() => {
     const el = stage.current;
@@ -206,34 +217,82 @@ const ToolsSection = () => {
     return () => { io.disconnect(); hold.inView = false; };
   }, [wheel, hold]);
 
+  /* Changement de filtre : les outils du filtre restent allumés, les autres s'estompent,
+     l'anneau recule d'un coup, un balayage passe et la roue pivote vers le premier outil */
+  const firstFilter = useRef(true);
+  useEffect(() => {
+    if (firstFilter.current) { firstFilter.current = false; return; }
+    if (!wheel) return;
+    const dimTo = (i: number) => (inFilter.has(i) ? 1 : DIM);
+    if (!hold.booted) {
+      fx.dim.forEach((d, i) => { d.v = dimTo(i); });
+      if (filter !== 'all') live.rot = -targets[0] * STEP;
+      render();
+      boot();
+      return;
+    }
+    interact();
+    gsap.to(fx.dim, { v: (i: number) => dimTo(i), duration: 0.6, ease: 'power2.out', overwrite: true, onUpdate: render });
+    gsap.timeline({ onUpdate: render })
+      .to(live, { pulse: 1, duration: 0.35, ease: 'power2.out' })
+      .to(live, { pulse: 0, duration: 1, ease: 'expo.out' });
+    if (filter === 'all') snap(live.rot, 0.8);
+    else spinToCard(targets[0], 0, 1.3, 'power3.inOut');
+    scan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
+  // Rotation automatique au repos (en pause hors écran, au survol d'une carte, au clavier, fenêtre ouverte).
+  // Avec un filtre : la roue passe d'un outil du filtre au suivant.
+  useEffect(() => {
+    if (!wheel) return;
+    const tick = (_time: number, deltaMs: number) => {
+      if (!hold.ready || !autoplayRef.current || !hold.inView || hold.hover || hold.focus || drag.current || dialogRef.current) return;
+      if (performance.now() < hold.until || tween.current?.isActive()) return;
+      const list = targetsRef.current;
+      if (list.length === COUNT) {
+        live.rot -= (AUTO_SPEED * Math.min(deltaMs, 64)) / 1000;
+        render();
+        return;
+      }
+      if (list.length < 2) return;
+      hold.hop += deltaMs;
+      if (hold.hop < HOP_DELAY) return;
+      hold.hop = 0;
+      spinToCard(list[(list.indexOf(focusedRef.current) + 1) % list.length], 1, 1.2, 'power3.inOut');
+    };
+    gsap.ticker.add(tick);
+    return () => gsap.ticker.remove(tick);
+  }, [wheel, render, spinToCard, hold, live]);
+
   // Pavé tactile : glisser deux doigts à l'horizontale fait tourner l'anneau
   useEffect(() => {
     const el = stage.current;
     if (!wheel || !el) return;
     let timer = 0;
     const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) < 2 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
+      if (!hold.ready || Math.abs(e.deltaX) < 2 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
       e.preventDefault();
       tween.current?.kill();
       live.rot -= (e.deltaX * DEG) / live.radius;
-      hold.until = performance.now() + IDLE_DELAY;
+      interact();
       render();
       clearTimeout(timer);
       timer = window.setTimeout(() => snap(live.rot, 0.6), 140);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => { el.removeEventListener('wheel', onWheel); clearTimeout(timer); };
-  }, [wheel, render, snap, hold, live]);
+  }, [wheel, render, snap, interact, hold, live]);
 
   // Nom de l'outil de face, "décodé" façon terminal
   useEffect(() => {
-    if (nameEl.current && current) scrambleText(nameEl.current, current.name, 420);
+    if (nameEl.current) scrambleText(nameEl.current, current.name, 420);
   }, [current]);
 
   /* ——— Glisser pour faire tourner (souris et doigt) ———
      Le glissement ne démarre qu'après quelques pixels : un simple clic ouvre toujours la carte. */
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!hold.ready || (e.pointerType === 'mouse' && e.button !== 0)) return;
     drag.current = { id: e.pointerId, x0: e.clientX, r0: live.rot, moved: false, samples: [] };
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -258,7 +317,7 @@ const ToolsSection = () => {
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
     if (!d.moved) return;
-    hold.until = performance.now() + IDLE_DELAY;
+    interact();
     suppressClick.current = true; // le clic qui suit un glissement n'ouvre pas de carte
     window.setTimeout(() => { suppressClick.current = false; }, 0);
     // Élan : vitesse des derniers mouvements (nulle si on s'est arrêté avant de relâcher)
@@ -275,13 +334,20 @@ const ToolsSection = () => {
     e.stopPropagation();
   };
 
-  // Clavier : la carte qui reçoit le focus vient de face ; flèches gauche/droite
+  // Clavier : la carte qui reçoit le focus vient de face ; flèches gauche/droite parmi les outils du filtre
+  const step = (dir: 1 | -1) => {
+    const list = targetsRef.current;
+    if (list.length < 2) return -1;
+    const next = list[(list.indexOf(focusedRef.current) + dir + list.length) % list.length];
+    goTo(next, dir);
+    return next;
+  };
   const onFocus = (e: React.FocusEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (!target.matches(':focus-visible')) return;
     hold.focus = true;
     const i = cards.current.indexOf(target as HTMLButtonElement);
-    if (i >= 0 && i < count) goTo(i);
+    if (i >= 0 && inFilter.has(i)) goTo(i);
   };
   const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) hold.focus = false;
@@ -289,18 +355,12 @@ const ToolsSection = () => {
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();
-    const next = (focusedRef.current + (e.key === 'ArrowRight' ? 1 : -1) + count) % count;
-    goTo(next);
-    cards.current[next]?.focus({ preventScroll: true });
+    const next = step(e.key === 'ArrowRight' ? 1 : -1);
+    if (next >= 0) cards.current[next]?.focus({ preventScroll: true });
   };
 
-  const applyFilter = (value: string) => {
-    if (value === filter) return;
-    finishArrival.current();
-    setFilter(value);
-  };
-
-  const control = 'liquid inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-[transform,color] duration-500 hover:-translate-y-0.5 hover:text-primary';
+  const control = 'liquid inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-[transform,color,opacity] duration-500 hover:-translate-y-0.5 hover:text-primary disabled:pointer-events-none disabled:opacity-40';
+  const filterLabel = filter === 'all' ? t('home.allTools') : t(`home.categories.${filter}`);
 
   return (
     <section ref={section} className="section-y relative">
@@ -315,7 +375,7 @@ const ToolsSection = () => {
             <button
               key={cat}
               type="button"
-              onClick={() => applyFilter(cat)}
+              onClick={() => setFilter(cat)}
               aria-pressed={filter === cat}
               className={`rounded-full border px-4 py-2 font-mono text-xs transition-colors ${
                 filter === cat ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'
@@ -350,55 +410,63 @@ const ToolsSection = () => {
             onKeyDown={onKeyDown}
           >
             <div className="tools-base" aria-hidden="true" />
+            <div className="tools-beam" aria-hidden="true" />
             <div ref={ring} className="tools-ring">
-              {visible.map((tool, i) => (
-                <button
-                  key={tool.name}
-                  ref={(el) => { cards.current[i] = el; }}
-                  type="button"
-                  onClick={() => { goTo(i); setSelectedTool(tool); }}
-                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.hover = true; }}
-                  onPointerLeave={(e) => { if (e.pointerType === 'mouse') hold.hover = false; }}
-                  data-cursor={t('ui.open')}
-                  data-focused={i === focused}
-                  style={{ '--card-angle': `${i * step}deg` } as React.CSSProperties}
-                  className="tool-card panel group flex min-h-[158px] flex-col justify-between p-4 text-left"
-                >
-                  <span className="card-frame" aria-hidden="true"><i /><i /><i /><i /></span>
-                  <CardBody tool={tool} category={t(`home.categories.${tool.category}`)} />
-                </button>
-              ))}
+              {TOOLS.map((tool, i) => {
+                const on = inFilter.has(i);
+                return (
+                  <button
+                    key={tool.name}
+                    ref={(el) => { cards.current[i] = el; }}
+                    type="button"
+                    onClick={() => { goTo(i); setSelectedTool(tool); }}
+                    onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.hover = true; }}
+                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') hold.hover = false; }}
+                    tabIndex={on ? undefined : -1}
+                    aria-hidden={on ? undefined : true}
+                    data-dim={!on}
+                    data-cursor={t('ui.open')}
+                    data-focused={i === focused}
+                    style={{ '--card-angle': `${i * STEP}deg`, opacity: 0, visibility: 'hidden' } as React.CSSProperties}
+                    className="tool-card panel group flex min-h-[158px] flex-col justify-between p-4 text-left"
+                  >
+                    <span className="card-frame" aria-hidden="true"><i /><i /><i /><i /></span>
+                    <CardBody tool={tool} index={i} category={t(`home.categories.${tool.category}`)} />
+                  </button>
+                );
+              })}
             </div>
+            <div className="tools-scan" aria-hidden="true" />
           </div>
 
           {/* Commandes : précédent / outil de face / suivant / pause */}
-          <div className="container-x relative z-[2] mt-2 flex flex-col items-center gap-4">
+          <div ref={controls} className="container-x relative z-[2] mt-2 flex flex-col items-center gap-4">
             {/* Télémétrie de la boîte à outils */}
-            <div className="hud-panel absolute right-[var(--gutter)] top-0 hidden w-[210px] lg:block" aria-hidden="true">
+            <div className="hud-panel absolute right-[var(--gutter)] top-0 hidden w-[220px] lg:block" aria-hidden="true">
               <p className="mb-2 flex justify-between gap-4 border-b border-dashed border-primary/30 pb-2 tracking-[.08em] text-primary">
                 <span>SYS://TOOLKIT</span>
                 <span className={autoplay ? 'text-[hsl(var(--online))]' : ''}>{autoplay ? 'AUTO' : 'PAUSE'}</span>
               </p>
               <dl className="grid gap-0.5">
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsTools')}</dt><dd className="tabular-nums text-foreground">{TOOLS.length}</dd></div>
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsCategories')}</dt><dd className="tabular-nums text-foreground">{categories.length}</dd></div>
+                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsTools')}</dt><dd className="tabular-nums text-foreground">{pad(targets.length)}/{TOOLS.length}</dd></div>
+                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsFilter')}</dt><dd className="truncate text-foreground">{filterLabel}</dd></div>
                 <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsRotation')}</dt><dd className="tabular-nums text-foreground"><span ref={rotEl}>000°</span></dd></div>
               </dl>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <button type="button" onClick={() => goTo((focusedRef.current - 1 + count) % count)} aria-label={t('home.toolsPrev')} className={control}>
+              <button type="button" onClick={() => step(-1)} disabled={targets.length < 2} aria-label={t('home.toolsPrev')} className={control}>
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <div className="hud-panel w-[min(58vw,300px)] text-center">
-                <p className="led text-sm text-primary">{pad(Math.min(focused, count - 1) + 1)} <span className="text-muted-foreground">/ {pad(count)}</span></p>
+                <p className="led text-sm text-primary">{pad(position + 1)} <span className="text-muted-foreground">/ {pad(targets.length)}</span></p>
                 <p className="mt-1 truncate font-display text-lg font-bold uppercase leading-tight text-foreground [font-stretch:118%]">
                   <span ref={nameEl} aria-hidden="true" />
-                  <span className="sr-only">{current?.name}</span>
+                  <span className="sr-only">{current.name}</span>
                 </p>
-                <p className="label-mono mt-1 !text-[.62rem]">{current && t(`home.categories.${current.category}`)}</p>
+                <p className="label-mono mt-1 !text-[.62rem]">{t(`home.categories.${current.category}`)}</p>
               </div>
-              <button type="button" onClick={() => goTo((focusedRef.current + 1) % count)} aria-label={t('home.toolsNext')} className={control}>
+              <button type="button" onClick={() => step(1)} disabled={targets.length < 2} aria-label={t('home.toolsNext')} className={control}>
                 <ChevronRight className="h-5 w-5" />
               </button>
               <button type="button" onClick={() => setAutoplay((on) => !on)} aria-label={autoplay ? t('home.toolsPause') : t('home.toolsPlay')} aria-pressed={!autoplay} className={control}>
@@ -411,18 +479,18 @@ const ToolsSection = () => {
           </div>
         </div>
       ) : (
-        /* Grille : peu d'outils dans le filtre, ou animations réduites */
+        /* Animations réduites : grille simple */
         <div className="container-x">
-          <div ref={grid} className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(140px,180px))] justify-center gap-3 [perspective:1400px] sm:grid-cols-[repeat(auto-fit,minmax(180px,220px))]">
-            {visible.map((tool) => (
+          <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(140px,180px))] justify-center gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,220px))]">
+            {targets.map((i) => (
               <button
-                key={tool.name}
+                key={TOOLS[i].name}
                 type="button"
-                onClick={() => setSelectedTool(tool)}
+                onClick={() => setSelectedTool(TOOLS[i])}
                 data-cursor={t('ui.open')}
-                className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left transition-transform duration-500 [transition-timing-function:var(--ease-out)] hover:-translate-y-1"
+                className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left"
               >
-                <CardBody tool={tool} category={t(`home.categories.${tool.category}`)} />
+                <CardBody tool={TOOLS[i]} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />
               </button>
             ))}
           </div>

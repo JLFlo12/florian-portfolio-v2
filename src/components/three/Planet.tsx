@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { planetState } from './planetState';
+import { useTheme } from '@/contexts/ThemeContext';
 
 /* ═══════════════════════════════════════════════════════════════
    PLANÈTE 3D (React Three Fiber)
-   - noyau sombre avec relief procédural + halo orange sur les bords
+   - noyau avec relief procédural + halo orange sur les bords
+     (noire en thème sombre, ivoire et pêche en thème clair)
    - continents en points lumineux (façon hologramme)
    - anneau + poussière d'anneau, lune en orbite, étoiles
    - liaisons réseau lumineuses parcourues par des "paquets"
@@ -15,6 +17,44 @@ import { planetState } from './planetState';
 const ACCENT = new THREE.Color('#ff6a1f');
 const CREAM = new THREE.Color('#ffe2c4');
 const BASE = new THREE.Color('#150c07');
+
+/* ——— Palettes : sombre (planète noire, néon additif) et claire (planète ivoire et pêche) ———
+   Les shaders écrivent leur couleur telle quelle : en mode clair on leur donne
+   directement les valeurs sRGB (raw) pour obtenir exactement les teintes voulues. */
+const raw = (hex: string) => new THREE.Color(hex).convertLinearToSRGB();
+
+interface Palette {
+  light: boolean;
+  accent: THREE.Color; dots: THREE.Color;              // bord du noyau, continents (sombre → éclairé)
+  ocean: THREE.Color; ocean2: THREE.Color; land: THREE.Color; land2: THREE.Color;
+  shade: THREE.Vector2; rim: number;                   // éclairage : ambiant + diffus, liseré orange
+  halo: THREE.Color;
+  ringA: THREE.Color; ringB: THREE.Color;
+  linkA: THREE.Color; linkB: THREE.Color;              // liaisons depuis La Réunion / autres
+  points: string; pointsOpacity: number; beacon: string;
+}
+
+const DARK: Palette = {
+  light: false,
+  accent: ACCENT, dots: CREAM,
+  ocean: BASE, ocean2: BASE.clone().multiplyScalar(1.7), land: BASE.clone().multiplyScalar(2.4), land2: BASE.clone().multiplyScalar(3.6),
+  shade: new THREE.Vector2(0.22, 1.05), rim: 0.6,
+  halo: ACCENT,
+  ringA: ACCENT, ringB: CREAM,
+  linkA: CREAM, linkB: ACCENT,
+  points: '#ffe2c4', pointsOpacity: 0.55, beacon: '#ffe2c4',
+};
+
+const LIGHT: Palette = {
+  light: true,
+  accent: raw('#ea580c'), dots: raw('#9a3412'),
+  ocean: raw('#f8ecdf'), ocean2: raw('#f1dfcb'), land: raw('#f8c9a2'), land2: raw('#ef9d66'),
+  shade: new THREE.Vector2(0.72, 0.36), rim: 0.5,
+  halo: raw('#fb923c'),
+  ringA: raw('#f97316'), ringB: raw('#fdba74'),
+  linkA: raw('#9a3412'), linkB: raw('#ea580c'),
+  points: '#c2410c', pointsOpacity: 0.4, beacon: '#9a3412',
+};
 
 /* Bruit simplex 3D (Ashima Arts / Stefan Gustavson, licence MIT) */
 const NOISE = /* glsl */ `
@@ -59,9 +99,13 @@ const REUNION_PITCH = Math.atan2(REUNION.y, Math.hypot(REUNION.x, REUNION.z));
 const DIVE_SCALE = 3.3; // taille finale : la planète remplit l'écran, continents et bord orange encore visibles
 
 /* ——— Noyau de la planète ——— */
-function Core() {
+function Core({ palette }: { palette: Palette }) {
   const material = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uLight: { value: LIGHT_DIR }, uAccent: { value: ACCENT }, uBase: { value: BASE } },
+    uniforms: {
+      uLight: { value: LIGHT_DIR }, uAccent: { value: ACCENT },
+      uOcean: { value: DARK.ocean }, uOcean2: { value: DARK.ocean2 }, uLand: { value: DARK.land }, uLand2: { value: DARK.land2 },
+      uShade: { value: DARK.shade }, uRim: { value: DARK.rim },
+    },
     vertexShader: /* glsl */ `
       varying vec3 vNormal; varying vec3 vPos; varying vec3 vView;
       void main(){
@@ -72,23 +116,32 @@ function Core() {
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: NOISE + /* glsl */ `
-      uniform vec3 uLight; uniform vec3 uAccent; uniform vec3 uBase;
+      uniform vec3 uLight; uniform vec3 uAccent;
+      uniform vec3 uOcean; uniform vec3 uOcean2; uniform vec3 uLand; uniform vec3 uLand2;
+      uniform vec2 uShade; uniform float uRim;
       varying vec3 vNormal; varying vec3 vPos; varying vec3 vView;
       void main(){
         vec3 p = normalize(vPos);
         float n = landField(p);
         float isLand = smoothstep(.08, .14, n);
         float bands = sin(p.y * 22. + snoise(p * 2.) * 2.) * .5 + .5;
-        vec3 ocean = mix(uBase, uBase * 1.7, bands * .35);
-        vec3 ground = mix(uBase * 2.4, uBase * 3.6, smoothstep(.14, .5, n));
+        vec3 ocean = mix(uOcean, uOcean2, bands * .35);
+        vec3 ground = mix(uLand, uLand2, smoothstep(.14, .5, n));
         vec3 col = mix(ocean, ground, isLand * .85);
         float diff = max(dot(vNormal, normalize(uLight)), 0.);
-        col *= .22 + diff * 1.05;
+        col *= uShade.x + diff * uShade.y;
         float fres = pow(1. - max(dot(vNormal, vView), 0.), 2.6);
-        col += uAccent * fres * .6;
+        col += uAccent * fres * uRim;
         gl_FragColor = vec4(col, 1.);
       }`,
   }), []);
+  useEffect(() => {
+    const u = material.uniforms;
+    u.uAccent.value = palette.accent;
+    u.uOcean.value = palette.ocean; u.uOcean2.value = palette.ocean2;
+    u.uLand.value = palette.land; u.uLand2.value = palette.land2;
+    u.uShade.value = palette.shade; u.uRim.value = palette.rim;
+  }, [material, palette]);
   return (
     <mesh material={material}>
       <sphereGeometry args={[1, 96, 96]} />
@@ -97,7 +150,7 @@ function Core() {
 }
 
 /* ——— Continents en points lumineux ——— */
-function DotLand() {
+function DotLand({ palette }: { palette: Palette }) {
   const gl = useThree((s) => s.gl);
   const { geometry, material } = useMemo(() => {
     const count = 11000;
@@ -144,24 +197,36 @@ function DotLand() {
     return { geometry: geo, material: mat };
   }, []);
   useEffect(() => { material.uniforms.uPixelRatio.value = gl.getPixelRatio(); }, [gl, material]);
+  useEffect(() => {
+    material.uniforms.uAccent.value = palette.accent;
+    material.uniforms.uCream.value = palette.dots;
+  }, [material, palette]);
   return <points geometry={geometry} material={material} />;
 }
 
-/* ——— Halo atmosphérique ——— */
-function Atmosphere() {
+/* ——— Halo atmosphérique ———
+   Sombre : lueur additive. Clair : voile pêche translucide (l'additif donnerait
+   un néon criard et un liseré gris sur un fond clair). */
+function Atmosphere({ palette }: { palette: Palette }) {
   const material = useMemo(() => new THREE.ShaderMaterial({
     side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { uColor: { value: ACCENT } },
+    uniforms: { uColor: { value: ACCENT }, uSoft: { value: 0 } },
     vertexShader: /* glsl */ `
       varying vec3 vNormal;
       void main(){ vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: /* glsl */ `
-      uniform vec3 uColor; varying vec3 vNormal;
+      uniform vec3 uColor; uniform float uSoft; varying vec3 vNormal;
       void main(){
         float i = pow(max(.72 - dot(vNormal, vec3(0., 0., 1.)), 0.), 3.2);
-        gl_FragColor = vec4(uColor * i * 2.4, i);
+        gl_FragColor = uSoft > .5 ? vec4(uColor, i * 1.1) : vec4(uColor * i * 2.4, i);
       }`,
   }), []);
+  useEffect(() => {
+    material.uniforms.uColor.value = palette.halo;
+    material.uniforms.uSoft.value = palette.light ? 1 : 0;
+    material.blending = palette.light ? THREE.NormalBlending : THREE.AdditiveBlending;
+    material.needsUpdate = true;
+  }, [material, palette]);
   return (
     <mesh material={material} scale={1.2}>
       <sphereGeometry args={[1, 64, 64]} />
@@ -170,7 +235,7 @@ function Atmosphere() {
 }
 
 /* ——— Liaisons réseau entre points (dont La Réunion) avec paquets lumineux ——— */
-function Links() {
+function Links({ palette }: { palette: Palette }) {
   const arcs = useMemo(() => {
     const rand = (seed: number) => { const x = Math.sin(seed * 9301.1) * 49297.3; return x - Math.floor(x); };
     const point = (s: number) => latLon(rand(s) * 140 - 70, rand(s + 7.3) * 360 - 180, 1.005);
@@ -198,6 +263,13 @@ function Links() {
     }
     return list;
   }, []);
+  useEffect(() => {
+    arcs.forEach(({ material }, i) => {
+      material.uniforms.uColor.value = i < 6 ? palette.linkA : palette.linkB;
+      material.blending = palette.light ? THREE.NormalBlending : THREE.AdditiveBlending;
+      material.needsUpdate = true;
+    });
+  }, [arcs, palette]);
   useFrame((state) => {
     // Les liaisons s'effacent pendant la plongée (sinon elles deviennent d'énormes faisceaux)
     const fade = 1 - THREE.MathUtils.smoothstep(planetState.dive, 0.18, 0.42);
@@ -207,7 +279,7 @@ function Links() {
 }
 
 /* ——— Balise La Réunion + étiquette HTML qui la suit ——— */
-function Beacon({ label }: { label: React.RefObject<HTMLDivElement> }) {
+function Beacon({ label, palette }: { label: React.RefObject<HTMLDivElement>; palette: Palette }) {
   const group = useRef<THREE.Group>(null);
   const pulse = useRef<THREE.Mesh>(null);
   const camera = useThree((s) => s.camera);
@@ -240,16 +312,16 @@ function Beacon({ label }: { label: React.RefObject<HTMLDivElement> }) {
   return (
     <group position={REUNION}>
       <group ref={group} quaternion={orientation}>
-        <mesh><sphereGeometry args={[0.02, 16, 16]} /><meshBasicMaterial color={CREAM} toneMapped={false} /></mesh>
+        <mesh><sphereGeometry args={[0.02, 16, 16]} /><meshBasicMaterial color={palette.beacon} toneMapped={false} /></mesh>
         <mesh ref={pulse}><ringGeometry args={[0.022, 0.03, 40]} /><meshBasicMaterial color={ACCENT} transparent side={THREE.DoubleSide} depthWrite={false} toneMapped={false} /></mesh>
-        <mesh position={[0, 0, 0.07]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.003, 0.003, 0.14, 6]} /><meshBasicMaterial color={CREAM} toneMapped={false} /></mesh>
+        <mesh position={[0, 0, 0.07]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.003, 0.003, 0.14, 6]} /><meshBasicMaterial color={palette.beacon} toneMapped={false} /></mesh>
       </group>
     </group>
   );
 }
 
 /* ——— Anneau + poussière ——— */
-function Ring() {
+function Ring({ palette }: { palette: Palette }) {
   const dust = useRef<THREE.Points>(null);
   const material = useMemo(() => new THREE.ShaderMaterial({
     side: THREE.DoubleSide, transparent: true, depthWrite: false,
@@ -277,12 +349,16 @@ function Ring() {
     g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
     return g;
   }, []);
+  useEffect(() => {
+    material.uniforms.uAccent.value = palette.ringA;
+    material.uniforms.uCream.value = palette.ringB;
+  }, [material, palette]);
   useFrame((_, dt) => { if (dust.current) dust.current.rotation.z += dt * 0.03; });
   return (
     <group rotation={[-Math.PI / 2 + 0.36, 0, 0.28]}>
       <mesh material={material}><ringGeometry args={[1.5, 2.35, 180, 1]} /></mesh>
       <points ref={dust} geometry={dustGeometry}>
-        <pointsMaterial color={CREAM} size={1.4} sizeAttenuation={false} transparent opacity={0.55} depthWrite={false} />
+        <pointsMaterial color={palette.points} size={1.4} sizeAttenuation={false} transparent opacity={palette.pointsOpacity} depthWrite={false} />
       </points>
     </group>
   );
@@ -305,7 +381,7 @@ function Moon() {
 }
 
 /* ——— Étoiles ——— */
-function Stars() {
+function Stars({ palette }: { palette: Palette }) {
   const geometry = useMemo(() => {
     const count = 900;
     const arr = new Float32Array(count * 3);
@@ -325,13 +401,13 @@ function Stars() {
   });
   return (
     <points ref={ref} geometry={geometry}>
-      <pointsMaterial color={CREAM} size={1.2} sizeAttenuation={false} transparent opacity={0.55} depthWrite={false} />
+      <pointsMaterial color={palette.points} size={1.2} sizeAttenuation={false} transparent opacity={palette.pointsOpacity} depthWrite={false} />
     </points>
   );
 }
 
 /* ——— Assemblage + mouvements (intro, souris, scroll) ——— */
-function System({ label, reduced }: { label: React.RefObject<HTMLDivElement>; reduced: boolean }) {
+function System({ label, reduced, palette }: { label: React.RefObject<HTMLDivElement>; reduced: boolean; palette: Palette }) {
   const system = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
   const intro = useRef(reduced ? 1 : 0);
@@ -371,19 +447,21 @@ function System({ label, reduced }: { label: React.RefObject<HTMLDivElement>; re
   return (
     <group ref={system} rotation={[0.18, 0, -0.32]}>
       <group ref={spin}>
-        <Core />
-        <DotLand />
-        <Links />
-        <Beacon label={label} />
+        <Core palette={palette} />
+        <DotLand palette={palette} />
+        <Links palette={palette} />
+        <Beacon label={label} palette={palette} />
       </group>
-      <Atmosphere />
-      <Ring />
+      <Atmosphere palette={palette} />
+      <Ring palette={palette} />
       <Moon />
     </group>
   );
 }
 
 const Planet = ({ label, visible }: { label: React.RefObject<HTMLDivElement>; visible: boolean }) => {
+  const { theme } = useTheme();
+  const palette = theme === 'light' ? LIGHT : DARK;
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
   return (
@@ -395,8 +473,8 @@ const Planet = ({ label, visible }: { label: React.RefObject<HTMLDivElement>; vi
     >
       <ambientLight intensity={0.25} />
       <directionalLight position={[-6, 4, 5]} intensity={2.2} />
-      <Stars />
-      <System label={label} reduced={reduced} />
+      <Stars palette={palette} />
+      <System label={label} reduced={reduced} palette={palette} />
     </Canvas>
   );
 };

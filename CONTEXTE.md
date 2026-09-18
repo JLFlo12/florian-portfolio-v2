@@ -32,7 +32,7 @@ La v2 est une **refonte complète** du portfolio d'origine, qui avait été gén
 | `67c7453` | Fusion du commit initial créé par GitHub (README remplacé par la version complète) |
 | `000b1c7` | Verre liquide, nouveau logo, tracé au survol sur Contact |
 | `78c4e62` | Plongée 3D de l'accueil vers la section Outils |
-| *(pas encore commité)* | Jarvis à jour, formulaire, page CV, polices locales, WebP, découpage du code, statistiques, typographie + télémétrie de la plongée, toile 3D des outils façon Jarvis |
+| `9ceba31` | Jarvis à jour, formulaire, page CV, polices locales, WebP, découpage du code, statistiques, typographie + télémétrie de la plongée, toile 3D des outils façon Jarvis (déployé sur Vercel le 18/09/2026) |
 
 Pour pousser : `git push v2 refonte-moderne:main`.
 **Règle de Florian : toujours lui faire relire les fichiers avant un commit ou un push.**
@@ -74,6 +74,7 @@ Pour pousser : `git push v2 refonte-moderne:main`.
 ## 4. Design system « FLORIAN.SYS »
 
 - **Couleurs** : noir chaud et orange néon (`#ff6a1f` en sombre, `#ea580c` en clair). Jetons HSL shadcn dans `src/index.css` (`:root` = clair, `.dark` = sombre, sombre par défaut).
+- **Planète et thème** : `Planet.tsx` a deux palettes (`DARK` / `LIGHT`), qui changent sans rechargement quand on bascule le thème. En clair, la planète est ivoire et pêche, ses continents orange brûlé, et le halo est un dégradé translucide en mélange normal : le mélange additif donnait un néon criard avec un liseré gris sur fond clair. C'est ce qui rend lisibles « FLORIAN » et les mots de la plongée. Les shaders écrivent leur couleur telle quelle, donc la palette claire utilise `raw()` (valeurs sRGB).
 - **Polices**, **hébergées dans `public/fonts/`** (sous-ensemble latin, licences SIL OFL dans `public/fonts/OFL.txt`) :
   - Hubot Sans : titres, largeur 112–125 %
   - Mona Sans : texte
@@ -139,11 +140,12 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - relâché, il garde son élan puis se cale sur la carte la plus proche ;
   - au repos, il tourne lentement. Il se met en pause hors écran, au survol d'une carte, au clavier, quand la fenêtre de détail est ouverte, ou avec le bouton pause (exigé par WCAG) ;
   - la carte de face est encadrée ; son nom se « décode » sous l'anneau (`scrambleText`) ; un panneau `SYS://TOOLKIT` affiche les compteurs et la rotation ;
-  - arrivée : l'anneau surgit des profondeurs en tournant, au rythme du scroll (suite de la plongée), une seule fois ;
+  - **entrée « allumage de l'hologramme »** (une seule fois, quand le haut de l'anneau passe aux 3/4 de l'écran) : le socle s'allume, un faisceau monte, un balayage lumineux passe, les cartes s'allument du centre vers l'arrière en scintillant, pendant que l'anneau remonte des profondeurs en tournant ; les commandes arrivent en dernier (`boot()`, classes `.is-on` / `.is-scan`) ;
+  - **les filtres gardent la roue entière** : les outils de la catégorie restent allumés, les autres s'estompent (`DIM`) et ne sont plus cliquables. La roue pivote vers le premier outil de la catégorie, avec un recul et un balayage. Ensuite, la rotation automatique passe d'un outil de la catégorie au suivant, et les flèches ne parcourent que ces outils (désactivées s'il n'y en a qu'un) ;
   - un clic ouvre la fenêtre de détail, mais un glissement ne l'ouvre pas : le glissement ne démarre qu'après 6 px, et le clic qui suit est bloqué ;
   - le rayon est calculé d'après la largeur réelle des cartes (`measure()`), donc les cartes voisines ne se chevauchent pas, quelle que soit la taille d'écran ;
-  - **grille simple** si le filtre compte moins de 6 outils, ou si `prefers-reduced-motion` est activé ;
-  - filtres par catégorie et fenêtre de détail, comme avant.
+  - les cartes sont centrées par leur marge, pas par `translate(-50%)` : leur axe de rotation doit être celui de l'anneau, sinon la carte de face est décalée ;
+  - **grille simple** seulement si `prefers-reduced-motion` est activé.
 - Bandeau défilant (après les outils), puis compétences en barres LED (données dans `src/data/profile.ts`).
 
 ### Contact

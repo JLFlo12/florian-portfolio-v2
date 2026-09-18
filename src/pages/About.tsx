@@ -93,7 +93,7 @@ const About = () => {
               <a href="/mon-cv.pdf" target="_blank" rel="noopener noreferrer" className="btn-neon">
                 <Download className="h-4 w-4" /> {t('about.downloadCV')}
               </a>
-              <a href="/mon-cv.pdf" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+              <a href="/mon-cv.pdf" target="_blank" rel="noopener noreferrer" className="btn-ghost liquid">
                 <FileText className="h-4 w-4" /> {t('about.viewCV')} <ArrowUpRight className="h-4 w-4" />
               </a>
             </div>

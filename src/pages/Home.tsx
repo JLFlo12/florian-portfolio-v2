@@ -112,10 +112,10 @@ const Home = () => {
         <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]">
           {/* Ligne du haut : statut + télémétrie */}
           <div className="flex flex-wrap items-start justify-between gap-4" data-hero-part>
-            <p className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-border bg-background/60 px-4 py-2 text-sm font-medium backdrop-blur" data-intro>
+            <p className="pointer-events-auto liquid inline-flex items-center gap-3 rounded-full px-4 py-2 text-sm font-medium" data-intro>
               <span className="status-dot" /> {t('ui.online')} · <span className="text-muted-foreground">{t('home.location')}</span>
             </p>
-            <div className="hud-panel hidden min-w-[250px] md:block" data-intro>
+            <div className="hud-panel hidden min-w-[250px] md:block" data-intro data-liquid>
               <p className="mb-2 flex justify-between gap-6 border-b border-dashed border-primary/30 pb-2 tracking-[.08em] text-primary">
                 <span>SYS://FLORIAN.GL</span><span>v{new Date().getFullYear()}</span>
               </p>
@@ -160,7 +160,7 @@ const Home = () => {
                     target={href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="glass inline-flex h-12 w-12 items-center justify-center rounded-full text-foreground transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:text-primary"
+                    className="liquid inline-flex h-12 w-12 items-center justify-center rounded-full text-foreground transition-all duration-500 hover:-translate-y-1 hover:border-primary hover:text-primary"
                   >
                     <Icon className="h-5 w-5" />
                   </a>

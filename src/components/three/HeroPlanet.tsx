@@ -66,7 +66,7 @@ const HeroPlanet = ({ section }: { section: React.RefObject<HTMLElement> }) => {
       ) : fallback}
       {/* Étiquette qui suit la balise La Réunion sur la planète */}
       <div ref={label} className="pointer-events-none absolute left-0 top-0 opacity-0 will-change-transform">
-        <span className="ml-3 -mt-3 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-primary/50 bg-background/80 px-3 py-1 font-mono text-[.68rem] text-foreground backdrop-blur">
+        <span className="ml-3 -mt-3 inline-flex items-center gap-2 whitespace-nowrap liquid liquid-strong rounded-full border-primary/50 px-3 py-1 font-mono text-[.68rem] text-foreground">
           <span className="status-dot" /> {t('ui.homeBeacon')}
         </span>
       </div>

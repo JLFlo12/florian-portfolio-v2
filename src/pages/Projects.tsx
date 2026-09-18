@@ -65,8 +65,8 @@ const Projects = () => {
             </div>
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-          <span className="led absolute left-4 top-4 rounded-md bg-background/70 px-2 py-1 text-sm text-primary backdrop-blur">{String(number).padStart(2, '0')}</span>
-          <span className={`absolute right-4 top-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[.68rem] uppercase tracking-wider backdrop-blur ${done ? 'border-[hsl(var(--online)/.4)] bg-background/70 text-[hsl(var(--online))]' : 'border-primary/50 bg-background/70 text-primary'}`}>
+          <span className="led liquid liquid-strong absolute left-4 top-4 rounded-lg px-2 py-1 text-sm text-primary">{String(number).padStart(2, '0')}</span>
+          <span className={`absolute right-4 top-4 inline-flex items-center gap-2 liquid liquid-strong rounded-full px-3 py-1 font-mono text-[.68rem] uppercase tracking-wider ${done ? 'border-[hsl(var(--online)/.4)] text-[hsl(var(--online))]' : 'border-primary/50 text-primary'}`}>
             {done ? '✓' : <span className="status-dot !bg-primary" />} {done ? t('projects.completed') : t('projects.inProgress')}
           </span>
         </div>

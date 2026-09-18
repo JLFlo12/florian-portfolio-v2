@@ -5,9 +5,10 @@ import { gsap, prefersReducedMotion, scrambleText } from '@/lib/motion';
    Liste de liens en très grandes capitales (inspirée du menu de
    landonorris.com) :
    - au survol, les lettres "roulent" et laissent place à leur copie orange ;
-   - le lien actif est grisé et barré d'un tracé qui se déroule,
-     puis s'enroule vers la droite quand on passe au lien suivant ;
-   - l'adresse du lien actif s'affiche en dessous, façon terminal.
+   - le lien survolé (ou sélectionné au clavier) est barré d'un tracé
+     qui se déroule, puis file vers la droite quand on le quitte ;
+   - l'adresse du lien survolé s'affiche en dessous, façon terminal
+     (l'e-mail par défaut).
    ─────────────────────────────────────────────────────────────── */
 
 export interface TrackItem {
@@ -95,16 +96,19 @@ const TrackLine = ({ on }: { on: boolean }) => {
 };
 
 const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
-  const [active, setActive] = useState(0);
+  // Lien survolé ou sélectionné au clavier (aucun = pas de tracé)
+  const [active, setActive] = useState<number | null>(null);
   const readout = useRef<HTMLSpanElement>(null);
+  const release = (i: number) => setActive((a) => (a === i ? null : a));
+  const value = items[active ?? 0].value;
 
   // L'adresse est écrite hors de React (effet "décodage" lettre par lettre)
   useEffect(() => {
     const el = readout.current;
     if (!el) return;
-    if (live) scrambleText(el, items[active].value, 520);
-    else el.textContent = items[active].value;
-  }, [active, items, live]);
+    if (live) scrambleText(el, value, 520);
+    else el.textContent = value;
+  }, [value, live]);
 
   return (
     <div className="flex w-full flex-col items-center">
@@ -119,7 +123,9 @@ const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
               aria-label={`${item.label} — ${item.value}`}
               data-cursor={item.cursor}
               onPointerEnter={() => setActive(i)}
+              onPointerLeave={() => release(i)}
               onFocus={() => setActive(i)}
+              onBlur={() => release(i)}
             >
               <span className="track-clip" aria-hidden="true">
                 <span className="track-inner" data-track-inner>

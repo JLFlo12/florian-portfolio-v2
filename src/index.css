@@ -164,22 +164,15 @@
     position: relative; padding: 12px 14px; border-radius: 3px;
     font-family: "Geist Mono", monospace; font-size: .72rem; line-height: 1.6;
     color: hsl(var(--muted-foreground));
-    background: linear-gradient(135deg, hsl(var(--primary) / .08), hsl(var(--background) / .55));
-    border: 1px solid hsl(var(--primary) / .22);
-    backdrop-filter: blur(6px);
+    background: linear-gradient(135deg, hsl(var(--primary) / .1), hsl(var(--background) / .22));
+    border: 1px solid hsl(var(--primary) / .28);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / .12), 0 14px 34px -16px hsl(var(--lg-shadow));
+    -webkit-backdrop-filter: blur(8px) brightness(var(--lg-bright));
+    backdrop-filter: blur(8px) brightness(var(--lg-bright));
   }
   .hud-panel::before, .hud-panel::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid hsl(var(--primary)); }
   .hud-panel::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
   .hud-panel::after { right: -1px; bottom: -1px; border-right-width: 2px; border-bottom-width: 2px; }
-
-  /* ——— Verre dépoli ——— */
-  .glass {
-    background: hsl(var(--card) / .55);
-    border: 1px solid hsl(var(--foreground) / .1);
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    box-shadow: 0 18px 40px -18px rgb(0 0 0 / .55), inset 0 1px 0 hsl(0 0% 100% / .06);
-  }
 
   /* ——— Boutons ——— */
   .btn-neon {
@@ -207,7 +200,65 @@
     border: 1px solid hsl(var(--foreground) / .18); color: hsl(var(--foreground));
     font-weight: 550; transition: border-color .3s, transform .5s var(--ease-out), background-color .3s;
   }
-  .btn-ghost:hover { border-color: hsl(var(--primary)); transform: translateY(-2px); background: hsl(var(--primary) / .08); }
+  .btn-ghost:hover { border-color: hsl(var(--primary)); transform: translateY(-2px); background-color: hsl(var(--primary) / .08); }
+
+  /* ——— Verre liquide (voir components/fx/LiquidGlass.tsx) ———
+     Très transparent : teinte légère, reflets sur les bords, ombre douce.
+     Lisibilité : le fond vu à travers est un peu assombri (clair en mode clair). */
+  :root {
+    --lg-tint: 36 40% 98% / .30;
+    --lg-edge: 0 0% 100% / .65;
+    --lg-hi: 0 0% 100% / .9;
+    --lg-bright: 1.07;
+    --lg-shadow: 25 30% 25% / .18;
+  }
+  .dark {
+    --lg-tint: 30 18% 5% / .20;
+    --lg-edge: 0 0% 100% / .13;
+    --lg-hi: 0 0% 100% / .32;
+    --lg-bright: .8;
+    --lg-shadow: 0 0% 0% / .55;
+  }
+  .liquid {
+    position: relative; isolation: isolate;
+    background-color: transparent;
+    background-image:
+      linear-gradient(155deg, hsl(0 0% 100% / .11) 0%, hsl(0 0% 100% / .03) 35%, transparent 55%, hsl(0 0% 100% / .05) 100%),
+      linear-gradient(hsl(var(--lg-tint)), hsl(var(--lg-tint)));
+    border: 1px solid hsl(var(--lg-edge));
+    --lg-box:
+      inset 0 1px 0 hsl(var(--lg-hi)),
+      inset 0 -1px 1px hsl(0 0% 100% / .07),
+      inset 0 0 18px hsl(0 0% 100% / .05),
+      0 14px 34px -16px hsl(var(--lg-shadow));
+    box-shadow: var(--lg-box);
+    -webkit-backdrop-filter: blur(12px) saturate(180%) brightness(var(--lg-bright));
+    backdrop-filter: blur(12px) saturate(180%) brightness(var(--lg-bright));
+  }
+  .liquid[role="menu"] { box-shadow: var(--lg-box); } /* menus Radix : remplace leur ombre par défaut */
+  /* Lisibilité : léger halo autour du texte (sauf sur les pastilles orange pleines) */
+  .liquid { text-shadow: 0 0 14px hsl(var(--background) / .5); }
+  .liquid .bg-primary { text-shadow: none; }
+  /* Variante plus teintée pour les petites étiquettes posées sur des images */
+  .liquid-strong { --lg-tint: 36 40% 98% / .66; --lg-bright: 1.2; }
+  .dark .liquid-strong { --lg-tint: 30 18% 5% / .58; --lg-bright: .5; }
+  /* Reflet qui suit la souris */
+  .liquid::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(160px circle at var(--lx, 22%) var(--ly, -20%), hsl(0 0% 100% / .2), transparent 70%);
+  }
+  /* Chrome / Edge : vraie réfraction, presque pas de flou */
+  .has-liquid .liquid, .has-liquid [data-liquid] {
+    -webkit-backdrop-filter: var(--lg-filter,) blur(2.5px) saturate(190%) brightness(var(--lg-bright));
+    backdrop-filter: var(--lg-filter,) blur(2.5px) saturate(190%) brightness(var(--lg-bright));
+  }
+  .has-liquid .liquid-strong {
+    -webkit-backdrop-filter: var(--lg-filter,) blur(5px) saturate(160%) brightness(var(--lg-bright));
+    backdrop-filter: var(--lg-filter,) blur(5px) saturate(160%) brightness(var(--lg-bright));
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .liquid { --lg-tint: var(--background) / .92; }
+  }
 
   /* ——— Puce "étiquette" ——— */
   .chip {

@@ -59,7 +59,7 @@ const ImageCard = ({ url, title, description, soon }: { url?: string; title: str
         </div>
       )}
       {url && (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/70 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100" aria-label={title}>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="absolute right-3 top-3 liquid liquid-strong inline-flex h-9 w-9 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100" aria-label={title}>
           <ExternalLink className="h-4 w-4" />
         </a>
       )}
@@ -148,7 +148,7 @@ const ProjectGallery = () => {
   );
 
   const BackLink = () => (
-    <Link to="/projects" className="btn-ghost !py-2.5 text-sm">
+    <Link to="/projects" className="btn-ghost liquid !py-2.5 text-sm">
       <ArrowLeft className="h-4 w-4" /> {t('gallery.back')}
     </Link>
   );

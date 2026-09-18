@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Cursor from '@/components/fx/Cursor';
 import Preloader from '@/components/fx/Preloader';
+import LiquidGlass from '@/components/fx/LiquidGlass';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
 interface LayoutProps {
@@ -29,7 +30,6 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
   const lenis = useLenis();
   const [menuOpen, setMenuOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const hudBar = useRef<HTMLElement>(null);
   const hudPct = useRef<HTMLSpanElement>(null);
   const curtain = useRef<HTMLDivElement>(null);
@@ -73,7 +73,6 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
     const update = () => {
       const y = window.scrollY;
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrolled(y > 30);
       // Indicateur de défilement mis à jour directement (sans re-rendu React à chaque image)
       const p = max > 0 ? Math.min(1, y / max) : 0;
       if (hudBar.current) hudBar.current.style.transform = `scaleX(${p})`;
@@ -104,7 +103,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
             <ChevronDown className="h-3 w-3" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="border-border bg-popover">
+        <DropdownMenuContent className="liquid rounded-2xl bg-transparent">
           <DropdownMenuItem onClick={() => changeLanguage('fr')} className="cursor-pointer">Français</DropdownMenuItem>
           <DropdownMenuItem onClick={() => changeLanguage('en')} className="cursor-pointer">English</DropdownMenuItem>
         </DropdownMenuContent>
@@ -137,6 +136,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-background text-foreground">
       <Preloader />
       <Cursor />
+      <LiquidGlass />
       <div className="grain" aria-hidden="true" />
 
       {/* Rideau de transition entre les pages */}
@@ -149,23 +149,22 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
         className={`fixed inset-x-0 top-0 z-50 transition-transform duration-700 [transition-timing-function:var(--ease-out)] ${hidden && !menuOpen ? '-translate-y-full' : ''}`}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className={`pointer-events-none absolute inset-0 border-b border-border/60 bg-background/70 backdrop-blur-xl transition-opacity duration-500 md:hidden ${scrolled ? 'opacity-100' : 'opacity-0'}`} />
         <nav className="container-x relative flex h-[var(--nav-h)] max-w-[1800px] items-center justify-between gap-4" aria-label="Navigation principale">
-          <Link to="/" className="relative z-[2] flex items-center gap-3 text-primary" aria-label="Florian G.L — accueil">
-            <Logo />
+          <Link to="/" className="liquid relative z-[2] flex items-center gap-2.5 rounded-full p-1 text-primary sm:pr-4" aria-label="Florian G.L — accueil">
+            <Logo size={40} />
             <span className="hidden font-display text-[.95rem] font-extrabold uppercase tracking-tight text-foreground sm:inline [font-stretch:125%]">
               Florian<span className="text-primary">.</span>G.L
             </span>
           </Link>
 
           {/* Pilule de navigation (ordinateur) */}
-          <div className="glass hidden items-center gap-1 rounded-full p-1.5 md:flex">
+          <div className="liquid hidden items-center gap-1 rounded-full p-1.5 md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive(item.path) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
+                  isActive(item.path) ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-foreground/10 hover:text-foreground'
                 }`}
               >
                 {item.label}
@@ -174,19 +173,19 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="relative z-[2] flex items-center gap-1">
-            <div className="hidden items-center gap-1 md:flex">{controls}</div>
+            <div className="liquid hidden items-center gap-0.5 rounded-full p-1 md:flex">{controls}</div>
             {/* Bouton menu (mobile) */}
             <button
               type="button"
-              className="relative h-11 w-11 md:hidden"
+              className="liquid relative h-[50px] w-[50px] rounded-full md:hidden"
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
               aria-label={menuOpen ? t('ui.close') : t('ui.menu')}
               onClick={() => setMenuOpen((o) => !o)}
             >
-              <span className={`absolute left-3 right-3 top-[15px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? 'translate-y-[6px] rotate-45' : ''}`} />
-              <span className={`absolute left-3 right-3 top-[21px] h-0.5 rounded bg-foreground transition-opacity ${menuOpen ? 'opacity-0' : ''}`} />
-              <span className={`absolute left-3 right-3 top-[27px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? '-translate-y-[6px] -rotate-45' : ''}`} />
+              <span className={`absolute left-[14px] right-[14px] top-[17px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? 'translate-y-[6px] rotate-45' : ''}`} />
+              <span className={`absolute left-[14px] right-[14px] top-[23px] h-0.5 rounded bg-foreground transition-opacity ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`absolute left-[14px] right-[14px] top-[29px] h-0.5 rounded bg-foreground transition-transform duration-500 ${menuOpen ? '-translate-y-[6px] -rotate-45' : ''}`} />
             </button>
           </div>
         </nav>

@@ -21,7 +21,7 @@ const Emblem = () => (
         <line key={i} x1="50" y1="6" x2="50" y2={i % 5 === 0 ? 12 : 9} transform={`rotate(${i * 6} 50 50)`} />
       ))}
     </svg>
-    <Logo />
+    <Logo size={46} />
   </div>
 );
 
@@ -41,8 +41,7 @@ const Contact = () => {
     { id: 'cv', label: 'CV', value: t('contact.cvValue'), href: '/mon-cv.pdf', external: true, cursor: t('ui.view') },
   ], [t]);
 
-  // Intro : les courbes de niveau se dessinent, les mots se déroulent l'un après l'autre,
-  // puis le tracé orange traverse le premier lien.
+  // Intro : les courbes de niveau se dessinent, puis les mots se déroulent l'un après l'autre.
   useLayoutEffect(() => {
     const root = hero.current;
     if (!root) return;
@@ -130,7 +129,7 @@ const Contact = () => {
               <a href={`mailto:${EMAIL}`} className="btn-neon">
                 <Mail className="h-4 w-4" /> {t('contact.collabButton')}
               </a>
-              <button type="button" onClick={copyEmail} className="btn-ghost">
+              <button type="button" onClick={copyEmail} className="btn-ghost liquid">
                 <Copy className="h-4 w-4" /> {t('contact.copy')}
               </button>
             </div>

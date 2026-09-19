@@ -182,9 +182,16 @@ Fichiers : `src/pages/Chatbot.tsx` et `src/lib/jarvisContext.ts`.
 
 ### Verre liquide
 Fichier : `src/components/fx/LiquidGlass.tsx`.
-- Tout élément `.liquid` ou `[data-liquid]` reçoit un filtre SVG `feDisplacementMap` calculé à sa taille. Sur **Chrome / Edge**, cela donne une vraie réfraction du contenu, avec une légère aberration chromatique.
-- Ailleurs (Safari, Firefox), c'est un verre transparent en CSS seul.
-- Un reflet suit la souris. La variante `.liquid-strong` est plus teintée, pour les étiquettes posées sur des images.
+- Tout élément `.liquid` ou `[data-liquid]` reçoit un filtre SVG `feDisplacementMap` dans `backdrop-filter`. Sa carte de déplacement est **calculée pixel par pixel dans un canvas** (`displacementMap()`), d'après la taille et l'arrondi de l'élément :
+  - profil de lentille convexe : forte courbure sur la tranche (`band`, `edgeShift`, puissance 2,4) ;
+  - léger effet loupe au centre (`zoom`) ;
+  - aberration chromatique (rouge, vert et bleu décalés).
+- Sur **Chrome / Edge**, le fond est réellement réfracté, en direct. Le flou est presque nul (0,6 px).
+- Ailleurs (Safari, Firefox), le verre est transparent, en CSS seul (flou de 1,5 px).
+- Le verre est dessiné par la réfraction, un liseré brillant (`::before`, lumière en haut à gauche et rebond en bas à droite), un filet de lumière en haut, une lueur au bas (`--lg-caustic`) et une ombre portée. La teinte est presque nulle (`--lg-tint`).
+- Un reflet suit la souris (`::after`, proportionnel à l'élément).
+- La variante `.liquid-strong` reste plus teintée et plus floue, pour les étiquettes posées sur des images.
+- Le profil de réfraction s'inspire du shader de [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT). La bibliothèque elle-même n'est pas utilisée : elle réfracte une **capture figée** de la page (html2canvas), qui ne voit ni la planète WebGL, ni les animations, ni le défilement.
 
 ### Logo et favicon
 - `src/components/Logo.tsx` : F penché sur un globe filaire relié en réseau. C'est l'emblème d'origine, redessiné en vectoriel. Les méridiens tournent et un paquet circule entre les nœuds.

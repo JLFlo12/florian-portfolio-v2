@@ -261,58 +261,74 @@
   .btn-ghost:hover { border-color: hsl(var(--primary)); transform: translateY(-2px); background-color: hsl(var(--primary) / .08); }
 
   /* ——— Verre liquide (voir components/fx/LiquidGlass.tsx) ———
-     Très transparent : teinte légère, reflets sur les bords, ombre douce.
-     Lisibilité : le fond vu à travers est un peu assombri (clair en mode clair). */
+     Du verre, pas du givre : presque pas de flou ni de teinte. Ce qui le dessine :
+     la réfraction sur la tranche (Chrome / Edge), un liseré brillant (::before),
+     un filet de lumière en haut, une lueur au bas (caustique) et une ombre portée. */
   :root {
-    --lg-tint: 36 40% 98% / .30;
-    --lg-edge: 0 0% 100% / .65;
-    --lg-hi: 0 0% 100% / .9;
-    --lg-bright: 1.07;
-    --lg-shadow: 25 30% 25% / .18;
+    --lg-tint: 0 0% 100% / .03;
+    --lg-edge: 0 0% 100% / .6;
+    --lg-hi: 0 0% 100% / .95;
+    --lg-rim-a: 0 0% 100% / .95;
+    --lg-rim-b: 0 0% 100% / .65;
+    --lg-caustic: 0 0% 100% / .4;
+    --lg-bright: 1;
+    --lg-shadow: 25 35% 25% / .2;
   }
   .dark {
-    --lg-tint: 30 18% 5% / .20;
-    --lg-edge: 0 0% 100% / .13;
-    --lg-hi: 0 0% 100% / .32;
-    --lg-bright: .8;
-    --lg-shadow: 0 0% 0% / .55;
+    --lg-tint: 30 18% 5% / .06;
+    --lg-edge: 0 0% 100% / .09;
+    --lg-hi: 0 0% 100% / .42;
+    --lg-rim-a: 0 0% 100% / .55;
+    --lg-rim-b: 0 0% 100% / .24;
+    --lg-caustic: 0 0% 100% / .12;
+    --lg-bright: .97;
+    --lg-shadow: 0 0% 0% / .6;
   }
   .liquid {
     position: relative; isolation: isolate;
     background-color: transparent;
     background-image:
-      linear-gradient(155deg, hsl(0 0% 100% / .11) 0%, hsl(0 0% 100% / .03) 35%, transparent 55%, hsl(0 0% 100% / .05) 100%),
+      linear-gradient(160deg, hsl(0 0% 100% / .04) 0%, transparent 40%),
       linear-gradient(hsl(var(--lg-tint)), hsl(var(--lg-tint)));
     border: 1px solid hsl(var(--lg-edge));
     --lg-box:
       inset 0 1px 0 hsl(var(--lg-hi)),
-      inset 0 -1px 1px hsl(0 0% 100% / .07),
-      inset 0 0 18px hsl(0 0% 100% / .05),
-      0 14px 34px -16px hsl(var(--lg-shadow));
+      inset 0 -10px 16px -14px hsl(var(--lg-caustic)),
+      0 1px 2px hsl(var(--lg-shadow)),
+      0 12px 28px -14px hsl(var(--lg-shadow));
     box-shadow: var(--lg-box);
-    -webkit-backdrop-filter: blur(12px) saturate(180%) brightness(var(--lg-bright));
-    backdrop-filter: blur(12px) saturate(180%) brightness(var(--lg-bright));
+    -webkit-backdrop-filter: blur(1.5px) saturate(170%) brightness(var(--lg-bright));
+    backdrop-filter: blur(1.5px) saturate(170%) brightness(var(--lg-bright));
   }
   .liquid[role="menu"] { box-shadow: var(--lg-box); } /* menus Radix : remplace leur ombre par défaut */
   /* Lisibilité : léger halo autour du texte (sauf sur les pastilles orange pleines) */
-  .liquid { text-shadow: 0 0 14px hsl(var(--background) / .5); }
+  .liquid { text-shadow: 0 0 10px hsl(var(--background) / .55); }
   .liquid .bg-primary { text-shadow: none; }
+  /* Liseré brillant : lumière forte en haut à gauche, rebond plus faible en bas à droite */
+  .liquid::before {
+    content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; pointer-events: none;
+    padding: 1.5px;
+    background: linear-gradient(135deg, hsl(var(--lg-rim-a)) 0%, hsl(0 0% 100% / 0) 30%, hsl(0 0% 100% / 0) 62%, hsl(var(--lg-rim-b)) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
   /* Variante plus teintée pour les petites étiquettes posées sur des images */
-  .liquid-strong { --lg-tint: 36 40% 98% / .66; --lg-bright: 1.2; }
-  .dark .liquid-strong { --lg-tint: 30 18% 5% / .58; --lg-bright: .5; }
-  /* Reflet qui suit la souris */
+  .liquid-strong { --lg-tint: 36 40% 98% / .62; --lg-bright: 1.15; }
+  .dark .liquid-strong { --lg-tint: 30 18% 5% / .5; --lg-bright: .6; }
+  /* Reflet qui suit la souris (proportionnel à l'élément : il ne voile jamais tout le verre) */
   .liquid::after {
     content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
-    background: radial-gradient(160px circle at var(--lx, 22%) var(--ly, -20%), hsl(0 0% 100% / .2), transparent 70%);
+    background: radial-gradient(circle at var(--lx, 22%) var(--ly, -20%), hsl(0 0% 100% / .13), transparent 42%);
   }
-  /* Chrome / Edge : vraie réfraction, presque pas de flou */
+  /* Chrome / Edge : vraie réfraction du fond, flou quasi nul */
   .has-liquid .liquid, .has-liquid [data-liquid] {
-    -webkit-backdrop-filter: var(--lg-filter,) blur(2.5px) saturate(190%) brightness(var(--lg-bright));
-    backdrop-filter: var(--lg-filter,) blur(2.5px) saturate(190%) brightness(var(--lg-bright));
+    -webkit-backdrop-filter: var(--lg-filter,) blur(.6px) saturate(165%) brightness(var(--lg-bright));
+    backdrop-filter: var(--lg-filter,) blur(.6px) saturate(165%) brightness(var(--lg-bright));
   }
   .has-liquid .liquid-strong {
-    -webkit-backdrop-filter: var(--lg-filter,) blur(5px) saturate(160%) brightness(var(--lg-bright));
-    backdrop-filter: var(--lg-filter,) blur(5px) saturate(160%) brightness(var(--lg-bright));
+    -webkit-backdrop-filter: var(--lg-filter,) blur(3px) saturate(150%) brightness(var(--lg-bright));
+    backdrop-filter: var(--lg-filter,) blur(3px) saturate(150%) brightness(var(--lg-bright));
   }
   @media (prefers-reduced-transparency: reduce) {
     .liquid { --lg-tint: var(--background) / .92; }

@@ -4,12 +4,14 @@ import { hasFinePointer } from '@/lib/motion';
 /* ───────────────────────────────────────────────────────────────
    Verre liquide
    Tout élément .liquid (ou [data-liquid]) devient une lentille :
-   - sur Chrome / Edge : le contenu derrière est vraiment réfracté sur les
-     bords (filtre SVG feDisplacementMap dans backdrop-filter), avec une
-     légère aberration chromatique (rouge, vert et bleu décalés) ;
+   - sur Chrome / Edge : le contenu derrière est vraiment réfracté, en direct
+     (filtre SVG feDisplacementMap dans backdrop-filter) : forte courbure sur
+     la tranche, léger effet loupe au centre, aberration chromatique ;
    - ailleurs (Safari, Firefox) : verre transparent en CSS seul (voir index.css).
-   Chaque élément a son propre filtre, recalculé quand sa taille change.
-   Le reflet (::after) suit la souris sur ordinateur.
+   Chaque élément a sa propre carte de déplacement, recalculée quand sa taille change.
+   Le reflet (::after) suit la souris sur ordinateur ; le liseré brillant est en CSS (::before).
+   Profil de réfraction inspiré du shader de liquid-glass-js (dashersw, licence MIT),
+   mais appliqué au fond réel : cette bibliothèque réfracte une capture figée de la page.
    ─────────────────────────────────────────────────────────────── */
 
 const SELECTOR = '.liquid, [data-liquid]';
@@ -23,22 +25,57 @@ const isChromium = () => {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-/* Carte de déplacement : gris neutre au centre (aucun décalage),
-   dégradés rouge (axe X) et bleu (axe Y) sur une bande le long des bords. */
-const displacementMap = (w: number, h: number, r: number, edge: number) => {
-  const inner = Math.max(r - edge, 0);
-  const svg = `<svg xmlns="${SVG_NS}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
-    + '<defs>'
-    + '<linearGradient id="x"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#f00"/></linearGradient>'
-    + '<linearGradient id="y" x2="0" y2="1"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#00f"/></linearGradient>'
-    + `<filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${(edge / 2.4).toFixed(1)}"/></filter>`
-    + '</defs>'
-    + `<rect width="${w}" height="${h}" fill="#000"/>`
-    + `<rect width="${w}" height="${h}" rx="${r}" fill="url(#x)"/>`
-    + `<rect width="${w}" height="${h}" rx="${r}" fill="url(#y)" style="mix-blend-mode:screen"/>`
-    + `<rect x="${edge}" y="${edge}" width="${Math.max(w - edge * 2, 0)}" height="${Math.max(h - edge * 2, 0)}" rx="${inner}" fill="#808080" filter="url(#b)"/>`
-    + '</svg>';
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+/* Carte de déplacement d'une lentille convexe, calculée pixel par pixel.
+   Pour chaque point : distance au bord arrondi et direction vers l'intérieur.
+   - Sur une bande le long du bord, le fond est pris plus à l'intérieur, de plus en plus
+     fort vers la tranche (courbe du verre) : le contenu s'y tord et s'y comprime.
+   - Partout, un léger rapprochement vers le centre : effet loupe.
+   Rouge = décalage horizontal, bleu = vertical, 128 = aucun décalage. */
+const displacementMap = (w: number, h: number, r: number) => {
+  const band = clamp(Math.min(w, h) * 0.34, 8, 28); // largeur de la tranche courbe (px)
+  const edgeShift = band * 0.85;                    // décalage maximal sur le bord (px)
+  const zoom = Math.min(w, h) >= 36 ? 0.045 : 0;    // grossissement au centre
+  const scale = Math.ceil((edgeShift + zoom * Math.max(w, h) / 2) * 2 + 2);
+  const hx = w / 2, hy = h / 2;
+
+  const raw = document.createElement('canvas');
+  raw.width = w; raw.height = h;
+  const image = raw.getContext('2d')!.createImageData(w, h);
+  const data = image.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = x + 0.5 - hx, py = y + 0.5 - hy;
+      const qx = Math.abs(px) - (hx - r), qy = Math.abs(py) - (hy - r);
+      const depth = r - Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - Math.min(Math.max(qx, qy), 0);
+      let vx = 0, vy = 0;
+      if (depth > 0) {
+        let nx: number, ny: number; // direction vers l'intérieur
+        if (qx > 0 && qy > 0) { const l = Math.hypot(qx, qy); nx = (-Math.sign(px) * qx) / l; ny = (-Math.sign(py) * qy) / l; }
+        else if (qx > qy) { nx = -Math.sign(px); ny = 0; }
+        else { nx = 0; ny = -Math.sign(py); }
+        const t = Math.max(0, 1 - depth / band);
+        const bend = edgeShift * Math.pow(t, 2.4); // courbure concentrée sur la tranche
+        vx = nx * bend - px * zoom;
+        vy = ny * bend - py * zoom;
+      }
+      const i = (y * w + x) * 4;
+      data[i] = 127.5 + (vx / scale) * 255;
+      data[i + 1] = 128;
+      data[i + 2] = 127.5 + (vy / scale) * 255;
+      data[i + 3] = 255;
+    }
+  }
+  raw.getContext('2d')!.putImageData(image, 0, 0);
+
+  // Léger adoucissement : pas d'arête visible là où deux bords se rejoignent
+  const map = document.createElement('canvas');
+  map.width = w; map.height = h;
+  const ctx = map.getContext('2d')!;
+  ctx.fillStyle = 'rgb(128,128,128)';
+  ctx.fillRect(0, 0, w, h);
+  ctx.filter = 'blur(1px)';
+  ctx.drawImage(raw, 0, 0);
+  return { href: map.toDataURL(), scale };
 };
 
 interface Lens { id: string; filter: SVGFilterElement; image: SVGFEImageElement; maps: SVGFEDisplacementMapElement[]; key: string }
@@ -46,8 +83,8 @@ interface Lens { id: string; filter: SVGFilterElement; image: SVGFEImageElement;
 // Un canal (rouge, vert ou bleu) déplacé séparément : c'est ce qui crée les franges colorées
 const CHANNELS = [
   { matrix: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0', factor: 1 },
-  { matrix: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0', factor: 0.93 },
-  { matrix: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0', factor: 0.86 },
+  { matrix: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0', factor: 0.95 },
+  { matrix: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0', factor: 0.9 },
 ];
 
 const createLens = (defs: SVGDefsElement, id: string): Lens => {
@@ -114,9 +151,7 @@ const LiquidGlass = () => {
         const key = `${w}x${h}r${r}`;
         if (key === lens.key) return;
         lens.key = key;
-        const edge = clamp(Math.min(w, h) * 0.24, 6, 22); // largeur de la bande qui réfracte
-        const scale = -edge * 2.4;                        // force de la déviation
-        const href = displacementMap(w, h, r, edge);
+        const { href, scale } = displacementMap(w, h, r);
         // La carte est décodée avant d'être branchée : pas d'image vide = pas de saut du fond
         const img = new Image();
         img.src = href;

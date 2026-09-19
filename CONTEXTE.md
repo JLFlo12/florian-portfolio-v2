@@ -85,8 +85,11 @@ Pour pousser : `git push v2 refonte-moderne:main`.
   Hubot Sans et Mona Sans sont préchargées dans `index.html`. Il n'y a plus aucune requête vers Google Fonts.
 - **Classes utiles** (`src/index.css`) : `container-x`, `section-y`, `display-xl`, `title-xl`, `serif-accent`, `label-mono`, `led`, `eyebrow`, `hud-frame`, `hud-panel`, `panel`, `btn-neon`, `btn-ghost`, `chip`, `liquid`, `liquid-strong`, `field`, `field__input`, `email-text`, `cv-*`, `track-*`, `dive-*`, `tools-*`, `tool-card`.
 - **Animations** (`src/lib/motion.tsx`) :
-  - attributs `data-reveal`, `data-stagger` (dont `flip`), `data-split`, `data-rule` et `data-count`, activés par `useReveal(ref)` ;
-  - aussi `magnetic()`, `scrambleText()` (annule l'appel précédent sur le même élément) et `SplitText` / `AccentTitle`.
+  - attributs `data-reveal`, `data-stagger` (dont `flip`), `data-band`, `data-rule` et `data-count`, activés par `useReveal(ref)` ;
+  - **`data-band` : bande de couleur façon landonorris.com.** Sur chaque ligne, une bande orange arrive de la gauche, couvre la ligne, puis se retire vers la droite en laissant le texte derrière elle. La valeur de l'attribut est un délai en secondes (ex. `data-band="0.35"`). Elle sert aux titres (`AccentTitle`, prop `band`), aux surtitres, aux intros de section, à la phrase d'intro d'À propos et aux sous-titres ;
+  - les lignes sont mesurées au moment de l'animation (`Range.getClientRects`), sans découper le texte, pour que React garde la main dessus (le changement de langue marche toujours). Le texte reste caché (`visibility`) jusqu'à ce que toutes ses lignes soient couvertes ;
+  - une bande lancée n'est ni coupée ni rejouée quand la page relance ses animations (ex. projets chargés depuis Supabase) : `gsap.context().ignore()` et le `WeakSet` `banded` ;
+  - aussi `magnetic()`, `scrambleText()` (annule l'appel précédent sur le même élément) et `AccentTitle`.
 - **Accessibilité** :
   - `prefers-reduced-motion` coupe les animations, la plongée et le préchargeur ;
   - `prefers-reduced-transparency` rend le verre opaque.
@@ -133,7 +136,14 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - mots « Réseaux / Systèmes / Cybersécurité » qui traversent l'écran ;
   - phrase « Voici avec quoi *je travaille* » construite lettre par lettre.
 
+  - sous la phrase, **Jarvis tape un message** (« Accès autorisé. 23 outils chargés, 10 catégories… »), avec un curseur plein. Les chiffres sont calculés depuis `tools.tsx` ;
+  - un **cercle se dessine autour de « Défile »** (flèche qui oscille).
+
   Tout est piloté par `gsap.ticker` et marche dans les deux sens.
+- **Manifeste** (`src/components/Manifesto.tsx`, en haut de la section Outils), façon landonorris.com :
+  - logo, puis « BUT R&T · Cyber · depuis 2024 », puis une grande phrase centrée en capitales ;
+  - les mots d'accent sont en italique orange. Dans la traduction (`home.manifesto`), `*mot*` marque un mot d'accent ;
+  - les mots s'allument un à un au fil du défilement (ScrollTrigger `scrub`).
 - **Outils : toile holographique « façon Jarvis »** (`src/components/ToolsSection.tsx`, données dans `src/data/tools.tsx`, styles `.tools-*` / `.tool-card` dans `index.css`) :
   - les outils forment un **anneau 3D en CSS** (pas de three.js) posé au-dessus d'un socle de projecteur ;
   - on le fait pivoter en le glissant (souris ou doigt, même en attrapant une carte), avec le pavé tactile (deux doigts à l'horizontale), les flèches du clavier ou les boutons précédent / suivant ;
@@ -192,6 +202,14 @@ Fichier : `src/components/fx/LiquidGlass.tsx`.
 - Un reflet suit la souris (`::after`, proportionnel à l'élément).
 - La variante `.liquid-strong` reste plus teintée et plus floue, pour les étiquettes posées sur des images.
 - Le profil de réfraction s'inspire du shader de [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT). La bibliothèque elle-même n'est pas utilisée : elle réfracte une **capture figée** de la page (html2canvas), qui ne voit ni la planète WebGL, ni les animations, ni le défilement.
+
+### Musique d'ambiance
+Fichiers : `src/lib/ambient.ts` et `src/components/SoundToggle.tsx` (bouton dans les réglages de l'en-tête et du menu mobile).
+- **Générée en direct avec Web Audio** : aucun fichier audio, rien à télécharger, pas de droits d'auteur.
+- Nappes douces en accords de 9e (ré, si mineur, sol, la), basse ronde, notes de cloche espacées avec écho, réverbération. Environ -26 dB en moyenne, fondu d'entrée de 5 s.
+- Les navigateurs bloquent le son avant une interaction : la musique démarre au premier clic ou à la première touche. Le bouton (barres d'égaliseur) la coupe ou la relance, et le choix est mémorisé (`localStorage` `florian-sound`).
+- Pause automatique quand l'onglet est caché.
+- Inspiré des boutons son de lisa.locomotive.ca et why.zero.university.
 
 ### Logo et favicon
 - `src/components/Logo.tsx` : F penché sur un globe filaire relié en réseau. C'est l'emblème d'origine, redessiné en vectoriel. Les méridiens tournent et un paquet circule entre les nœuds.

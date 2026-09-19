@@ -1,16 +1,22 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrowDown } from 'lucide-react';
 import { gsap, prefersReducedMotion } from '@/lib/motion';
 import { planetState } from '@/components/three/planetState';
+import { TOOLS } from '@/data/tools';
 
 /* ───────────────────────────────────────────────────────────────
    Habillage de la plongée vers les outils (au-dessus de la planète) :
    - télémétrie d'atterrissage : altitude, vitesse, cible, progression, statut ;
    - réticule qui se verrouille sur La Réunion au centre de l'écran ;
    - trois mots qui traversent l'écran, puis une phrase qui se construit
-     lettre par lettre dans la lueur finale.
+     lettre par lettre dans la lueur finale ;
+   - sous la phrase, Jarvis tape un message (curseur plein), puis un cercle
+     se dessine autour de l'invitation à défiler.
    Tout suit planetState.dive (0 → 1, piloté par le scroll), dans les deux sens.
    ─────────────────────────────────────────────────────────────── */
+
+const RING = 2 * Math.PI * 34; // périmètre du cercle de l'invitation à défiler
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const range = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
@@ -29,8 +35,10 @@ const DiveOverlay = () => {
     top: useRef<HTMLDivElement>(null), left: useRef<HTMLDivElement>(null), right: useRef<HTMLDivElement>(null),
     phase: useRef<HTMLSpanElement>(null), alt: useRef<HTMLSpanElement>(null), speed: useRef<HTMLSpanElement>(null),
     pct: useRef<HTMLSpanElement>(null), bar: useRef<HTMLElement>(null), reticle: useRef<HTMLDivElement>(null),
-    line: useRef<HTMLDivElement>(null),
+    line: useRef<HTMLDivElement>(null), jarvis: useRef<HTMLParagraphElement>(null), typed: useRef<HTMLSpanElement>(null),
+    hint: useRef<HTMLDivElement>(null), ring: useRef<SVGCircleElement>(null),
   };
+  const message = t('home.dive.jarvis', { tools: TOOLS.length, categories: new Set(TOOLS.map((tool) => tool.category)).size });
   const wordRefs = useRef<(HTMLParagraphElement | null)[]>([]);
 
   useEffect(() => {
@@ -86,12 +94,20 @@ const DiveOverlay = () => {
         c.style.opacity = String(p);
         c.style.transform = `translate3d(0, ${(1 - p) * 0.6}em, 0) rotateX(${(1 - p) * -70}deg)`;
       });
+
+      // Jarvis tape son message sous la phrase
+      if (r.jarvis) r.jarvis.style.opacity = String(smooth(d, 0.84, 0.88));
+      write('typed', r.typed, message.slice(0, Math.round(range(d, 0.86, 0.975) * message.length)));
+
+      // Cercle qui se dessine autour de l'invitation à défiler
+      if (r.hint) r.hint.style.opacity = String(smooth(d, 0.9, 0.95));
+      if (r.ring) r.ring.style.strokeDashoffset = (RING * (1 - smooth(d, 0.9, 1))).toFixed(1);
     };
 
     gsap.ticker.add(tick);
     return () => gsap.ticker.remove(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language]);
+  }, [i18n.language, message]);
 
   if (typeof window !== 'undefined' && prefersReducedMotion()) return null;
 
@@ -146,6 +162,23 @@ const DiveOverlay = () => {
       <div ref={refs.line} className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center [perspective:800px]">
         <p className="serif-accent text-[clamp(2rem,5.6vw,4.6rem)] leading-none">{split(t('home.dive.line1'))}</p>
         <p className="display-xl mt-2 text-[clamp(2.4rem,8.6vw,8rem)]">{split(t('home.dive.line2'))}</p>
+      </div>
+
+      {/* Sous la phrase : message de Jarvis, puis invitation à défiler */}
+      <div className="absolute inset-x-0 top-[calc(50%+clamp(5.5rem,9.5vw,9.5rem))] flex flex-col items-center gap-[clamp(2rem,5vh,3.5rem)] px-6 text-center">
+        <p ref={refs.jarvis} className="dive-jarvis opacity-0">
+          <span className="text-primary">JARVIS ›</span> <span ref={refs.typed} /><span className="dive-caret" />
+        </p>
+        <div ref={refs.hint} className="flex flex-col items-center gap-3 opacity-0">
+          <span className="relative grid h-[76px] w-[76px] place-items-center">
+            <svg className="absolute inset-0 -rotate-90" viewBox="0 0 76 76" fill="none">
+              <circle cx="38" cy="38" r="34" stroke="hsl(var(--foreground) / .12)" strokeWidth="1" />
+              <circle ref={refs.ring} cx="38" cy="38" r="34" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={RING} />
+            </svg>
+            <ArrowDown className="dive-hint-arrow h-5 w-5 text-foreground" strokeWidth={1.5} />
+          </span>
+          <span className="label-mono tracking-[.3em]">{t('home.dive.scroll')}</span>
+        </div>
       </div>
     </div>
   );

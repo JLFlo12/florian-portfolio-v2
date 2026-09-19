@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Hand, Pause, Play } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import SectionHeading from '@/components/SectionHeading';
+import Manifesto from '@/components/Manifesto';
 import { TOOLS, type Tool } from '@/data/tools';
 import { gsap, prefersReducedMotion, scrambleText, useReveal } from '@/lib/motion';
 
@@ -366,7 +367,8 @@ const ToolsSection = () => {
     <section ref={section} className="section-y relative">
       {/* Lueur d'arrivée : prolonge le voile orange de la fin de plongée */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[90vh] bg-[radial-gradient(70%_45%_at_50%_42%,hsl(var(--primary)/.12),transparent_70%)] [mask-image:linear-gradient(to_bottom,transparent,#000_35%)]" aria-hidden="true" />
-      <div className="container-x relative">
+      <Manifesto />
+      <div className="container-x relative mt-[clamp(6rem,14vw,11rem)]">
         <SectionHeading index="01" label="tools" title={t('home.toolsTitle')} lede={t('home.toolsHint')} />
 
         {/* Filtres par catégorie */}

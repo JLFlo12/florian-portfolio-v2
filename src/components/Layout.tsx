@@ -16,6 +16,7 @@ import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Cursor from '@/components/fx/Cursor';
 import Preloader from '@/components/fx/Preloader';
 import LiquidGlass from '@/components/fx/LiquidGlass';
+import SoundToggle from '@/components/SoundToggle';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
 interface LayoutProps {
@@ -117,6 +118,9 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
       >
         <Gamepad2 className="h-4 w-4" />
       </Link>
+
+      {/* Musique d'ambiance */}
+      <SoundToggle />
 
       {/* Thème */}
       <button

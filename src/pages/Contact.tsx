@@ -8,6 +8,7 @@ import ContactForm from '@/components/ContactForm';
 import { CONTACT } from '@/data/profile';
 import TrackLinks, { TrackItem } from '@/components/TrackLinks';
 import TopoLines from '@/components/fx/TopoLines';
+import Sakura from '@/components/fx/Sakura';
 import { useReunionTime } from '@/components/Footer';
 import { gsap, hasFinePointer, prefersReducedMotion, useReveal } from '@/lib/motion';
 import { isReady, onReady } from '@/lib/ready';
@@ -91,7 +92,9 @@ const Contact = () => {
   };
 
   return (
-    <div ref={page} className="pb-24">
+    <div ref={page} className="relative overflow-x-clip pb-24">
+      {/* Cerisier en fleurs et pétales qui tombent */}
+      <Sakura />
       {/* ——— Contacts façon "piste" ——— */}
       <section ref={hero} className="relative isolate flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 pb-[clamp(24px,5vh,56px)] pt-[calc(var(--nav-h)+clamp(8px,3vh,40px))] text-center">
         <TopoLines ref={topo} className="topo pointer-events-none absolute -inset-8 -z-10 h-[calc(100%+4rem)] w-[calc(100%+4rem)]" />

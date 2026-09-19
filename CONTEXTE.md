@@ -215,6 +215,14 @@ Fichiers : `src/lib/ambient.ts` et `src/components/SoundToggle.tsx` (bouton dans
 - `src/components/Logo.tsx` : F penché sur un globe filaire relié en réseau. C'est l'emblème d'origine, redessiné en vectoriel. Les méridiens tournent et un paquet circule entre les nœuds.
 - `public/favicon.svg` : même dessin, fixe.
 
+### Sakura (pages Jeux et Contact)
+Fichier : `src/components/fx/Sakura.tsx`, styles `.sakura-*` / `.sk-*` dans `index.css`, couleurs `--sakura-*` (clair et sombre).
+- Une branche de cerisier en fleurs sort du bord droit, sous l'en-tête. Elle est générée avec une graine fixe (toujours la même), dessinée en SVG, pousse à l'arrivée (fleurs qui éclosent), puis se balance doucement.
+- Des pétales tombent sur tout l'écran (canvas fixe) : ils tournoient et se retournent, suivent le vent (rafales avec traînées), s'écartent de la souris et suivent un peu le défilement.
+- Frôler une fleur avec la souris la fait frissonner et lâcher des pétales.
+- Pendant une partie : pétales derrière le jeu, moins nombreux, branche estompée.
+- ⚠️ Les classes des couleurs (`sk-c0/1/2`) sont écrites en entier dans le code (`TINTS`) : Tailwind supprime les classes qu'il ne trouve pas écrites telles quelles.
+
 ### Autres pages
 Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style, avec la même logique qu'avant (hooks Supabase, admin, galeries, Canva).
 

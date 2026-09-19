@@ -99,6 +99,11 @@
     /* ——— Réglages non-couleur ——— */
     --online: 145 70% 42%;
     --tool-shadow: 0 1px 0 hsl(0 0% 100% / .8) inset, 0 18px 38px -22px hsl(24 45% 30% / .38);
+    --sakura-wood: 20 34% 36%;
+    --sakura-2: 24 96% 60%;
+    --sakura-3: 20 92% 74%;
+    --sakura-core: 14 80% 36%;
+    --sakura-edge: 16 70% 36% / .4;
     --ease-out: cubic-bezier(.16, 1, .3, 1);
     --gutter: clamp(16px, 4vw, 48px);
     --nav-h: 76px;
@@ -137,6 +142,11 @@
 
     --online: 145 70% 55%;
     --tool-shadow: none;
+    --sakura-wood: 20 30% 46%;
+    --sakura-2: 26 100% 68%;
+    --sakura-3: 32 100% 84%;
+    --sakura-core: 14 85% 38%;
+    --sakura-edge: 0 0% 0% / .3;
   }
 }
 
@@ -208,6 +218,32 @@
     text-wrap: balance;
   }
   .manifesto .serif-accent { font-size: 1.14em; line-height: .8; padding-right: 0; }
+
+  /* Sakura (page Jeux) : branche en SVG + pétales qui tombent (components/fx/Sakura.tsx) */
+  .sakura-branch {
+    position: absolute; top: calc(var(--nav-h) - 8px); right: 0; z-index: 0; pointer-events: none; /* sous l'en-tête : ses boutons restent lisibles */
+    width: min(46vw, 660px); height: auto; overflow: visible;
+    transition: opacity .8s;
+  }
+  .sakura-branch.is-calm { opacity: .35; }
+  @media (max-width: 767px) { .sakura-branch { width: 68vw; opacity: .5; } } /* reste derrière les titres sans les gêner */
+  .sakura-sway { transform-box: view-box; transform-origin: 100% 0; animation: sk-sway 9s ease-in-out infinite alternate; }
+  @keyframes sk-sway { from { transform: rotate(-1.2deg); } to { transform: rotate(1.6deg); } }
+  .sk-seg {
+    stroke: hsl(var(--sakura-wood)); stroke-linecap: round; fill: none;
+    stroke-dasharray: var(--l); stroke-dashoffset: var(--l);
+    animation: sk-draw .28s linear var(--d) forwards;
+  }
+  @keyframes sk-draw { to { stroke-dashoffset: 0; } }
+  .sk-bloom { transform-box: fill-box; transform-origin: center; animation: sk-pop .8s cubic-bezier(.34, 1.56, .64, 1) var(--d) both; }
+  @keyframes sk-pop { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sakura-branch use { stroke: hsl(var(--sakura-edge)); stroke-width: .045; }
+  .sk-c0 { fill: hsl(var(--primary)); }
+  .sk-c1 { fill: hsl(var(--sakura-2)); }
+  .sk-c2 { fill: hsl(var(--sakura-3)); }
+  .sk-core { fill: hsl(var(--sakura-core)); stroke: none; }
+  .sakura-petals { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 30; pointer-events: none; transition: opacity .6s; }
+  .sakura-petals.is-calm { z-index: 0; opacity: .7; }
 
   /* Bouton de musique : barres d'égaliseur */
   .sound-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }

@@ -7,6 +7,7 @@ import SnakeGame from '@/components/games/SnakeGame';
 import GuessBuilding from '@/components/games/GuessBuilding';
 import TowerCrane from '@/components/games/TowerCrane';
 import SectionHeading from '@/components/SectionHeading';
+import Sakura from '@/components/fx/Sakura';
 import { gsap, prefersReducedMotion, useReveal } from '@/lib/motion';
 
 interface GameCard {
@@ -102,8 +103,10 @@ const Games = () => {
   };
 
   return (
-    <div ref={page} className="pb-24 pt-[calc(var(--nav-h)+56px)]">
-      <div className="container-x">
+    <div ref={page} className="relative overflow-x-clip pb-24 pt-[calc(var(--nav-h)+56px)]">
+      {/* Cerisier en fleurs et pétales qui tombent (plus discrets pendant une partie) */}
+      <Sakura calm={!!activeGame} />
+      <div className="container-x relative z-[1]">
         <div ref={stage}>
           {activeGame ? (
             renderGame()

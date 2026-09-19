@@ -25,7 +25,7 @@ const About = () => {
       {/* ——— En-tête ——— */}
       <section className="container-x">
         <SectionHeading as="h1" index="//" label="about" title={t('about.title')} />
-        <p className="mt-14 max-w-5xl font-sans text-[clamp(1.7rem,4.2vw,3.6rem)] font-medium leading-[1.1] tracking-[-.035em] [font-stretch:108%]" data-reveal>
+        <p className="mt-14 max-w-5xl font-sans text-[clamp(1.7rem,4.2vw,3.6rem)] font-medium leading-[1.1] tracking-[-.035em] [font-stretch:108%]" data-band="0.4">
           {introWords.slice(0, -1).join(' ')}{' '}
           <span className="serif-accent">{introWords.slice(-1)}</span>
         </p>
@@ -34,7 +34,7 @@ const About = () => {
       {/* ——— Formation ——— */}
       <section className="container-x section-y !pb-0">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
-          <h2 className="flex items-baseline gap-4 font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-reveal>
+          <h2 className="flex items-baseline gap-4 self-start font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band>
             <span className="led text-base text-primary">01</span> {t('about.educationTitle')}
           </h2>
           <div className="panel group p-7 lg:p-9" data-reveal>
@@ -55,7 +55,7 @@ const About = () => {
 
       {/* ——— Expertise ——— */}
       <section className="container-x section-y !pb-0">
-        <h2 className="mb-10 flex items-baseline gap-4 border-b border-border pb-5 font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-reveal>
+        <h2 className="mb-10 flex items-baseline gap-4 border-b border-border pb-5 font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band>
           <span className="led text-base text-primary">02</span> {t('about.expertiseTitle')}
         </h2>
         <div className="grid gap-5 md:grid-cols-3" data-stagger="flip">

@@ -26,7 +26,7 @@ const canvaLinks: { [key: string]: string } = {
 
 /* ——— Petits blocs réutilisés ——— */
 const BlockTitle = ({ index, children }: { index: string; children: React.ReactNode }) => (
-  <h2 className="mb-8 flex items-baseline gap-4 border-b border-border pb-4 font-display text-[clamp(1.6rem,3.4vw,2.6rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-reveal>
+  <h2 className="mb-8 flex items-baseline gap-4 border-b border-border pb-4 font-display text-[clamp(1.6rem,3.4vw,2.6rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band>
     <span className="led text-base text-primary">{index}</span> {children}
   </h2>
 );
@@ -190,12 +190,12 @@ const ProjectGallery = () => {
           {/* En-tête du projet */}
           <header className="mt-14 grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-end">
             <div>
-              <p className="eyebrow" data-reveal>
+              <p className="eyebrow" data-band>
                 <span className="eyebrow__index">{dynamicProject.status === 'completed' ? '✓' : '··'}</span>
                 <span className="eyebrow__rule" data-rule aria-hidden="true" />
                 <span className="eyebrow__label">{dynamicProject.status === 'completed' ? t('projects.completed') : t('projects.inProgress')}</span>
               </p>
-              <AccentTitle as="h1" text={dynamicProject.title} serifWords={0} className="mt-5 font-display text-[clamp(2.2rem,6vw,5.2rem)] font-extrabold uppercase leading-[.92] tracking-[-.035em] [font-stretch:118%]" />
+              <AccentTitle as="h1" text={dynamicProject.title} serifWords={0} band={0.12} className="mt-5 font-display text-[clamp(2.2rem,6vw,5.2rem)] font-extrabold uppercase leading-[.92] tracking-[-.035em] [font-stretch:118%]" />
             </div>
             <div className="space-y-5" data-reveal>
               <p className="border-l border-primary/40 pl-5 text-lg leading-relaxed text-muted-foreground">{description}</p>
@@ -294,12 +294,12 @@ const ProjectGallery = () => {
       <div className="container-x">
         <div data-reveal><BackLink /></div>
         <header className="mt-14">
-          <p className="eyebrow" data-reveal>
+          <p className="eyebrow" data-band>
             <span className="eyebrow__index">//</span>
             <span className="eyebrow__rule" data-rule aria-hidden="true" />
             <span className="eyebrow__label">projects</span>
           </p>
-          <AccentTitle as="h1" text={gallery.projectTitle} serifWords={0} className="mt-5 font-display text-[clamp(2.2rem,6vw,5.2rem)] font-extrabold uppercase leading-[.92] tracking-[-.035em] [font-stretch:118%]" />
+          <AccentTitle as="h1" text={gallery.projectTitle} serifWords={0} band={0.12} className="mt-5 font-display text-[clamp(2.2rem,6vw,5.2rem)] font-extrabold uppercase leading-[.92] tracking-[-.035em] [font-stretch:118%]" />
         </header>
 
         {canvaLink && (

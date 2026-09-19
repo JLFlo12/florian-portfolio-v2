@@ -1,4 +1,4 @@
-import React, { Fragment, useLayoutEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -15,59 +15,102 @@ export const hasFinePointer = () =>
   typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 /* ───────────────────────────────────────────────────────────────
-   <SplitText> : découpe un texte en mots puis en lettres.
-   Les lettres s'animent en 3D quand un parent porte [data-split].
-   Le texte complet reste lisible par les lecteurs d'écran (aria-label).
-   ─────────────────────────────────────────────────────────────── */
-export const SplitText = ({ text, className, hidden = false }: { text: string; className?: string; hidden?: boolean }) => {
-  const words = text.split(' ');
-  const a11y = hidden ? { 'aria-hidden': true as const } : { 'aria-label': text, role: 'text' };
-  return (
-    <span className={className} {...a11y}>
-      {words.map((word, i) => (
-        <Fragment key={`${word}-${i}`}>
-          <span className="split-word" aria-hidden="true">
-            {[...word].map((ch, j) => (
-              <span key={j} className="split-char">{ch}</span>
-            ))}
-          </span>
-          {i < words.length - 1 ? ' ' : null}
-        </Fragment>
-      ))}
-    </span>
-  );
-};
-
-/* ───────────────────────────────────────────────────────────────
    Titre de section : premier(s) mot(s) en italique à empattements,
    la suite en capitales étirées. Ex. "Mes projets" → "Mes" + "PROJETS".
+   Il apparaît avec la bande de couleur ; `band` = délai (s).
    ─────────────────────────────────────────────────────────────── */
 export const AccentTitle = ({
-  text, serifWords = 1, className = 'title-xl', as = 'h2', id,
-}: { text: string; serifWords?: number; className?: string; as?: 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div'; id?: string }) => {
+  text, serifWords = 1, className = 'title-xl', as = 'h2', id, band = 0,
+}: { text: string; serifWords?: number; className?: string; as?: 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div'; id?: string; band?: number }) => {
   const Tag = as as React.ElementType;
   const words = text.trim().split(/\s+/);
   const n = words.length > 1 ? Math.min(serifWords, words.length - 1) : 0;
   const serif = words.slice(0, n).join(' ');
   const rest = words.slice(n).join(' ');
   return (
-    <Tag className={className} id={id} data-split aria-label={text}>
-      {serif && <SplitText text={serif} className="serif-accent" hidden />}
+    <Tag className={className} id={id} data-band={band || ''} aria-label={text}>
+      {serif && <span className="serif-accent" aria-hidden="true">{serif}</span>}
       {serif && ' '}
-      <SplitText text={rest} hidden />
+      <span aria-hidden="true">{rest}</span>
     </Tag>
   );
 };
 
 /* ───────────────────────────────────────────────────────────────
+   Bande de couleur (façon landonorris.com) : sur chaque ligne du texte,
+   une bande orange arrive de la gauche et couvre la ligne, puis se retire
+   vers la droite en laissant le texte derrière elle.
+   Les lignes sont mesurées au moment de l'animation (Range.getClientRects) :
+   le texte n'est pas découpé, React garde la main sur son contenu.
+   Le texte est caché (visibility) tant que toutes les lignes ne sont pas couvertes.
+   ─────────────────────────────────────────────────────────────── */
+function textLines(el: HTMLElement) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const rects = Array.from(range.getClientRects()).filter((r) => r.width > 1 && r.height > 1).sort((a, b) => a.top - b.top);
+  const lines: { mid0: number; mid1: number; left: number; right: number; top: number; bottom: number }[] = [];
+  rects.forEach((r) => {
+    const mid = r.top + r.height / 2;
+    const line = lines.find((l) => mid >= l.mid0 && mid <= l.mid1);
+    if (line) {
+      line.left = Math.min(line.left, r.left); line.right = Math.max(line.right, r.right);
+      line.top = Math.min(line.top, r.top); line.bottom = Math.max(line.bottom, r.bottom);
+    } else {
+      lines.push({ mid0: r.top, mid1: r.bottom, left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+    }
+  });
+  const box = el.getBoundingClientRect();
+  const ox = box.left + el.clientLeft;
+  const oy = box.top + el.clientTop;
+  return lines.map((l) => {
+    const h = l.bottom - l.top;
+    const pad = h * 0.13; // l'italique déborde de sa boîte (surtout à gauche)
+    return { x: l.left - ox - pad, y: l.top - oy - h * 0.03, w: l.right - l.left + pad * 2, h: h * 1.06 };
+  });
+}
+
+export function bandReveal(el: HTMLElement, delay = 0) {
+  el.querySelectorAll(':scope > .band').forEach((band) => band.remove());
+  const lines = textLines(el);
+  if (!lines.length) { el.style.removeProperty('visibility'); return; }
+  const positioned = getComputedStyle(el).position !== 'static';
+  if (!positioned) el.style.position = 'relative';
+  const bands = lines.map(({ x, y, w, h }) => {
+    const band = document.createElement('span');
+    band.className = 'band';
+    band.setAttribute('aria-hidden', 'true');
+    Object.assign(band.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+    el.appendChild(band);
+    return band;
+  });
+  const each = 0.09;   // décalage entre deux lignes (s)
+  const cover = 0.5;   // arrivée de la bande
+  const covered = (bands.length - 1) * each + cover;
+  gsap.timeline({
+    delay,
+    onComplete: () => {
+      bands.forEach((band) => band.remove());
+      if (!positioned) el.style.removeProperty('position');
+      el.style.removeProperty('visibility');
+    },
+  })
+    .fromTo(bands, { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: cover, ease: 'power3.inOut', stagger: each }, 0)
+    .set(el, { visibility: 'visible' }, covered)
+    .set(bands, { transformOrigin: '100% 50%' }, covered)
+    .to(bands, { scaleX: 0, duration: 0.55, ease: 'power3.inOut', stagger: each }, covered);
+}
+
+/* ───────────────────────────────────────────────────────────────
    useReveal : active les animations d'apparition dans un bloc.
    - [data-reveal]   : monte et apparaît
    - [data-stagger]  : ses enfants apparaissent l'un après l'autre
-   - [data-split]    : ses lettres basculent en 3D
+   - [data-band]     : le texte apparaît derrière une bande de couleur (valeur = délai en s)
    - [data-rule]     : filet qui se dessine
    - [data-count]    : compteur de 0 à la valeur
    Relancé quand `deps` change (ex. projets chargés depuis Supabase).
    ─────────────────────────────────────────────────────────────── */
+const banded = new WeakSet<Element>();
+
 export function useReveal(scope: React.RefObject<HTMLElement>, deps: React.DependencyList = []) {
   useLayoutEffect(() => {
     const root = scope.current;
@@ -95,11 +138,15 @@ export function useReveal(scope: React.RefObject<HTMLElement>, deps: React.Depen
         }), 'top 90%');
       });
 
-      root.querySelectorAll<HTMLElement>('[data-split]').forEach((title) => {
-        const chars = title.querySelectorAll('.split-char');
-        if (!chars.length) return;
-        gsap.set(chars, { yPercent: 110, rotationX: -95, opacity: 0, transformPerspective: 700, transformOrigin: '50% 100%' });
-        once(title, () => gsap.to(chars, { yPercent: 0, rotationX: 0, opacity: 1, duration: 1.2, ease: 'expo.out', stagger: 0.022 }));
+      // Hors du contexte : une bande lancée va au bout même si le bloc relance ses animations
+      // (ex. projets arrivés de Supabase), et ne rejoue pas.
+      root.querySelectorAll<HTMLElement>('[data-band]').forEach((el) => {
+        if (banded.has(el)) return;
+        el.style.visibility = 'hidden';
+        once(el, () => {
+          banded.add(el);
+          gsap.context().ignore(() => bandReveal(el, Number(el.dataset.band) || 0));
+        });
       });
 
       root.querySelectorAll<HTMLElement>('[data-rule]').forEach((rule) => {

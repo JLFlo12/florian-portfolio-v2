@@ -72,11 +72,11 @@ const Home = () => {
 
   const SkillList = ({ title, list, index }: { title: string; list: typeof TECHNICAL_SKILLS; index: string }) => (
     <div>
-      <p className="eyebrow mb-6" data-reveal>
+      <p className="eyebrow mb-6" data-band>
         <span className="eyebrow__index">{index}</span>
         <span className="eyebrow__rule" data-rule aria-hidden="true" />
       </p>
-      <h3 className="mb-8 font-display text-[clamp(1.8rem,3.4vw,2.8rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-reveal>
+      <h3 className="mb-8 font-display text-[clamp(1.8rem,3.4vw,2.8rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band="0.12">
         {title}
       </h3>
       <ul className="divide-y divide-border border-y border-border" data-stagger>

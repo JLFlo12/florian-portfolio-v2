@@ -162,12 +162,12 @@ const Chatbot = () => {
         {/* En-tête */}
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow" data-reveal>
+            <p className="eyebrow" data-band>
               <span className="eyebrow__index">AI</span>
               <span className="eyebrow__rule" data-rule aria-hidden="true" />
               <span className="eyebrow__label">jarvis</span>
             </p>
-            <AccentTitle as="h1" text="Jarvis" serifWords={0} className="mt-4 display-xl text-[clamp(3rem,9vw,6.5rem)]" />
+            <AccentTitle as="h1" text="Jarvis" serifWords={0} band={0.12} className="mt-4 display-xl text-[clamp(3rem,9vw,6.5rem)]" />
           </div>
           <div className="hud-panel max-w-xs" data-reveal>
             <p className="flex items-center gap-2 text-foreground"><span className="status-dot" /> {t('ui.online')}</p>

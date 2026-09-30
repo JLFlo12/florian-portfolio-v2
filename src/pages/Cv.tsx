@@ -97,6 +97,20 @@ const Cv = () => {
                 ))}
               </ul>
             </Block>
+
+            <Block title={cv.labels.internships}>
+              <ul className="space-y-4">
+                {cv.internships.map((i) => (
+                  <li key={i.company}>
+                    <p className="font-semibold">{i.company}</p>
+                    <p className="cv-years">{i.years}</p>
+                    <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                      {i.items.map((item) => <li key={item} className="cv-bullet">{item}</li>)}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </Block>
           </aside>
 
           {/* Colonne principale */}

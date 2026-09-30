@@ -69,6 +69,9 @@ ${TECHNICAL_SKILLS.map((s) => `- ${s.name} : ${LEVELS[s.level]}`).join('\n')}
 ${SOFT_SKILLS.map((s) => `- ${s.name} : ${LEVELS[s.level]}`).join('\n')}
 - Autres qualités citées dans son CV : autonomie, méthodologie d'analyse, organisation.
 
+### Stage
+- ESIROI (2026) : amélioration de l'infrastructure réseau.
+
 ### Expérience pratique (d'après son CV)
 - Simulation et configuration de réseaux : Cisco Packet Tracer, GNS3
 - Analyse de réseau : Wireshark

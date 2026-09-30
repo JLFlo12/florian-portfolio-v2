@@ -5,10 +5,11 @@ export interface CvContent {
   about: string;
   experience: { title: string; items: string[] }[];
   education: { school: string; degree: string; years: string }[];
+  internships: { company: string; years: string; items: string[] }[];
   skills: string[];
   languages: { name: string; level: string }[];
   interests: { name: string; text: string }[];
-  labels: Record<'contact' | 'education' | 'skills' | 'languages' | 'about' | 'experience' | 'interests', string>;
+  labels: Record<'contact' | 'education' | 'skills' | 'languages' | 'about' | 'experience' | 'interests' | 'internships', string>;
 }
 
 export const CV: Record<'fr' | 'en', CvContent> = {
@@ -27,6 +28,9 @@ export const CV: Record<'fr' | 'en', CvContent> = {
       { school: 'IUT de La Réunion', degree: 'BUT Réseaux et Télécommunications', years: '2024 – 2027' },
       { school: 'Lycée Roland Garros', degree: 'Baccalauréat technologique', years: '2023 – 2024' },
     ],
+    internships: [
+      { company: 'ESIROI', years: '2026', items: ["Amélioration de l'infrastructure réseau"] },
+    ],
     skills: ['Autonomie', "Méthodologie d'analyse", "Travail d'équipe", 'Organisation', 'Esprit critique', 'Avis critique'],
     languages: [
       { name: 'Français', level: 'natif' },
@@ -38,7 +42,7 @@ export const CV: Record<'fr' | 'en', CvContent> = {
       { name: 'Art', text: 'sens esthétique et capacité à penser différemment' },
       { name: 'Informatique', text: 'veille technologique et auto-apprentissage' },
     ],
-    labels: { contact: 'Contact', education: 'Formation', skills: 'Compétences', languages: 'Langues', about: 'À propos de moi', experience: 'Expérience', interests: 'Intérêts' },
+    labels: { contact: 'Contact', education: 'Formation', skills: 'Compétences', languages: 'Langues', about: 'À propos de moi', experience: 'Expérience', interests: 'Intérêts', internships: 'Stage' },
   },
   en: {
     title: 'Networks & telecommunications student',
@@ -55,6 +59,9 @@ export const CV: Record<'fr' | 'en', CvContent> = {
       { school: 'IUT de La Réunion', degree: 'Bachelor of Technology (BUT) in Networks & Telecommunications', years: '2024 – 2027' },
       { school: 'Lycée Roland Garros', degree: 'Technological baccalaureate', years: '2023 – 2024' },
     ],
+    internships: [
+      { company: 'ESIROI', years: '2026', items: ['Improved the network infrastructure'] },
+    ],
     skills: ['Autonomy', 'Analytical method', 'Teamwork', 'Organisation', 'Critical thinking', 'Critical judgement'],
     languages: [
       { name: 'French', level: 'native' },
@@ -66,6 +73,6 @@ export const CV: Record<'fr' | 'en', CvContent> = {
       { name: 'Art', text: 'aesthetic sense and thinking differently' },
       { name: 'Computing', text: 'tech watch and self-learning' },
     ],
-    labels: { contact: 'Contact', education: 'Education', skills: 'Skills', languages: 'Languages', about: 'About me', experience: 'Experience', interests: 'Interests' },
+    labels: { contact: 'Contact', education: 'Education', skills: 'Skills', languages: 'Languages', about: 'About me', experience: 'Experience', interests: 'Interests', internships: 'Internship' },
   },
 };

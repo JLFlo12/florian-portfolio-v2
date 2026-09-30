@@ -98,16 +98,10 @@ const Cv = () => {
               </ul>
             </Block>
 
-            <Block title={cv.labels.internships}>
-              <ul className="space-y-4">
-                {cv.internships.map((i) => (
-                  <li key={i.company}>
-                    <p className="font-semibold">{i.company}</p>
-                    <p className="cv-years">{i.years}</p>
-                    <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-                      {i.items.map((item) => <li key={item} className="cv-bullet">{item}</li>)}
-                    </ul>
-                  </li>
+            <Block title={cv.labels.tools}>
+              <ul className="space-y-1.5 text-sm">
+                {cv.tools.map((x) => (
+                  <li key={x.name}><span className="font-semibold">{x.name}</span> <span className="text-muted-foreground">: {x.text}</span></li>
                 ))}
               </ul>
             </Block>
@@ -126,11 +120,12 @@ const Cv = () => {
             </Block>
 
             <Block title={cv.labels.experience}>
-              <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+              <ul className="space-y-4">
                 {cv.experience.map((x) => (
                   <li key={x.title}>
                     <p className="font-semibold">{x.title}</p>
-                    <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                    <p className="cv-years">{x.place}</p>
+                    <ul className="mt-1.5 space-y-0.5 text-sm text-muted-foreground">
                       {x.items.map((item) => <li key={item} className="cv-bullet">{item}</li>)}
                     </ul>
                   </li>

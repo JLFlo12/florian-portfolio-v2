@@ -181,7 +181,7 @@ const Projects = () => {
       )}
 
       {inProgressProjects.length > 0 && <Group title={t('projects.inProgress')} index="01" list={inProgressProjects} offset={0} />}
-      {completedProjects.length > 0 && <Group title={t('projects.completed')} index="02" list={completedProjects} offset={inProgressProjects.length} />}
+      {completedProjects.length > 0 && <Group title={t('projects.completed')} index={inProgressProjects.length > 0 ? '02' : '01'} list={completedProjects} offset={inProgressProjects.length} />}
 
       {/* Dialogs */}
       <AdminLoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} onLogin={login} />

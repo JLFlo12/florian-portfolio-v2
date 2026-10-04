@@ -161,6 +161,11 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - les 12 projets Supabase forment un ruban de cartes qui ondule en profondeur (three.js seul, chargé quand la bande approche) ; pas de grille au sol, Florian l'a fait retirer ;
   - chaque carte est dessinée dans un canvas 2D (image du projet ou couverture générée, numéro LED, mots-clés, titre, bouton flèche) puis envoyée en texture ; coins arrondis et ombrage dans le shader ;
   - la bande avance avec le défilement de la page, se glisse à la souris ou au doigt (avec élan), une carte survolée avance ; un clic ouvre `/projects/dynamic-<id>` ; compteur `01 / 12` de la carte au centre ;
+  - **cartes noires + liquide** (souris seulement, idée reprise de bleibtgleich.dev) : au repos, les cartes sont noires avec leur texte (titre, mots-clés, numéro, flèche). Sur la carte survolée, et seulement elle, la souris laisse des gouttes de liquide qui montrent l'image telle quelle, sans la déformer (bord net, bord un peu plus sombre, reflet discret), puis s'évaporent en ~2 s. Un effet loupe a été retiré : Florian trouvait l'image déformée.
+    - `three/fluid.ts` : petite simulation de fluide sur GPU (« stable fluids ») dans les coordonnées de la carte, réglée en liquide épais (peu de tourbillons) avec une petite zone autour de la souris ; `ribbon.ts` en garde trois, prêtées tour à tour aux cartes survolées (la moins récemment utilisée est vidée et réattribuée, une simulation inactive depuis 4 s est libérée) ;
+    - chaque carte a deux textures (image et version noire) ; sur écran tactile, images visibles et pas de liquide ;
+    - essais refusés par Florian : flou, puis fluide en fumée sur tout le canvas (toutes les cartes à la fois, zone trop grande).
+  - **effet caoutchouc** : la déformation suit la vitesse (glisser, élan, défilement) avec un ressort peu amorti : le milieu des cartes traîne derrière leurs bords, se creuse, la vague s'amplifie, puis tout revient en oscillant ;
   - sans WebGL ou avec les animations réduites : une rangée de cartes HTML qui défile au doigt ;
   - ⚠️ ne pas nommer une classe `.band` : ce nom est pris par les bandes de couleur de `bandReveal` (`transform: scaleX(0)`).
 - Puis compétences en barres LED (données dans `src/data/profile.ts`).
@@ -229,6 +234,23 @@ Fichier : `src/components/fx/Sakura.tsx`, styles `.sakura-*` / `.sk-*` dans `ind
 - Frôler une fleur avec la souris la fait frissonner et lâcher des pétales.
 - Pendant une partie : pétales derrière le jeu, moins nombreux, branche estompée.
 - ⚠️ Les classes des couleurs (`sk-c0/1/2`) sont écrites en entier dans le code (`TINTS`) : Tailwind supprime les classes qu'il ne trouve pas écrites telles quelles.
+
+### Page projet
+Fichier : `src/pages/ProjectGallery.tsx` (styles `.case-*` dans `index.css`). Une seule mise en page pour tous les projets (Supabase et anciens projets locaux de `projectGalleries.ts`), façon étude de cas :
+- barre du haut : retour, position `04 / 12`, projet précédent / suivant, bouton admin (cadenas) ;
+- en-tête : statut, grand titre (taille selon la longueur), fiche technique (statut, domaine, support : « Présentation Canva / Gamma » détecté depuis l'adresse, ou nombre de rubriques) ;
+- couverture 21:9 en parallaxe (image du projet, ou couverture générée avec le premier mot-clé) avec coins HUD ;
+- « À propos » (libellé collant à gauche, description en grand, mots-clés), puis sections numérotées selon le contenu : présentation intégrée dans un cadre d'écran, rubriques en deux colonnes (emojis retirés des titres et des listes), fichiers, galerie (première image en grand) ;
+- en bas, le projet suivant en très grand. Le mode admin (édition de la galerie) est conservé.
+- ⚠️ **Gamma** : seule l'adresse `gamma.app/embed/<id>` peut s'afficher dans une iframe sur un autre site (`frame-ancestors *`) ; les pages `gamma.app/docs/…` l'interdisent (`frame-ancestors 'self'`). `slidesOf()` convertit donc les liens Gamma. Canva : `…/view?embed`, la présentation doit être partagée en lecture publique.
+- Tous les projets sont au statut « Terminé » depuis le 04/10/2026 (Le Voyage de Torii était « En cours »).
+
+### Mentions légales et confidentialité
+Fichiers : `src/pages/Legal.tsx` (routes `/mentions-legales` et `/legal`), contenu FR/EN dans `src/data/legal.ts`, lien dans le pied de page.
+- Éditeur (Florian, particulier, contact e-mail), hébergeur Vercel Inc. (440 N Barranca Avenue #4133, Covina, CA 91723, USA), Supabase pour les projets, crédits (polices SIL OFL, photo UniFi CC0, Unsplash).
+- Données : formulaire via FormSubmit (Devro LABS), conservation 12 mois au plus ; Jarvis via la passerelle IA de Lovable (Google Gemini), conversations non conservées ; Vercel Web Analytics sans cookie ; stockage local limité aux préférences.
+- **Présentations Canva / Gamma chargées seulement après un clic** (`SlidesEmbed` dans la page projet) : ces services déposent leurs propres cookies. Le choix est retenu par service dans `localStorage` (`florian-embeds`) et se réinitialise depuis la page Mentions légales.
+- ⚠️ À mettre à jour si le site ajoute un service (statistiques, formulaire, contenu intégré…).
 
 ### Autres pages
 Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style, avec la même logique qu'avant (hooks Supabase, admin, galeries, Canva).

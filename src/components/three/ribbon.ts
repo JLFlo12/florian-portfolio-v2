@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { gsap } from '@/lib/motion';
+import { createFluid, INK_TEXEL } from './fluid';
 
 /* ───────────────────────────────────────────────────────────────
    Bande de projets en 3D (inspirée de jesperlandberg.com) : les cartes se
    suivent sur un ruban qui ondule en profondeur. Elle avance avec le
    défilement de la page, se glisse à la souris ou au doigt, et un clic
-   ouvre le projet.
+   ouvre le projet. Les cartes sont noires (seul le texte reste visible) : sur la
+   carte survolée, la souris laisse un liquide qui fait apparaître l'image, comme
+   à travers une goutte d'eau (idée reprise de bleibtgleich.dev).
+   En mouvement, elles se déforment comme du caoutchouc, avec un ressort.
    three.js seul (sans React), chargé à part quand la bande approche.
    ─────────────────────────────────────────────────────────────── */
 
@@ -58,14 +62,29 @@ const wrapLines = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   return kept;
 };
 
-function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, img?: HTMLImageElement) {
+// cover = version noire de la carte (texte seul), que le fluide efface pour montrer l'image
+function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, img?: HTMLImageElement, cover = false) {
   const ctx = canvas.getContext('2d')!;
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   ctx.textBaseline = 'alphabetic';
 
-  if (img) coverImage(ctx, img, w, h);
+  if (cover) {
+    ctx.fillStyle = '#0c0a08';
+    ctx.fillRect(0, 0, w, h);
+    const light = ctx.createRadialGradient(w * 0.15, 0, 0, w * 0.15, 0, w * 0.95);
+    light.addColorStop(0, 'rgba(245, 240, 232, .08)');
+    light.addColorStop(1, 'rgba(245, 240, 232, 0)');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, w, h);
+    // Liseré discret, aligné sur les coins arrondis du shader (rayon 0,055 × 640 px)
+    ctx.strokeStyle = 'rgba(245, 240, 232, .12)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(1.5, 1.5, w - 3, h - 3, 34);
+    ctx.stroke();
+  } else if (img) coverImage(ctx, img, w, h);
   else {
     // Projet sans image : fond sombre, lueur orange, quadrillage et grand mot-clé
     ctx.fillStyle = '#120e0b';
@@ -89,12 +108,14 @@ function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, i
     ctx.fillText(word, 52, h * 0.5);
   }
 
-  // Dégradé en bas pour lire le texte
-  const shade = ctx.createLinearGradient(0, h * 0.4, 0, h);
-  shade.addColorStop(0, 'rgba(8, 6, 4, 0)');
-  shade.addColorStop(1, 'rgba(8, 6, 4, .84)');
-  ctx.fillStyle = shade;
-  ctx.fillRect(0, h * 0.4, w, h * 0.6);
+  // Dégradé en bas pour lire le texte sur l'image
+  if (!cover) {
+    const shade = ctx.createLinearGradient(0, h * 0.4, 0, h);
+    shade.addColorStop(0, 'rgba(8, 6, 4, 0)');
+    shade.addColorStop(1, 'rgba(8, 6, 4, .84)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, h * 0.4, w, h * 0.6);
+  }
 
   // Numéro en chiffres LED
   ctx.font = `900 34px Doto, ${FONT_MONO}`;
@@ -139,11 +160,16 @@ const cardVertex = /* glsl */ `
   uniform float uK;
   uniform float uPhase;
   uniform float uLift;
+  uniform float uBend;
   varying vec2 vUv;
   varying float vLight;
   void main() {
     vUv = uv;
     vec4 world = modelMatrix * vec4(position, 1.0);
+    // Caoutchouc : en mouvement, le milieu de la carte traîne derrière ses bords et se creuse
+    float middle = 1.0 - pow(abs(uv.y * 2.0 - 1.0), 2.0);
+    world.x += uBend * 0.22 * middle;
+    world.z -= abs(uBend) * 0.16 * sin(3.14159 * uv.x) * middle;
     float a = uK * world.x + uPhase;
     world.z += uAmp * sin(a) + uLift;
     // Lumière venant de face, un peu à gauche : les pans tournés vers la droite s'assombrissent
@@ -155,6 +181,11 @@ const cardVertex = /* glsl */ `
 
 const cardFragment = /* glsl */ `
   uniform sampler2D uMap;
+  uniform sampler2D uCover;
+  uniform sampler2D uInk;
+  uniform vec2 uInkTexel;
+  uniform float uInkOn;
+  uniform float uReveal;
   uniform vec2 uSize;
   uniform float uRadius;
   uniform float uHover;
@@ -169,8 +200,31 @@ const cardFragment = /* glsl */ `
     float d = roundedBox((vUv - 0.5) * uSize, uSize * 0.5, uRadius);
     float edge = fwidth(d);
     float mask = 1.0 - smoothstep(-edge, edge, d);
-    vec3 color = texture2D(uMap, vUv).rgb * mix(0.6, 1.0, vLight);
-    color = mix(color, vec3(1.0), uHover * 0.07);
+    vec3 color = texture2D(uMap, vUv).rgb;
+    if (uReveal > 0.5) {
+      vec3 cover = texture2D(uCover, vUv).rgb;
+      if (uInkOn > 0.5) {
+        // Liquide laissé par la souris : bord net, image montrée telle quelle (sans déformation),
+        // avec juste un bord un peu plus sombre et un reflet discret du côté de la lumière
+        float ink = texture2D(uInk, vUv).r;
+        vec2 grad = vec2(
+          texture2D(uInk, vUv + vec2(uInkTexel.x, 0.0)).r - texture2D(uInk, vUv - vec2(uInkTexel.x, 0.0)).r,
+          texture2D(uInk, vUv + vec2(0.0, uInkTexel.y)).r - texture2D(uInk, vUv - vec2(0.0, uInkTexel.y)).r);
+        float aa = fwidth(ink) + 0.002;
+        float inside = smoothstep(0.32 - aa, 0.32 + aa, ink);
+        vec3 seen = texture2D(uMap, vUv).rgb;
+        vec3 normal = normalize(vec3(-grad * 7.0, 1.0));
+        float shine = pow(max(dot(normal, normalize(vec3(-0.5, 0.6, 1.0))), 0.0), 40.0);
+        float rim = 1.0 - smoothstep(0.32, 0.5, ink);
+        seen = seen * (1.0 - rim * 0.18) + shine * 0.3;
+        color = mix(cover, seen, inside);
+      } else {
+        color = cover;
+      }
+    }
+    color *= mix(0.6, 1.0, vLight);
+    // Survol : léger éclaircissement (très léger sur les cartes noires, qui sinon virent au gris)
+    color = mix(color, vec3(1.0), uHover * (uReveal > 0.5 ? 0.02 : 0.07));
     gl_FragColor = vec4(color, mask * uOpacity);
     #include <colorspace_fragment>
   }
@@ -184,16 +238,29 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 60);
   const anisotropy = renderer.capabilities.getMaxAnisotropy();
+  // Cartes noires + liquide seulement avec une souris : sur écran tactile, les images restent visibles
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const canFloat = renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float');
+  const liquid = fine && canFloat;
 
   /* ——— Textures : une par projet (redessinée quand l'image ou les polices arrivent) ——— */
   const visuals = cards.map((card, i) => {
     const surface = document.createElement('canvas');
     surface.width = TEX_W;
     surface.height = TEX_H;
-    const visual = { card, surface, img: undefined as HTMLImageElement | undefined, texture: new THREE.CanvasTexture(surface) };
+    const visual = { card, surface, img: undefined as HTMLImageElement | undefined, texture: new THREE.CanvasTexture(surface), cover: null as THREE.CanvasTexture | null };
     visual.texture.colorSpace = THREE.SRGBColorSpace;
     visual.texture.anisotropy = anisotropy;
     drawCard(surface, card, i + 1);
+    if (liquid) {
+      const black = document.createElement('canvas');
+      black.width = TEX_W;
+      black.height = TEX_H;
+      drawCard(black, card, i + 1, undefined, true);
+      visual.cover = new THREE.CanvasTexture(black);
+      visual.cover.colorSpace = THREE.SRGBColorSpace;
+      visual.cover.anisotropy = anisotropy;
+    }
     if (card.image) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -206,7 +273,11 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
   let alive = true;
   Promise.all(FONTS.map((font) => document.fonts.load(font))).then(() => {
     if (!alive) return;
-    visuals.forEach((v, i) => { drawCard(v.surface, v.card, i + 1, v.img); v.texture.needsUpdate = true; });
+    visuals.forEach((v, i) => {
+      drawCard(v.surface, v.card, i + 1, v.img);
+      v.texture.needsUpdate = true;
+      if (v.cover) { drawCard(v.cover.image as HTMLCanvasElement, v.card, i + 1, undefined, true); v.cover.needsUpdate = true; }
+    });
   }).catch(() => { /* polices de secours */ });
 
   /* ——— Cartes : répétées pour couvrir toute la largeur, puis replacées en boucle ——— */
@@ -219,10 +290,19 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     uPhase: { value: 0 },
     uSize: { value: new THREE.Vector2(W, H) },
     uRadius: { value: 0.055 },
+    uBend: { value: 0 },
+    uReveal: { value: liquid ? 1 : 0 },
+    uInkTexel: { value: INK_TEXEL },
   };
-  const geometry = new THREE.PlaneGeometry(W, H, 40, 1);
+  const geometry = new THREE.PlaneGeometry(W, H, 40, 12);
   const materials = Array.from({ length: count }, (_, i) => new THREE.ShaderMaterial({
-    uniforms: { ...shared, uMap: { value: visuals[i % cards.length].texture }, uLift: { value: 0 }, uHover: { value: 0 }, uOpacity: { value: 0 } },
+    uniforms: {
+      ...shared,
+      uMap: { value: visuals[i % cards.length].texture },
+      uCover: { value: visuals[i % cards.length].cover },
+      uInk: { value: null as THREE.Texture | null }, uInkOn: { value: 0 },
+      uLift: { value: 0 }, uHover: { value: 0 }, uOpacity: { value: 0 },
+    },
     vertexShader: cardVertex,
     fragmentShader: cardFragment,
     transparent: true,
@@ -233,10 +313,25 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     return mesh;
   });
 
+  /* ——— Liquide : trois simulations, prêtées tour à tour aux cartes survolées ——— */
+  const sims = liquid ? Array.from({ length: 3 }, () => ({ fluid: createFluid(renderer), mesh: -1, last: -Infinity })) : [];
+  const simFor = (mesh: number) => {
+    let slot = sims.find((s) => s.mesh === mesh);
+    if (!slot) {
+      slot = sims.reduce((a, b) => (a.last <= b.last ? a : b)); // la moins récemment utilisée
+      if (slot.mesh >= 0) materials[slot.mesh].uniforms.uInkOn.value = 0;
+      slot.fluid.clear();
+      slot.mesh = mesh;
+      materials[mesh].uniforms.uInkOn.value = 1;
+    }
+    slot.last = performance.now();
+    return slot;
+  };
+
   /* ——— État ——— */
   const state = {
     offset: 0, drag: 0, drift: 0, fling: 0,
-    amp: AMP, phase: 0, intro: 1,
+    amp: AMP, phase: 0, intro: 1, bend: 0, bendSpeed: 0,
     hover: -1, focus: -1,
     dist: 5, unitsPerPx: 0.01, running: false, introStarted: false,
   };
@@ -261,11 +356,17 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     const target = scrollShift() + state.drag + state.drift - state.intro * PITCH * 2.4;
     const before = state.offset;
     state.offset += (target - state.offset) * (1 - Math.exp(-dt * 7));
-    const speed = Math.abs(state.offset - before) / Math.max(dt, 1e-3);
-    state.amp += (AMP * (1 + Math.min(speed * 0.12, 0.7)) - state.amp) * (1 - Math.exp(-dt * 5));
+    const velocity = (state.offset - before) / Math.max(dt, 1e-3);
+    // Caoutchouc : la déformation suit la vitesse avec un ressort (elle déborde puis revient en oscillant)
+    const bendTarget = Math.max(-1.3, Math.min(1.3, velocity * 0.32));
+    state.bendSpeed += (bendTarget - state.bend) * 150 * dt;
+    state.bendSpeed *= Math.exp(-dt * 9);
+    state.bend += state.bendSpeed * dt;
+    state.amp += (AMP * (1 + Math.min(Math.abs(state.bend), 0.9)) - state.amp) * (1 - Math.exp(-dt * 6));
     state.phase += dt * 0.22;
     shared.uAmp.value = state.amp;
     shared.uPhase.value = state.phase;
+    shared.uBend.value = state.bend;
 
     let focus = 0;
     let nearest = Infinity;
@@ -281,6 +382,17 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
       if (Math.abs(x) < nearest) { nearest = Math.abs(x); focus = i % cards.length; }
     });
     if (focus !== state.focus) { state.focus = focus; events.onFocus(focus); }
+    const now = performance.now();
+    for (const slot of sims) {
+      if (slot.mesh < 0) continue;
+      if (now - slot.last > 4000) { // liquide évaporé : la simulation se libère
+        materials[slot.mesh].uniforms.uInkOn.value = 0;
+        slot.mesh = -1;
+        continue;
+      }
+      slot.fluid.step(dt);
+      materials[slot.mesh].uniforms.uInk.value = slot.fluid.output;
+    }
     render();
   };
 
@@ -340,8 +452,9 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     }
     const x = o.x + t * d.x;
     const y = o.y + t * d.y;
-    if (Math.abs(y) > H / 2) return -1;
-    return meshes.findIndex((m) => Math.abs(x - m.position.x) <= W / 2);
+    const index = Math.abs(y) > H / 2 ? -1 : meshes.findIndex((m) => Math.abs(x - m.position.x) <= W / 2);
+    // Position sur la carte, en coordonnées 0–1 (origine en bas à gauche)
+    return { index, u: index >= 0 ? (x - meshes[index].position.x) / W + 0.5 : 0, v: y / H + 0.5 };
   };
 
   let dragging = false;
@@ -349,6 +462,14 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
   let lastX = 0;
   let lastT = 0;
   let travel = 0;
+  let lastInk: { mesh: number; u: number; v: number } | null = null;
+  // La souris remue le liquide de la carte qu'elle survole, et seulement celle-là
+  const stir = (hit: ReturnType<typeof pick>) => {
+    if (!sims.length || hit.index < 0) { lastInk = null; return; }
+    const prev = lastInk && lastInk.mesh === hit.index ? lastInk : null;
+    simFor(hit.index).fluid.splat(hit.u, hit.v, prev ? hit.u - prev.u : 0, prev ? hit.v - prev.v : 0);
+    lastInk = { mesh: hit.index, u: hit.u, v: hit.v };
+  };
   const cursor = () => { canvas.style.cursor = dragging ? 'grabbing' : state.hover >= 0 ? 'pointer' : 'grab'; };
   const down = (e: PointerEvent) => {
     if (e.button !== 0) return;
@@ -362,6 +483,8 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     cursor();
   };
   const move = (e: PointerEvent) => {
+    const hit = e.pointerType === 'mouse' ? pick(e.clientX, e.clientY) : null;
+    if (hit) stir(hit);
     if (dragging && e.pointerId === pointer) {
       const dx = e.clientX - lastX;
       const seconds = Math.max(e.timeStamp - lastT, 8) / 1000;
@@ -373,8 +496,8 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
       state.fling += (speed - state.fling) * 0.5;
       return;
     }
-    if (e.pointerType === 'mouse') {
-      state.hover = pick(e.clientX, e.clientY);
+    if (hit) {
+      state.hover = hit.index;
       cursor();
     }
   };
@@ -384,13 +507,13 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     if (e.timeStamp - lastT > 90) state.fling = 0; // relâché sans élan
     if (travel < 6) {
       state.fling = 0;
-      const i = pick(e.clientX, e.clientY);
+      const i = pick(e.clientX, e.clientY).index;
       if (i >= 0) events.onSelect(i % cards.length);
     }
     cursor();
   };
   const cancel = () => { dragging = false; cursor(); };
-  const leave = () => { state.hover = -1; };
+  const leave = () => { state.hover = -1; lastInk = null; };
   canvas.addEventListener('pointerdown', down);
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
@@ -410,9 +533,10 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
       canvas.removeEventListener('pointerup', up);
       canvas.removeEventListener('pointercancel', cancel);
       canvas.removeEventListener('pointerleave', leave);
-      visuals.forEach((v) => v.texture.dispose());
+      visuals.forEach((v) => { v.texture.dispose(); v.cover?.dispose(); });
       materials.forEach((m) => m.dispose());
       geometry.dispose();
+      sims.forEach((s) => s.fluid.dispose());
       renderer.dispose();
     },
   };

@@ -86,7 +86,11 @@ const Footer = () => {
         </div>
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} GIRARDOT LAHOGUE Florian. {t('ui.rights')}</p>
+          <p>
+            © {new Date().getFullYear()} GIRARDOT LAHOGUE Florian. {t('ui.rights')}{' '}
+            <span aria-hidden="true">·</span>{' '}
+            <Link to="/mentions-legales" className="underline-offset-4 transition-colors hover:text-foreground hover:underline">{t('ui.legal')}</Link>
+          </p>
           <button type="button" onClick={toTop} className="inline-flex items-center gap-2 transition-colors hover:text-foreground">
             {t('ui.backTop')} ↑
           </button>

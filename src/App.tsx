@@ -17,6 +17,7 @@ const Cv = lazy(() => import("./pages/Cv"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const Games = lazy(() => import("./pages/Games"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Legal = lazy(() => import("./pages/Legal"));
 // Notifications (formulaire, Jarvis, admin) : chargées juste après le premier affichage
 const Sonner = lazy(() => import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })));
 
@@ -47,6 +48,8 @@ const App = () => (
                 <Route path="/cv" element={<Cv />} />
                 <Route path="/chatbot" element={<Chatbot />} />
                 <Route path="/games" element={<Games />} />
+                <Route path="/mentions-legales" element={<Legal />} />
+                <Route path="/legal" element={<Legal />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

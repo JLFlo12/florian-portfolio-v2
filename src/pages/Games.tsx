@@ -119,7 +119,6 @@ const Games = () => {
                   <article
                     key={game.id}
                     className={`panel group flex min-h-[300px] flex-col justify-between p-7 transition-transform duration-500 [transition-timing-function:var(--ease-out)] ${game.available ? 'hover:-translate-y-1.5' : 'opacity-55'}`}
-                    data-cursor={game.available ? t('ui.play') : undefined}
                   >
                     <div className="flex items-start justify-between">
                       <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-muted/40 transition-transform duration-700 group-hover:rotate-[-6deg] group-hover:scale-110">

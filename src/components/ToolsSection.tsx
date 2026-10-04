@@ -401,7 +401,6 @@ const ToolsSection = () => {
             role="group"
             aria-roledescription="carousel"
             aria-label={t('home.toolsCarousel')}
-            data-cursor={t('ui.drag')}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
@@ -427,7 +426,6 @@ const ToolsSection = () => {
                     tabIndex={on ? undefined : -1}
                     aria-hidden={on ? undefined : true}
                     data-dim={!on}
-                    data-cursor={t('ui.open')}
                     data-focused={i === focused}
                     style={{ '--card-angle': `${i * STEP}deg`, opacity: 0, visibility: 'hidden' } as React.CSSProperties}
                     className="tool-card panel group flex min-h-[158px] flex-col justify-between p-4 text-left"
@@ -489,7 +487,6 @@ const ToolsSection = () => {
                 key={TOOLS[i].name}
                 type="button"
                 onClick={() => setSelectedTool(TOOLS[i])}
-                data-cursor={t('ui.open')}
                 className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left"
               >
                 <CardBody tool={TOOLS[i]} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />

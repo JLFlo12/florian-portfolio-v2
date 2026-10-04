@@ -105,8 +105,8 @@ Pour pousser : `git push v2 refonte-moderne:main`.
 - Également dans le layout :
   - le rideau de transition orange entre les pages ;
   - l'indicateur de défilement façon télémétrie ;
-  - le curseur personnalisé et le grain.
-- `src/components/fx/Preloader.tsx` : écran de chargement façon démarrage système (mode rapide si déjà vu dans la session). Il envoie le signal `markReady()` (`src/lib/ready.ts`).
+  - le grain (le curseur est celui du système : Florian ne veut pas de curseur personnalisé).
+- `src/components/fx/Preloader.tsx` : écran de chargement minimaliste, trois points en orbite (deux de la couleur du texte, un orange). Une fois la page prête (polices chargées, 1,3 s minimum, 0,35 s si déjà vu dans la session), les points se rejoignent au centre, puis l'écran s'ouvre en cercle depuis ce point, avec un liseré orange. Il envoie le signal `markReady()` (`src/lib/ready.ts`).
 - `src/components/fx/SmoothScroll.tsx` : Lenis synchronisé avec GSAP. Il se met en pause quand un menu ou une fenêtre Radix bloque le défilement.
 - `src/components/Footer.tsx` : grand appel à l'action, menu, contacts, heure de La Réunion (`useReunionTime`).
 - `src/App.tsx` : l'accueil est chargé tout de suite, les autres pages à la demande (`React.lazy`). Les notifications Sonner sont chargées après le premier affichage.
@@ -156,7 +156,14 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - le rayon est calculé d'après la largeur réelle des cartes (`measure()`), donc les cartes voisines ne se chevauchent pas, quelle que soit la taille d'écran ;
   - les cartes sont centrées par leur marge, pas par `translate(-50%)` : leur axe de rotation doit être celui de l'anneau, sinon la carte de face est décalée ;
   - **grille simple** seulement si `prefers-reduced-motion` est activé.
-- Bandeau défilant (après les outils), puis compétences en barres LED (données dans `src/data/profile.ts`).
+- **Bande de projets 3D** (après les outils), inspirée de jesperlandberg.com, à la place de l'ancien bandeau défilant :
+  - `src/components/ProjectBand.tsx` garde la place (hauteur fixe) et ne charge `ProjectBandBody.tsx` (projets Supabase) puis `three/ribbon.ts` qu'à l'approche : Supabase reste hors du premier chargement de l'accueil (≈ 77 Ko compressés pour le fichier principal) ;
+  - les 12 projets Supabase forment un ruban de cartes qui ondule en profondeur (three.js seul, chargé quand la bande approche) ; pas de grille au sol, Florian l'a fait retirer ;
+  - chaque carte est dessinée dans un canvas 2D (image du projet ou couverture générée, numéro LED, mots-clés, titre, bouton flèche) puis envoyée en texture ; coins arrondis et ombrage dans le shader ;
+  - la bande avance avec le défilement de la page, se glisse à la souris ou au doigt (avec élan), une carte survolée avance ; un clic ouvre `/projects/dynamic-<id>` ; compteur `01 / 12` de la carte au centre ;
+  - sans WebGL ou avec les animations réduites : une rangée de cartes HTML qui défile au doigt ;
+  - ⚠️ ne pas nommer une classe `.band` : ce nom est pris par les bandes de couleur de `bandReveal` (`transform: scaleX(0)`).
+- Puis compétences en barres LED (données dans `src/data/profile.ts`).
 
 ### Contact
 Fichiers : `src/pages/Contact.tsx`, `TrackLinks.tsx`, `ContactForm.tsx` et `fx/TopoLines.tsx`.

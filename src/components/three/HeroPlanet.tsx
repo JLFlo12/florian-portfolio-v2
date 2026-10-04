@@ -2,18 +2,10 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { planetState } from './planetState';
 import { onReady } from '@/lib/ready';
+import { hasWebGL } from './webgl';
 
 // La scène three.js est chargée à part (elle ne ralentit pas l'affichage du reste du site)
 const Planet = lazy(() => import('./Planet'));
-
-const hasWebGL = () => {
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    (gl as WebGLRenderingContext | null)?.getExtension('WEBGL_lose_context')?.loseContext();
-    return !!gl;
-  } catch { return false; }
-};
 
 /* Conteneur de la planète 3D du hero : charge la scène, lui transmet la souris,
    met le rendu en pause quand le hero n'est plus visible.

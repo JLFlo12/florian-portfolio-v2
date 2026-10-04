@@ -1,15 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { gsap } from '@/lib/motion';
 import { markReady } from '@/lib/ready';
-import Logo from '@/components/Logo';
 
-/* Écran de chargement "florian.sys" : compteur LED, journal de démarrage, volets qui s'ouvrent.
+/* Écran de chargement : trois points en orbite, dont un orange.
+   Quand la page est prête (polices chargées, durée minimale écoulée), les points se
+   rejoignent au centre, puis l'écran s'ouvre en cercle à partir de ce point.
    Plus court quand on revient pendant la même session. */
 const Preloader = () => {
-  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
-  const lines = t('ui.loaderLines', { returnObjects: true }) as string[];
 
   useEffect(() => {
     const root = document.documentElement;
@@ -19,45 +17,39 @@ const Preloader = () => {
     let quick = false;
     try { quick = sessionStorage.getItem('florian-boot') === '1'; sessionStorage.setItem('florian-boot', '1'); } catch { /* stockage indisponible */ }
 
-    const count = el.querySelector<HTMLElement>('[data-loader-count]')!;
-    const bar = el.querySelector<HTMLElement>('.loader__bar i')!;
-    const items = Array.from(el.querySelectorAll<HTMLElement>('.loader__log li'));
-    const dur = quick ? 0.6 : 1.8;
-    const state = { v: 0 };
+    let tl: gsap.core.Timeline | undefined;
+    let cancelled = false;
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
 
-    const tl = gsap.timeline();
-    tl.to(state, {
-      v: 100, duration: dur, ease: 'power2.inOut',
-      onUpdate: () => {
-        count.textContent = String(Math.round(state.v)).padStart(3, '0');
-        bar.style.transform = `scaleX(${state.v / 100})`;
-      },
-    }, 0);
-    items.forEach((li, i) => {
-      const at = (dur / items.length) * i;
-      tl.to(li, { opacity: 1, duration: 0.15 }, at).call(() => li.classList.add('is-done'), [], at + (dur / items.length) * 0.8);
+    Promise.all([wait(quick ? 350 : 1300), Promise.race([fonts, wait(2500)])]).then(() => {
+      if (cancelled) return;
+      const orbit = el.querySelector('.loader__orbit');
+      const others = el.querySelectorAll('.loader__orbit i:not(:last-child)'); // les deux points clairs
+      const ring = el.querySelector('.loader__ring');
+      const radius = Math.hypot(window.innerWidth, window.innerHeight) / 2 + 20;
+      tl = gsap.timeline({ defaults: { overwrite: 'auto' } })
+        .to(orbit, { '--r': '0px', duration: 0.55, ease: 'power3.inOut' })
+        .to(others, { opacity: 0, duration: 0.2, ease: 'none' }, '-=0.2')
+        .to(orbit, { scale: 1.5, duration: 0.2, ease: 'power2.out' }, '-=0.08')
+        .addLabel('open')
+        .set(ring, { opacity: 1 }, 'open')
+        .to(el, { '--hole': `${radius}px`, duration: 1.05, ease: 'expo.inOut' }, 'open')
+        .to(ring, { opacity: 0, duration: 0.7, ease: 'power1.in' }, 'open+=0.35')
+        .call(markReady, [], 'open+=0.3')
+        .call(() => root.classList.remove('is-loading'));
+      if (quick) tl.timeScale(1.4);
     });
-    tl.to(el.querySelector('.loader__inner'), { autoAlpha: 0, y: -24, scale: 0.96, duration: 0.45, ease: 'power2.in' }, dur + 0.1)
-      .to(el.querySelector('.loader__panel--top'), { yPercent: -100, duration: 1, ease: 'expo.inOut' }, dur + 0.35)
-      .to(el.querySelector('.loader__panel--bottom'), { yPercent: 100, duration: 1, ease: 'expo.inOut' }, dur + 0.35)
-      .call(markReady, [], dur + 0.55)
-      .call(() => root.classList.remove('is-loading'), [], dur + 1.35);
 
-    return () => { tl.kill(); root.classList.remove('is-loading'); markReady(); };
+    return () => { cancelled = true; tl?.kill(); root.classList.remove('is-loading'); markReady(); };
   }, []);
 
   return (
     <div ref={ref} className="loader" aria-hidden="true">
-      <div className="loader__panel loader__panel--top" />
-      <div className="loader__panel loader__panel--bottom" />
-      <div className="loader__inner">
-        <div className="text-[#ff6a1f] scale-125"><Logo /></div>
-        <p className="loader__count"><span data-loader-count>000</span><small>%</small></p>
-        <div className="loader__bar"><i /></div>
-        <ul className="loader__log">
-          {lines.map((line) => <li key={line}>{line}</li>)}
-        </ul>
+      <div className="loader__veil">
+        <div className="loader__orbit"><i /><i /><i /></div>
       </div>
+      <div className="loader__ring" />
     </div>
   );
 };

@@ -38,10 +38,10 @@ const Contact = () => {
   useReveal(page);
 
   const items = useMemo<TrackItem[]>(() => [
-    { id: 'email', label: t('contact.stackEmail'), value: EMAIL, href: `mailto:${EMAIL}`, cursor: t('contact.write') },
-    { id: 'linkedin', label: t('contact.linkedin'), value: 'linkedin.com/in/florian-girardot-lahogue-4aa367341', href: CONTACT.linkedin, external: true, cursor: t('ui.open') },
-    { id: 'github', label: t('contact.github'), value: 'github.com/JLFlo12', href: CONTACT.github, external: true, cursor: t('ui.open') },
-    { id: 'cv', label: 'CV', value: t('contact.cvValue'), href: '/cv', cursor: t('ui.view') },
+    { id: 'email', label: t('contact.stackEmail'), value: EMAIL, href: `mailto:${EMAIL}` },
+    { id: 'linkedin', label: t('contact.linkedin'), value: 'linkedin.com/in/florian-girardot-lahogue-4aa367341', href: CONTACT.linkedin, external: true },
+    { id: 'github', label: t('contact.github'), value: 'github.com/JLFlo12', href: CONTACT.github, external: true },
+    { id: 'cv', label: 'CV', value: t('contact.cvValue'), href: '/cv' },
   ], [t]);
 
   // Intro : les courbes de niveau se dessinent, puis les mots se déroulent l'un après l'autre.

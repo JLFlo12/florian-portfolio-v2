@@ -31,7 +31,7 @@ This is **version 2**: a complete redesign with a 3D planet on the home page, mo
 ## Features
 
 - 🪐 **Home**: introduction with an interactive 3D planet (dotted continents, network links, ring, beacon on Réunion), technical skills and soft skills, and the tools I use (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…) shown as a Jarvis-style 3D hologram ring you can grab and spin
-- ✨ **Motion design**: boot-style loading screen, smooth scrolling, 3D text reveals, page transitions, custom cursor and HUD details (disabled when the system asks for reduced motion)
+- ✨ **Motion design**: minimal three-dot loading screen, smooth scrolling, 3D text reveals, page transitions, a 3D project ribbon and HUD details (disabled when the system asks for reduced motion)
 - 📁 **Projects**: projects grouped into *In progress* and *Completed*, with a detail page for each (description, image gallery, Canva slideshow)
 - 👤 **About**: education, areas of expertise (networks, systems, cybersecurity) and a CV available as a printable web page (`/cv`, one A4 page) or as a PDF
 - ✉️ **Contact**: a contact form (messages are delivered by email through FormSubmit, with a spam trap), plus email, GitHub and LinkedIn
@@ -140,7 +140,7 @@ florian-portfolio-v2/
 ├── src/
 │   ├── components/
 │   │   ├── admin/             # Admin login, project form, gallery editor
-│   │   ├── fx/                # Smooth scrolling, loading screen, custom cursor
+│   │   ├── fx/                # Smooth scrolling, loading screen
 │   │   ├── games/             # The 5 mini-games
 │   │   ├── three/             # 3D planet on the home page (React Three Fiber)
 │   │   ├── Layout.tsx         # Header, navigation, page transitions, theme and language switches

@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
-import Cursor from '@/components/fx/Cursor';
 import Preloader from '@/components/fx/Preloader';
 import LiquidGlass from '@/components/fx/LiquidGlass';
 import SoundToggle from '@/components/SoundToggle';
@@ -139,7 +138,6 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Preloader />
-      <Cursor />
       <LiquidGlass />
       <div className="grain" aria-hidden="true" />
 

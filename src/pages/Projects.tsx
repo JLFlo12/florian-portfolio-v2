@@ -45,7 +45,7 @@ const Projects = () => {
   const ProjectCard = ({ project, number }: { project: DynamicProject; number: number }) => {
     const done = project.status === 'completed';
     return (
-      <article className="panel group relative flex h-full flex-col" data-cursor={t('ui.view')}>
+      <article className="panel group relative flex h-full flex-col">
         {/* Visuel : image du projet, ou couverture générée */}
         <div className="relative aspect-[16/10] overflow-hidden border-b border-border">
           {project.thumbnail_url ? (

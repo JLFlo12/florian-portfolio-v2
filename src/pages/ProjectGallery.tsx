@@ -48,7 +48,7 @@ const DetailCard = ({ section, content, index }: { section: string; content: str
 );
 
 const ImageCard = ({ url, title, description, soon }: { url?: string; title: string; description?: string; soon: string }) => (
-  <figure className="panel group" data-cursor={url ? 'Zoom' : undefined}>
+  <figure className="panel group">
     <div className="relative aspect-[4/3] overflow-hidden">
       {url ? (
         <img src={url} alt={title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-[1.2s] [transition-timing-function:var(--ease-out)] group-hover:scale-110" />

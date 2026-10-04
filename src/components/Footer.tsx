@@ -44,7 +44,7 @@ const Footer = () => {
     <footer ref={ref} className="relative overflow-hidden border-t border-border">
       <div className="pointer-events-none absolute -bottom-40 left-1/2 h-80 w-[70vw] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" aria-hidden="true" />
       <div className="container-x relative py-20 lg:py-28">
-        <Link to="/contact" className="group block" data-cursor={t('nav.contact')}>
+        <Link to="/contact" className="group block">
           <AccentTitle
             as="p"
             text={`${t('ui.footerTitle')}`}

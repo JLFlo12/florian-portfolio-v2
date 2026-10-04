@@ -18,7 +18,6 @@ export interface TrackItem {
   value: string;   // adresse affichée sous la liste
   href: string;
   external?: boolean;
-  cursor?: string; // texte du curseur personnalisé
 }
 
 /* Tracé "circuit" : paliers haut/bas reliés par des courbes douces */
@@ -128,7 +127,6 @@ const TrackLinks = ({ items, live }: { items: TrackItem[]; live: boolean }) => {
               {...linkProps(item)}
               className={`track-link${i === active ? ' is-active' : ''}`}
               aria-label={`${item.label} — ${item.value}`}
-              data-cursor={item.cursor}
               onPointerEnter={() => setActive(i)}
               onPointerLeave={() => release(i)}
               onFocus={() => setActive(i)}

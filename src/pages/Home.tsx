@@ -4,7 +4,7 @@ import { ArrowRight, Github, Linkedin, Mail, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ToolsSection from '@/components/ToolsSection';
 import HeroPlanet from '@/components/three/HeroPlanet';
-import Marquee from '@/components/Marquee';
+import ProjectBand from '@/components/ProjectBand';
 import SectionHeading from '@/components/SectionHeading';
 import DiveOverlay from '@/components/DiveOverlay';
 import { useReunionTime } from '@/components/Footer';
@@ -67,8 +67,6 @@ const Home = () => {
     { href: 'https://github.com/JLFlo12', icon: Github, label: 'GitHub' },
     { href: 'https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/', icon: Linkedin, label: 'LinkedIn' },
   ];
-
-  const marqueeItems = ['Réseaux & GNS3', 'Cybersécurité', 'Linux / Windows Server', 'Virtualisation', 'Unreal Engine 5', 'Raspberry Pi', 'TypeScript', 'Wireshark', 'pfSense'];
 
   const SkillList = ({ title, list, index }: { title: string; list: typeof TECHNICAL_SKILLS; index: string }) => (
     <div>
@@ -180,7 +178,8 @@ const Home = () => {
       {/* ═══════════════ OUTILS (arrivée de la plongée) ═══════════════ */}
       <ToolsSection />
 
-      <Marquee items={marqueeItems} />
+      {/* ═══════════════ BANDE DE PROJETS 3D ═══════════════ */}
+      <ProjectBand />
 
       {/* ═══════════════ COMPÉTENCES ═══════════════ */}
       <section ref={skills} className="section-y relative">

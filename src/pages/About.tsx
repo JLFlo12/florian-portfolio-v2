@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Download, FileText, GraduationCap, Network, Server, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Briefcase, Download, FileText, GraduationCap, Network, Server, ShieldCheck } from 'lucide-react';
 import SectionHeading from '@/components/SectionHeading';
 import { useReveal } from '@/lib/motion';
 
@@ -53,10 +53,30 @@ const About = () => {
         </div>
       </section>
 
+      {/* ——— Expérience (stage terminé : pas de point « en cours ») ——— */}
+      <section className="container-x section-y !pb-0">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
+          <h2 className="flex items-baseline gap-4 self-start font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band>
+            <span className="led text-base text-primary">02</span> {t('about.experienceTitle')}
+          </h2>
+          <div className="panel group p-7 lg:p-9" data-reveal>
+            <div className="flex items-start gap-5">
+              <span className="inline-flex h-14 w-14 flex-none items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
+                <Briefcase className="h-7 w-7" />
+              </span>
+              <div>
+                <h3 className="font-display text-[clamp(1.3rem,2.4vw,2rem)] font-extrabold leading-tight [font-stretch:110%]">{t('about.internshipTitle')}</h3>
+                <p className="mt-3 text-muted-foreground">{t('about.internshipDescription')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ——— Expertise ——— */}
       <section className="container-x section-y !pb-0">
         <h2 className="mb-10 flex items-baseline gap-4 border-b border-border pb-5 font-display text-[clamp(1.8rem,3.6vw,3rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band>
-          <span className="led text-base text-primary">02</span> {t('about.expertiseTitle')}
+          <span className="led text-base text-primary">03</span> {t('about.expertiseTitle')}
         </h2>
         <div className="grid gap-5 md:grid-cols-3" data-stagger="flip">
           {expertise.map(({ icon: Icon, title, text }, i) => (
@@ -82,7 +102,7 @@ const About = () => {
           <div className="relative flex flex-wrap items-end justify-between gap-8">
             <div>
               <p className="eyebrow">
-                <span className="eyebrow__index">03</span>
+                <span className="eyebrow__index">04</span>
                 <span className="eyebrow__rule" aria-hidden="true" />
                 <span className="eyebrow__label">cv.pdf</span>
               </p>

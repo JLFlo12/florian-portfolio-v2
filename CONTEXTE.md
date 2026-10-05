@@ -262,6 +262,7 @@ Fichiers : `src/pages/Legal.tsx` (routes `/mentions-legales` et `/legal`), conte
 
 ### Autres pages
 Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style, avec la même logique qu'avant (hooks Supabase, admin, galeries, Canva).
+- **À propos** (`src/pages/About.tsx`, textes `about.*`) : 01 Formation, 02 Expérience (stage en informatique à l'ESIROI, 2e année de BUT, ajouté le 05/10 à la demande de Florian ; sans le point « en cours » qui clignote, puisque le stage est fini), 03 Expertise, 04 CV.
 
 ---
 

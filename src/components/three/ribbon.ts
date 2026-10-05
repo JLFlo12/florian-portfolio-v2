@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import { gsap } from '@/lib/motion';
-import { createFluid, INK_TEXEL } from './fluid';
+import { createFluid } from './fluid';
 
 /* ───────────────────────────────────────────────────────────────
    Bande de projets en 3D (inspirée de jesperlandberg.com) : les cartes se
    suivent sur un ruban qui ondule en profondeur. Elle avance avec le
    défilement de la page, se glisse à la souris ou au doigt, et un clic
-   ouvre le projet. Les cartes sont noires (seul le texte reste visible) : sur la
-   carte survolée, la souris laisse un liquide qui fait apparaître l'image, comme
-   à travers une goutte d'eau (idée reprise de bleibtgleich.dev).
+   ouvre le projet. Les cartes sont unies, noires en mode sombre et blanches en
+   mode clair (seul le texte reste visible) : sur la carte survolée, la souris
+   laisse un liquide qui fait apparaître l'image, comme à travers une goutte
+   d'eau (idée reprise de bleibtgleich.dev).
    En mouvement, elles se déforment comme du caoutchouc, avec un ressort.
    three.js seul (sans React), chargé à part quand la bande approche.
    ─────────────────────────────────────────────────────────────── */
@@ -37,6 +38,27 @@ const FONT_TITLE = '"Hubot Sans", "Arial Black", system-ui, sans-serif';
 const FONT_MONO = '"Geist Mono", ui-monospace, monospace';
 const FONTS = ['900 120px "Hubot Sans"', '700 50px "Hubot Sans"', '500 20px "Geist Mono"', '900 34px Doto'];
 
+/* ——— Couleurs des cartes selon le thème du site (les teintes rvb servent aussi en transparence) ——— */
+const DARK = {
+  cover: '#0c0a08',        // version unie, que le liquide efface
+  plain: '#120e0b',        // fond des projets sans image
+  ink: '245, 240, 232',    // texte, liseré, quadrillage, mot-clé
+  shade: '8, 6, 4',        // dégradé sous le texte
+  accent: '255, 106, 31',  // numéro et lueur
+  glow: 0.42,
+  sheen: 0.08,             // lumière en haut à gauche de la version unie
+};
+type Look = typeof DARK;
+const LIGHT: Look = {
+  cover: '#fcfaf8',
+  plain: '#f4eee6',
+  ink: '25, 20, 16',
+  shade: '244, 238, 230',
+  accent: '234, 88, 12',
+  glow: 0.3,
+  sheen: 0,
+};
+
 /* ——— Visuel d'une carte, dessiné dans un canvas 2D puis envoyé en texture ——— */
 const coverImage = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) => {
   const s = Math.max(w / img.naturalWidth, h / img.naturalHeight);
@@ -62,39 +84,43 @@ const wrapLines = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   return kept;
 };
 
-// cover = version noire de la carte (texte seul), que le fluide efface pour montrer l'image
-function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, img?: HTMLImageElement, cover = false) {
+// cover = version unie de la carte (texte seul), que le fluide efface pour montrer l'image
+function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, look: Look, img?: HTMLImageElement, cover = false) {
   const ctx = canvas.getContext('2d')!;
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   ctx.textBaseline = 'alphabetic';
+  // Sur une image, le texte reste clair sur un dégradé sombre, quel que soit le thème
+  const on = img ? DARK : look;
 
   if (cover) {
-    ctx.fillStyle = '#0c0a08';
+    ctx.fillStyle = look.cover;
     ctx.fillRect(0, 0, w, h);
-    const light = ctx.createRadialGradient(w * 0.15, 0, 0, w * 0.15, 0, w * 0.95);
-    light.addColorStop(0, 'rgba(245, 240, 232, .08)');
-    light.addColorStop(1, 'rgba(245, 240, 232, 0)');
-    ctx.fillStyle = light;
-    ctx.fillRect(0, 0, w, h);
+    if (look.sheen) {
+      const light = ctx.createRadialGradient(w * 0.15, 0, 0, w * 0.15, 0, w * 0.95);
+      light.addColorStop(0, `rgba(${look.ink}, ${look.sheen})`);
+      light.addColorStop(1, `rgba(${look.ink}, 0)`);
+      ctx.fillStyle = light;
+      ctx.fillRect(0, 0, w, h);
+    }
     // Liseré discret, aligné sur les coins arrondis du shader (rayon 0,055 × 640 px)
-    ctx.strokeStyle = 'rgba(245, 240, 232, .12)';
+    ctx.strokeStyle = `rgba(${look.ink}, .12)`;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(1.5, 1.5, w - 3, h - 3, 34);
     ctx.stroke();
   } else if (img) coverImage(ctx, img, w, h);
   else {
-    // Projet sans image : fond sombre, lueur orange, quadrillage et grand mot-clé
-    ctx.fillStyle = '#120e0b';
+    // Projet sans image : fond uni, lueur orange, quadrillage et grand mot-clé
+    ctx.fillStyle = look.plain;
     ctx.fillRect(0, 0, w, h);
     const glow = ctx.createRadialGradient(w * 0.82, h * 0.06, 0, w * 0.82, h * 0.06, w * 0.85);
-    glow.addColorStop(0, 'rgba(255, 106, 31, .42)');
-    glow.addColorStop(1, 'rgba(255, 106, 31, 0)');
+    glow.addColorStop(0, `rgba(${look.accent}, ${look.glow})`);
+    glow.addColorStop(1, `rgba(${look.accent}, 0)`);
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(245, 240, 232, .06)';
+    ctx.strokeStyle = `rgba(${look.ink}, .06)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = 32; x < w; x += 32) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
@@ -104,22 +130,22 @@ function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, i
     let size = 150;
     ctx.font = `900 ${size}px ${FONT_TITLE}`;
     while (size > 56 && ctx.measureText(word).width > w - 112) { size -= 6; ctx.font = `900 ${size}px ${FONT_TITLE}`; }
-    ctx.fillStyle = 'rgba(245, 240, 232, .92)';
+    ctx.fillStyle = `rgba(${look.ink}, .92)`;
     ctx.fillText(word, 52, h * 0.5);
   }
 
   // Dégradé en bas pour lire le texte sur l'image
   if (!cover) {
     const shade = ctx.createLinearGradient(0, h * 0.4, 0, h);
-    shade.addColorStop(0, 'rgba(8, 6, 4, 0)');
-    shade.addColorStop(1, 'rgba(8, 6, 4, .84)');
+    shade.addColorStop(0, `rgba(${on.shade}, 0)`);
+    shade.addColorStop(1, `rgba(${on.shade}, .84)`);
     ctx.fillStyle = shade;
     ctx.fillRect(0, h * 0.4, w, h * 0.6);
   }
 
   // Numéro en chiffres LED
   ctx.font = `900 34px Doto, ${FONT_MONO}`;
-  ctx.fillStyle = '#ff6a1f';
+  ctx.fillStyle = `rgb(${look.accent})`;
   ctx.fillText(String(number).padStart(2, '0'), 52, 80);
 
   // Titre (deux lignes au plus) et mots-clés au-dessus
@@ -127,11 +153,11 @@ function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, i
   const button = 64;
   ctx.font = `700 50px ${FONT_TITLE}`;
   const lines = wrapLines(ctx, card.title, w - pad * 2 - button - 28, 2);
-  ctx.fillStyle = '#f5f0e8';
+  ctx.fillStyle = `rgb(${on.ink})`;
   let y = h - pad;
   for (let i = lines.length - 1; i >= 0; i--) { ctx.fillText(lines[i], pad, y); y -= 56; }
   ctx.font = `500 20px ${FONT_MONO}`;
-  ctx.fillStyle = 'rgba(245, 240, 232, .66)';
+  ctx.fillStyle = `rgba(${on.ink}, .66)`;
   ctx.fillText(card.tags.slice(0, 3).join('  ·  ').toUpperCase(), pad, y - 6);
 
   // Bouton flèche en bas à droite
@@ -139,12 +165,12 @@ function drawCard(canvas: HTMLCanvasElement, card: RibbonCard, number: number, i
   const cy = h - pad - button / 2 + 12;
   ctx.beginPath();
   ctx.arc(cx, cy, button / 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(245, 240, 232, .14)';
+  ctx.fillStyle = `rgba(${on.ink}, .14)`;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(245, 240, 232, .4)';
+  ctx.strokeStyle = `rgba(${on.ink}, .4)`;
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.strokeStyle = '#f5f0e8';
+  ctx.strokeStyle = `rgb(${on.ink})`;
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -183,7 +209,6 @@ const cardFragment = /* glsl */ `
   uniform sampler2D uMap;
   uniform sampler2D uCover;
   uniform sampler2D uInk;
-  uniform vec2 uInkTexel;
   uniform float uInkOn;
   uniform float uReveal;
   uniform vec2 uSize;
@@ -204,20 +229,13 @@ const cardFragment = /* glsl */ `
     if (uReveal > 0.5) {
       vec3 cover = texture2D(uCover, vUv).rgb;
       if (uInkOn > 0.5) {
-        // Liquide laissé par la souris : bord net, image montrée telle quelle (sans déformation),
-        // avec juste un bord un peu plus sombre et un reflet discret du côté de la lumière
+        // Liquide laissé par la souris : bord net, image montrée telle quelle (sans déformation
+        // ni reflet blanc), avec juste un bord un peu plus sombre
         float ink = texture2D(uInk, vUv).r;
-        vec2 grad = vec2(
-          texture2D(uInk, vUv + vec2(uInkTexel.x, 0.0)).r - texture2D(uInk, vUv - vec2(uInkTexel.x, 0.0)).r,
-          texture2D(uInk, vUv + vec2(0.0, uInkTexel.y)).r - texture2D(uInk, vUv - vec2(0.0, uInkTexel.y)).r);
         float aa = fwidth(ink) + 0.002;
         float inside = smoothstep(0.32 - aa, 0.32 + aa, ink);
-        vec3 seen = texture2D(uMap, vUv).rgb;
-        vec3 normal = normalize(vec3(-grad * 7.0, 1.0));
-        float shine = pow(max(dot(normal, normalize(vec3(-0.5, 0.6, 1.0))), 0.0), 40.0);
         float rim = 1.0 - smoothstep(0.32, 0.5, ink);
-        seen = seen * (1.0 - rim * 0.18) + shine * 0.3;
-        color = mix(cover, seen, inside);
+        color = mix(cover, color * (1.0 - rim * 0.18), inside);
       } else {
         color = cover;
       }
@@ -230,7 +248,7 @@ const cardFragment = /* glsl */ `
   }
 `;
 
-export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], events: RibbonEvents) {
+export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], events: RibbonEvents, light = false) {
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !coarse, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.3 : 1.75));
@@ -243,7 +261,8 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
   const canFloat = renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float');
   const liquid = fine && canFloat;
 
-  /* ——— Textures : une par projet (redessinée quand l'image ou les polices arrivent) ——— */
+  /* ——— Textures : une par projet (redessinée quand l'image, les polices ou le thème changent) ——— */
+  let look = light ? LIGHT : DARK;
   const visuals = cards.map((card, i) => {
     const surface = document.createElement('canvas');
     surface.width = TEX_W;
@@ -251,13 +270,11 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     const visual = { card, surface, img: undefined as HTMLImageElement | undefined, texture: new THREE.CanvasTexture(surface), cover: null as THREE.CanvasTexture | null };
     visual.texture.colorSpace = THREE.SRGBColorSpace;
     visual.texture.anisotropy = anisotropy;
-    drawCard(surface, card, i + 1);
     if (liquid) {
-      const black = document.createElement('canvas');
-      black.width = TEX_W;
-      black.height = TEX_H;
-      drawCard(black, card, i + 1, undefined, true);
-      visual.cover = new THREE.CanvasTexture(black);
+      const plain = document.createElement('canvas');
+      plain.width = TEX_W;
+      plain.height = TEX_H;
+      visual.cover = new THREE.CanvasTexture(plain);
       visual.cover.colorSpace = THREE.SRGBColorSpace;
       visual.cover.anisotropy = anisotropy;
     }
@@ -265,19 +282,21 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.decoding = 'async';
-      img.onload = () => { visual.img = img; drawCard(surface, card, i + 1, img); visual.texture.needsUpdate = true; };
+      img.onload = () => { visual.img = img; drawCard(surface, card, i + 1, look, img); visual.texture.needsUpdate = true; };
       img.src = card.image;
     }
     return visual;
   });
+  // Dessine les deux textures d'une carte (image et version unie) avec le thème actuel
+  const paint = (v: (typeof visuals)[number], i: number) => {
+    drawCard(v.surface, v.card, i + 1, look, v.img);
+    v.texture.needsUpdate = true;
+    if (v.cover) { drawCard(v.cover.image as HTMLCanvasElement, v.card, i + 1, look, undefined, true); v.cover.needsUpdate = true; }
+  };
+  visuals.forEach(paint);
   let alive = true;
   Promise.all(FONTS.map((font) => document.fonts.load(font))).then(() => {
-    if (!alive) return;
-    visuals.forEach((v, i) => {
-      drawCard(v.surface, v.card, i + 1, v.img);
-      v.texture.needsUpdate = true;
-      if (v.cover) { drawCard(v.cover.image as HTMLCanvasElement, v.card, i + 1, undefined, true); v.cover.needsUpdate = true; }
-    });
+    if (alive) visuals.forEach(paint);
   }).catch(() => { /* polices de secours */ });
 
   /* ——— Cartes : répétées pour couvrir toute la largeur, puis replacées en boucle ——— */
@@ -292,7 +311,6 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
     uRadius: { value: 0.055 },
     uBend: { value: 0 },
     uReveal: { value: liquid ? 1 : 0 },
-    uInkTexel: { value: INK_TEXEL },
   };
   const geometry = new THREE.PlaneGeometry(W, H, 40, 12);
   const materials = Array.from({ length: count }, (_, i) => new THREE.ShaderMaterial({
@@ -522,6 +540,13 @@ export function createRibbon(canvas: HTMLCanvasElement, cards: RibbonCard[], eve
   cursor();
 
   return {
+    /** Thème du site : cartes blanches en mode clair, noires en mode sombre. */
+    setLight(next: boolean) {
+      if ((look === LIGHT) === next) return;
+      look = next ? LIGHT : DARK;
+      visuals.forEach(paint);
+    },
+
     destroy() {
       alive = false;
       stop();

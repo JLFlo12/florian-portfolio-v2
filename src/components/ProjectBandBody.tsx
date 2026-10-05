@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpRight } from 'lucide-react';
 import { useDynamicProjects } from '@/hooks/useDynamicProjects';
+import { useTheme } from '@/contexts/ThemeContext';
 import { prefersReducedMotion, useReveal } from '@/lib/motion';
 import { hasWebGL } from '@/components/three/webgl';
 import type { Ribbon } from '@/components/three/ribbon';
@@ -19,8 +20,11 @@ const ProjectBandBody = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: projects = [], isLoading } = useDynamicProjects();
+  const light = useTheme().theme === 'light';
   const root = useRef<HTMLElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const ribbon = useRef<Ribbon>();
+  const lightNow = useRef(light);
   const [focus, setFocus] = useState(0);
   const [use3d] = useState(() => hasWebGL() && !prefersReducedMotion());
   useReveal(root, [projects.length]);
@@ -31,23 +35,28 @@ const ProjectBandBody = () => {
   useEffect(() => {
     const el = root.current;
     if (!use3d || !cards.length || !el) return;
-    let ribbon: Ribbon | undefined;
     let cancelled = false;
     const loader = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return;
       loader.disconnect();
       import('@/components/three/ribbon').then(({ createRibbon }) => {
         if (cancelled || !canvas.current) return;
-        ribbon = createRibbon(canvas.current, cards, {
+        ribbon.current = createRibbon(canvas.current, cards, {
           onSelect: (i) => navigate(href(i)),
           onFocus: setFocus,
-        });
+        }, lightNow.current);
       });
     }, { rootMargin: '600px 0px' });
     loader.observe(el);
-    return () => { cancelled = true; loader.disconnect(); ribbon?.destroy(); };
+    return () => { cancelled = true; loader.disconnect(); ribbon.current?.destroy(); ribbon.current = undefined; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [use3d, cards, navigate]);
+
+  // Thème du site : les cartes sont redessinées (blanches en mode clair), sans recréer la scène
+  useEffect(() => {
+    lightNow.current = light;
+    ribbon.current?.setLight(light);
+  }, [light]);
 
   // Pendant le chargement, la section garde sa place (pas de saut de mise en page)
   if (isLoading) return <section className={use3d ? 'project-band project-band--3d' : 'project-band'} aria-hidden="true" />;

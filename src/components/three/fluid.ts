@@ -175,9 +175,6 @@ const pingPong = (size: [number, number]) => {
   return pair;
 };
 
-/** Texel de l'encre, pour lire ses voisins dans le shader de la carte. */
-export const INK_TEXEL = new THREE.Vector2(1 / DYE[0], 1 / DYE[1]);
-
 export function createFluid(renderer: THREE.WebGLRenderer) {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const scene = new THREE.Scene();

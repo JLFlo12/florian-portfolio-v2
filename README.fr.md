@@ -31,7 +31,7 @@ Voici la **version 2** : une refonte complète avec une planète 3D sur l'accuei
 ## Fonctionnalités
 
 - 🪐 **Accueil** : présentation avec une planète 3D interactive (continents en points lumineux, liaisons réseau, anneau, balise sur La Réunion), compétences techniques et soft skills, et les outils que j'utilise (Kali Linux, Wireshark, GNS3, pfSense, Unreal Engine…) présentés sur une toile holographique 3D façon Jarvis, qu'on attrape et fait pivoter
-- ✨ **Animations** : écran de chargement minimaliste à trois points, défilement fluide, titres qui apparaissent en 3D, transitions entre les pages, bande de projets en 3D et détails façon HUD (désactivés si le système demande de réduire les animations)
+- ✨ **Animations** : écran de chargement minimaliste à trois points, défilement fluide, titres qui apparaissent en 3D, transitions entre les pages, bande de projets en 3D, astronaute qui tombe au fil du défilement puis flotte parmi les étoiles, et détails façon HUD (désactivés si le système demande de réduire les animations)
 - 📁 **Projets** : projets classés en *En cours* et *Terminés*, avec une page de détail pour chacun (description, galerie d'images, diaporama Canva)
 - 👤 **À propos** : formation, domaines d'expertise (réseaux, systèmes, cybersécurité) et CV disponible en page web imprimable (`/cv`, une page A4) ou en PDF
 - ✉️ **Contact** : un formulaire de contact (les messages arrivent par e-mail via FormSubmit, avec un piège anti-robots), ainsi que l'e-mail, GitHub et LinkedIn

@@ -144,7 +144,11 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
 - **Manifeste** (`src/components/Manifesto.tsx`, en haut de la section Outils), façon landonorris.com :
   - logo, puis « BUT R&T · Cyber · depuis 2024 », puis une grande phrase centrée en capitales ;
   - les mots d'accent sont en italique orange. Dans la traduction (`home.manifesto`), `*mot*` marque un mot d'accent ;
-  - les mots s'allument un à un au fil du défilement (ScrollTrigger `scrub`).
+  - les mots s'allument un à un au fil du défilement (ScrollTrigger `scrub`) ;
+  - **astronaute qui tombe** derrière le texte, à droite (`src/components/fx/Astronaut.tsx`, styles `.astronaut` dans `index.css`), demandé par Florian d'après une photo qu'il a envoyée : pendant que le manifeste traverse l'écran, il tombe depuis le haut en tournant, apparaît en fondu, puis rapetisse et s'efface avant le bas ; à l'arrêt, il flotte (animation CSS). Petit (72 à 130 px de large) et **chute lente**, à la demande de Florian : elle dure le passage du manifeste plus 1,5 hauteur d'écran (`RANGE`) et ne descend qu'aux 3/4 de l'écran (`LAND`), il s'efface vers les 2/3 ;
+  - **la chute ne revient jamais en arrière** (Florian trouvait bizarre de la voir rejouée à l'envers en remontant) : timeline en pause, avancée jusqu'à la plus grande progression atteinte (amortie comme un scrub) ; en remontant, il reste où il en est, porté par la page ; elle repart de zéro quand la zone repasse sous l'écran (`onLeaveBack`). Opacité nulle aux deux bouts de la chute, donc invisible avant et après. `onRefresh` recalcule la trajectoire au même point. Mode clair : `mix-blend-mode: multiply`. Animations réduites : pas d'astronaute ;
+  - image `public/astronaut.webp` (300 × 461, 28 Ko) : photo de Florian détourée (fond noir et étoiles retirés, silhouette pleine, bord sombre épluché). **Origine et licence de la photo non vérifiées** ;
+  - ⚠️ l'effet est en `useEffect`, pas `useLayoutEffect` : la ref de la zone (posée par le parent) n'existe pas encore quand les effets « layout » des enfants s'exécutent.
 - **Outils : toile holographique « façon Jarvis »** (`src/components/ToolsSection.tsx`, données dans `src/data/tools.tsx`, styles `.tools-*` / `.tool-card` dans `index.css`) :
   - les outils forment un **anneau 3D en CSS** (pas de three.js) posé au-dessus d'un socle de projecteur ;
   - on le fait pivoter en le glissant (souris ou doigt, même en attrapant une carte), avec le pavé tactile (deux doigts à l'horizontale), les flèches du clavier ou les boutons précédent / suivant ;
@@ -169,7 +173,10 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - **effet caoutchouc** : la déformation suit la vitesse (glisser, élan, défilement) avec un ressort peu amorti : le milieu des cartes traîne derrière leurs bords, se creuse, la vague s'amplifie, puis tout revient en oscillant ;
   - sans WebGL ou avec les animations réduites : une rangée de cartes HTML qui défile au doigt ;
   - ⚠️ ne pas nommer une classe `.band` : ce nom est pris par les bandes de couleur de `bandReveal` (`transform: scaleX(0)`).
-- Puis compétences en barres LED (données dans `src/data/profile.ts`).
+- Puis compétences en barres LED (données dans `src/data/profile.ts`). Sur grand écran, les deux colonnes partagent les lignes de la grille (`grid-rows-subgrid`) : les listes commencent à la même hauteur et leurs lignes s'alignent, même si « Compétences techniques » tient sur deux lignes et « Soft skills » sur une (demandé par Florian).
+  - **fin du voyage de l'astronaute** (`src/components/fx/SpaceDrift.tsx`, styles `.astronaut--drift` et `.starfield`), d'après un croquis de Florian : quand le titre « Mes compétences » arrive à l'écran, l'astronaute apparaît dans la marge à gauche du titre, puis le traverse très lentement (60 s, aller-retour sans fin) en ondulant **derrière les lettres** (l'en-tête `z-[1]` passe devant) : caché par les lettres, visible entre elles et entre les mots, la tête qui dépasse en haut de la vague ; arrivée juste après la fin du texte (mesurée avec un `Range` sur le contenu du h2). Il tourne sur lui-même (un tour en 200 s). Tout petit (28 à 40 px), un peu transparent, à peine balancé : Florian ne veut pas qu'il attire l'œil au premier regard. Chemin calculé d'après la mise en page (`offsetTop`/`offsetLeft`, recalculé au redimensionnement, à l'arrivée et à chaque `ScrollTrigger.refresh()`) ; sans marge assez large, il part du bord du titre. En pause quand la section est hors de l'écran ;
+  - derrière, un **champ d'étoiles discret** (canvas) qui dérive très lentement vers la gauche et défile un peu moins vite que la page, avec un léger scintillement et quelques étoiles à halo. Il ne remplit pas la section : masque en ovale centré sur le titre (variables `--sky-y` / `--sky-ry` posées par le composant), croisé (`mask-composite: intersect`) avec un fondu en haut pour ne pas marquer la limite avec la bande de projets. Couleur du texte du thème, plus discrète en mode clair (couleur choisie d'après le thème et pas relue dans les variables CSS : la classe `dark` change après les effets des composants enfants) ;
+  - animations réduites : astronaute immobile à gauche du titre, étoiles fixes.
 
 ### Contact
 Fichiers : `src/pages/Contact.tsx`, `TrackLinks.tsx`, `ContactForm.tsx` et `fx/TopoLines.tsx`.
@@ -177,7 +184,7 @@ Fichiers : `src/pages/Contact.tsx`, `TrackLinks.tsx`, `ContactForm.tsx` et `fx/T
   - les lettres roulent au survol ;
   - un tracé orange se déroule **uniquement au survol ou au focus clavier** ;
   - l'adresse s'affiche en dessous, façon terminal.
-- Fond en courbes de niveau qui se dessinent, et emblème du logo dans une bague graduée.
+- Fond en courbes de niveau qui se dessinent, et emblème du logo dans une bague graduée. Les courbes s'effacent en fondu vers le bas de la section (`.topo` : `mask-image`) : la section les coupait net au-dessus de la carte « Prêt à collaborer ? », remarqué par Florian.
 - **Formulaire de contact via FormSubmit** (`https://formsubmit.co/ajax/<email>`) :
   - piège anti-robots `_honey` ;
   - lien mailto pré-rempli en secours.

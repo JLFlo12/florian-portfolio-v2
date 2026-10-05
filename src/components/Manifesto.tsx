@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
+import Astronaut from '@/components/fx/Astronaut';
 import { gsap, prefersReducedMotion } from '@/lib/motion';
 import { STUDIES } from '@/data/profile';
 
@@ -17,6 +18,7 @@ const Manifesto = () => {
     return match ? { word: match[1], tail: match[2], accent: true } : { word: raw, tail: '', accent: false };
   }), [text]);
   const plain = text.replace(/\*/g, '');
+  const root = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLParagraphElement>(null);
 
   useLayoutEffect(() => {
@@ -30,10 +32,12 @@ const Manifesto = () => {
   }, [words, i18n.language]);
 
   return (
-    <div className="container-x relative flex flex-col items-center text-center">
-      <Logo size={46} className="text-primary" />
-      <p className="label-mono mt-4" data-band>{t('home.manifestoLabel', { year: STUDIES.start })}</p>
-      <p ref={ref} className="manifesto mt-10 max-w-[18em]" aria-label={plain}>
+    <div ref={root} className="container-x relative flex flex-col items-center text-center">
+      {/* Derrière le texte : le texte est positionné (relative) pour passer devant */}
+      <Astronaut zone={root} />
+      <Logo size={46} className="relative text-primary" />
+      <p className="label-mono relative mt-4" data-band>{t('home.manifestoLabel', { year: STUDIES.start })}</p>
+      <p ref={ref} className="manifesto relative mt-10 max-w-[18em]" aria-label={plain}>
         {words.map(({ word, tail, accent }, i) => (
           <span key={`${word}-${i}`} aria-hidden="true">
             <span className={`mf-word ${accent ? 'serif-accent' : ''}`}>{word}</span>

@@ -219,6 +219,26 @@
   }
   .manifesto .serif-accent { font-size: 1.14em; line-height: .8; padding-right: 0; }
 
+  /* Astronaute qui tombe derrière le manifeste (components/fx/Astronaut.tsx) : GSAP bouge le cadre, l'image flotte */
+  .astronaut { position: absolute; top: 0; left: 78%; width: clamp(72px, 9vw, 130px); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+  .astronaut img { display: block; width: 100%; height: auto; animation: astronaut-float 7s ease-in-out infinite; }
+  :root:not(.dark) .astronaut { mix-blend-mode: multiply; } /* mode clair : le blanc de la combinaison prend la teinte du papier */
+  @keyframes astronaut-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(6deg); } }
+
+  /* Fin de l'accueil (compétences) : l'astronaute flotte devant un champ d'étoiles qui dérive (components/fx/SpaceDrift.tsx) */
+  /* Petit, un peu transparent et à peine balancé : il ne doit pas attirer l'œil au premier regard */
+  .astronaut--drift { left: 0; width: clamp(28px, 2.1vw, 40px); }
+  .astronaut--drift img { opacity: .72; animation: astronaut-hover 10s ease-in-out infinite; }
+  :root:not(.dark) .astronaut--drift img { opacity: .85; }
+  @keyframes astronaut-hover { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(3deg); } }
+  /* Étoiles dans un ovale centré sur le titre (--sky-y / --sky-ry posés par SpaceDrift), fondu de tous côtés,
+     et rien tout en haut de la section (pas de démarcation avec la bande de projets) */
+  .starfield {
+    position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+    mask-image: radial-gradient(ellipse 66% var(--sky-ry, 320px) at 50% var(--sky-y, 200px), #000 10%, transparent 100%), linear-gradient(to bottom, transparent, #000 90px);
+    mask-composite: intersect;
+  }
+
   /* Sakura (page Jeux) : branche en SVG + pétales qui tombent (components/fx/Sakura.tsx) */
   .sakura-branch {
     position: absolute; top: calc(var(--nav-h) - 8px); right: 0; z-index: 0; pointer-events: none; /* sous l'en-tête : ses boutons restent lisibles */
@@ -748,6 +768,8 @@
   .field__input:focus { outline: none; border-color: hsl(var(--primary)); background: hsl(var(--background) / .7); box-shadow: 0 0 0 4px hsl(var(--primary) / .16); }
 
   /* Courbes de niveau en fond */
+  /* Fondu vers le bas : la section coupe les courbes à son bord (le SVG déborde de 2rem de chaque côté) */
+  .topo { mask-image: linear-gradient(to bottom, #000 50%, transparent calc(100% - 2rem)); }
   .topo path { stroke: hsl(var(--foreground) / .075); stroke-width: 1.1; }
   .topo g:nth-child(2n) path { stroke: hsl(var(--primary) / .12); }
 

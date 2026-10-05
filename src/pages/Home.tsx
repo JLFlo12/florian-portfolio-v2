@@ -7,6 +7,7 @@ import HeroPlanet from '@/components/three/HeroPlanet';
 import ProjectBand from '@/components/ProjectBand';
 import SectionHeading from '@/components/SectionHeading';
 import DiveOverlay from '@/components/DiveOverlay';
+import SpaceDrift from '@/components/fx/SpaceDrift';
 import { useReunionTime } from '@/components/Footer';
 import { gsap, ScrollTrigger, magnetic, prefersReducedMotion, useReveal } from '@/lib/motion';
 import { planetState } from '@/components/three/planetState';
@@ -68,8 +69,10 @@ const Home = () => {
     { href: 'https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/', icon: Linkedin, label: 'LinkedIn' },
   ];
 
+  // Sur grand écran, les deux colonnes partagent les lignes de la grille (sous-grille) : surtitre, titre, liste.
+  // Les listes commencent ainsi à la même hauteur, même si un titre tient sur deux lignes et l'autre sur une.
   const SkillList = ({ title, list, index }: { title: string; list: typeof TECHNICAL_SKILLS; index: string }) => (
-    <div>
+    <div className="lg:row-span-3 lg:grid lg:grid-rows-subgrid">
       <p className="eyebrow mb-6" data-band>
         <span className="eyebrow__index">{index}</span>
         <span className="eyebrow__rule" data-rule aria-hidden="true" />
@@ -77,7 +80,7 @@ const Home = () => {
       <h3 className="mb-8 font-display text-[clamp(1.8rem,3.4vw,2.8rem)] font-extrabold uppercase leading-none tracking-tight [font-stretch:118%]" data-band="0.12">
         {title}
       </h3>
-      <ul className="divide-y divide-border border-y border-border" data-stagger>
+      <ul className="self-start divide-y divide-border border-y border-border" data-stagger>
         {list.map((skill) => (
           <li key={skill.name} className="group flex items-center justify-between gap-6 py-4">
             <span className="text-lg font-medium transition-transform duration-500 group-hover:translate-x-2">{skill.name}</span>
@@ -183,9 +186,11 @@ const Home = () => {
 
       {/* ═══════════════ COMPÉTENCES ═══════════════ */}
       <section ref={skills} className="section-y relative">
-        <div className="container-x">
+        {/* Fin du voyage de l'astronaute : il flotte près du titre, dans un champ d'étoiles (derrière le contenu) */}
+        <SpaceDrift zone={skills} />
+        <div className="container-x relative">
           <SectionHeading index="02" label="skills" title={t('home.skillsHeading')} />
-          <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-24">
+          <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-x-24 lg:gap-y-0">
             <SkillList title={t('home.skillsTitle')} list={TECHNICAL_SKILLS} index="2.1" />
             <SkillList title={t('home.softSkillsTitle')} list={SOFT_SKILLS} index="2.2" />
           </div>

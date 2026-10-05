@@ -6,7 +6,7 @@
 
 [🇬🇧 English](README.md) · 🇫🇷 Français
 
-[![Site en ligne](https://img.shields.io/badge/Site%20en%20ligne-florian--portfolio--v2.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://florian-portfolio-v2.vercel.app/)
+[![Site en ligne](https://img.shields.io/badge/Site%20en%20ligne-florianlh.fr-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://www.florianlh.fr/)
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -161,7 +161,7 @@ florian-portfolio-v2/
 
 ## Déploiement
 
-Le site est déployé sur **Vercel** à l'adresse [florian-portfolio-v2.vercel.app](https://florian-portfolio-v2.vercel.app/). `vercel.json` renvoie toutes les routes vers `index.html`, pour que les liens comme `/projects` fonctionnent quand on recharge la page.
+Le site est déployé sur **Vercel** à l'adresse [florianlh.fr](https://www.florianlh.fr/) (aussi accessible via [florian-portfolio-v2.vercel.app](https://florian-portfolio-v2.vercel.app/)). `vercel.json` renvoie toutes les routes vers `index.html`, pour que les liens comme `/projects` fonctionnent quand on recharge la page.
 
 ## Licence
 

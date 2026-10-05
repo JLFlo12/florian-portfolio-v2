@@ -8,7 +8,7 @@ Ce fichier résume tout le travail fait sur la refonte du portfolio, les décisi
 
 | | |
 | --- | --- |
-| **Site v2 (en ligne)** | https://florian-portfolio-v2.vercel.app |
+| **Site v2 (en ligne)** | https://www.florianlh.fr (et https://florian-portfolio-v2.vercel.app) |
 | **Dépôt v2 (public)** | https://github.com/JLFlo12/florian-portfolio-v2 |
 | **Ancien site (inchangé)** | https://florian-portfolio-zeta.vercel.app |
 | **Ancien dépôt (inchangé)** | https://github.com/JLFlo12/florian-portfolio |
@@ -46,6 +46,7 @@ Pour pousser : `git push v2 refonte-moderne:main`.
   npx vercel@latest link --project florian-portfolio-v2   # une seule fois
   npx vercel@latest deploy --prod --yes
   ```
+- **Nom de domaine `florianlh.fr`** (acheté chez OVH, DNS chez OVH) : ajouté au projet le 05/10/2026. `www.florianlh.fr` est l'adresse principale, `florianlh.fr` y redirige (308). Zone OVH : `A @ → 76.76.21.21` et `CNAME www → cname.vercel-dns.com.` ; les anciens A/AAAA d'OVH (51.91.236.255, 2001:41d0:301::29) et le TXT `1|www.florianlh.fr` doivent être supprimés. Les MX/SPF d'OVH restent.
 - `vercel.json` : toutes les routes renvoient vers `index.html` (application monopage), **sauf** `/_vercel/*`, pour ne pas casser le script de statistiques.
 - Option à proposer : relier ce projet Vercel au dépôt v2 pour que chaque push déploie automatiquement.
 

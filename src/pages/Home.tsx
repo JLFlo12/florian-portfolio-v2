@@ -114,21 +114,12 @@ const Home = () => {
         <DiveOverlay />
 
         <div className="container-x pointer-events-none relative z-[2] flex min-h-[100svh] max-w-[1800px] flex-col justify-between gap-10 pb-14 pt-[calc(var(--nav-h)+36px)]" data-dive-ui>
-          {/* Ligne du haut : statut + télémétrie */}
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <p className="pointer-events-auto liquid inline-flex items-center gap-3 rounded-full px-4 py-2 text-sm font-medium" data-intro>
-              <span className="status-dot" /> {t('ui.online')} · <span className="text-muted-foreground">{t('home.location')}</span>
+          {/* Ligne du haut : heure locale, en texte simple, à droite (la localisation est en bas du hero) */}
+          <div className="flex justify-end">
+            <p className="hidden text-right text-sm leading-snug text-muted-foreground md:block" data-intro>
+              {t('ui.localTime')}
+              <span className="block tabular-nums text-foreground">{time.slice(0, 5)} <span className="text-muted-foreground">GMT+4</span></span>
             </p>
-            <div className="hud-panel hidden min-w-[250px] md:block" data-intro data-liquid>
-              <p className="mb-2 flex justify-between gap-6 border-b border-dashed border-primary/30 pb-2 tracking-[.08em] text-primary">
-                <span>SYS://FLORIAN.GL</span><span>v{new Date().getFullYear()}</span>
-              </p>
-              <dl className="grid gap-0.5">
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.status')}</dt><dd className="text-[hsl(var(--online))]">BUT R&T</dd></div>
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.localTime')}</dt><dd className="tabular-nums text-foreground">{time}</dd></div>
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('ui.coords')}</dt><dd className="text-foreground">-21.11 · 55.53</dd></div>
-              </dl>
-            </div>
           </div>
 
           {/* Bas du hero : nom, rôle, bio, liens */}

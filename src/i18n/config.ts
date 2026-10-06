@@ -26,9 +26,6 @@ const resources = {
         rights: 'Tous droits réservés.',
         legal: 'Mentions légales',
         localTime: 'Heure locale',
-        status: 'Statut',
-        online: 'En ligne',
-        coords: 'Coordonnées',
         session: 'Session',
         explore: 'Explorer',
         soundOn: 'Activer la musique',
@@ -45,7 +42,16 @@ const resources = {
         placeholder: 'Tapez votre message...',
         send: 'Envoyer',
         tooMany: 'Trop de requêtes, réessayez dans un instant.',
-        noCredits: 'Crédits IA épuisés.'
+        noCredits: 'Crédits IA épuisés.',
+        voice: 'Réponses à voix haute',
+        mic: 'Parler à Jarvis',
+        micStop: 'Terminer et envoyer',
+        voiceHint: 'Touchez Jarvis ou le micro pour lui parler',
+        listening: 'Je vous écoute…',
+        thinking: 'Jarvis réfléchit…',
+        speaking: 'Jarvis répond…',
+        micDenied: 'Micro refusé : autorisez-le dans votre navigateur pour parler à Jarvis.',
+        micError: 'La reconnaissance vocale ne répond pas. Réessayez ou écrivez votre question.'
       },
       // Home page
       home: {
@@ -62,7 +68,7 @@ const resources = {
           jarvis: 'Accès autorisé. {{tools}} outils chargés, {{categories}} catégories. Fais défiler pour prendre les commandes.',
           scroll: 'Défile'
         },
-        manifesto: 'Je *construis* des réseaux, je *sécurise* des systèmes, je *casse* ce qui peut l\'être pour mieux le *protéger*, et je crée des *mondes* en 3D.',
+        manifesto: 'Je *construis* des réseaux, je *sécurise* des systèmes, je *casse* ce qui peut l\'être pour mieux le *protéger*, et je crée des *jeux* *vidéo*.',
         manifestoLabel: 'BUT R&T · Cyber · depuis {{year}}',
         role: 'Étudiant en BUT Réseaux & Télécommunications',
         bio: 'Étudiant passionné par l\'informatique, le développement et la cyber.',
@@ -78,9 +84,6 @@ const resources = {
         toolsCarousel: 'Toile des outils en 3D',
         toolsPrev: 'Outil précédent',
         toolsNext: 'Outil suivant',
-        toolsStatsTools: 'Outils',
-        toolsStatsRotation: 'Rotation',
-        toolsStatsFilter: 'Filtre',
         toolsPause: 'Mettre la rotation en pause',
         toolsPlay: 'Relancer la rotation',
         allTools: 'Tous',
@@ -265,9 +268,6 @@ const resources = {
         rights: 'All rights reserved.',
         legal: 'Legal notice',
         localTime: 'Local time',
-        status: 'Status',
-        online: 'Online',
-        coords: 'Coordinates',
         session: 'Session',
         explore: 'Explore',
         soundOn: 'Turn music on',
@@ -284,7 +284,16 @@ const resources = {
         placeholder: 'Type your message...',
         send: 'Send',
         tooMany: 'Too many requests, please try again shortly.',
-        noCredits: 'AI credits exhausted.'
+        noCredits: 'AI credits exhausted.',
+        voice: 'Spoken replies',
+        mic: 'Talk to Jarvis',
+        micStop: 'Finish and send',
+        voiceHint: 'Tap Jarvis or the mic to talk to him',
+        listening: 'Listening…',
+        thinking: 'Jarvis is thinking…',
+        speaking: 'Jarvis is answering…',
+        micDenied: 'Microphone blocked: allow it in your browser to talk to Jarvis.',
+        micError: 'Speech recognition is not responding. Try again or type your question.'
       },
       // Home page
       home: {
@@ -301,7 +310,7 @@ const resources = {
           jarvis: 'Access granted. {{tools}} tools loaded, {{categories}} categories. Scroll down to take control.',
           scroll: 'Scroll'
         },
-        manifesto: 'I *build* networks, *secure* systems, *break* what can be broken to better *protect* it, and craft 3D *worlds*.',
+        manifesto: 'I *build* networks, *secure* systems, *break* what can be broken to better *protect* it, and make *video* *games*.',
         manifestoLabel: 'BUT R&T · Cyber · since {{year}}',
         role: 'Student in Networks & Telecommunications',
         bio: 'Computer science, development and cybersecurity enthusiast.',
@@ -317,9 +326,6 @@ const resources = {
         toolsCarousel: '3D tools hologram',
         toolsPrev: 'Previous tool',
         toolsNext: 'Next tool',
-        toolsStatsTools: 'Tools',
-        toolsStatsRotation: 'Rotation',
-        toolsStatsFilter: 'Filter',
         toolsPause: 'Pause the rotation',
         toolsPlay: 'Resume the rotation',
         allTools: 'All',

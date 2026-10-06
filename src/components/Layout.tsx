@@ -76,7 +76,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
       // Indicateur de défilement mis à jour directement (sans re-rendu React à chaque image)
       const p = max > 0 ? Math.min(1, y / max) : 0;
       if (hudBar.current) hudBar.current.style.transform = `scaleX(${p})`;
-      if (hudPct.current) hudPct.current.textContent = `${String(Math.round(p * 100)).padStart(3, '0')}%`;
+      if (hudPct.current) hudPct.current.textContent = `${Math.round(p * 100)}%`;
       if (hudBar.current) hudBar.current.closest<HTMLElement>('[data-scroll-hud]')!.style.opacity = y > window.innerHeight * 0.5 && p < 0.96 ? '1' : '0';
       if (Math.abs(y - last) > 6) { setHidden(y > last && y > window.innerHeight * 0.5); last = y; }
       ticking = false;
@@ -220,14 +220,12 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
 
       {location.pathname !== '/chatbot' && <Footer />}
 
-      {/* Indicateur de défilement façon télémétrie (grand écran) */}
-      <div data-scroll-hud className="pointer-events-none fixed bottom-6 left-[var(--gutter)] z-40 hidden items-center gap-3 font-mono text-[.68rem] uppercase tracking-[.1em] text-muted-foreground opacity-0 transition-opacity duration-500 lg:flex" aria-hidden="true">
-        <span className="text-primary">FLORIAN.SYS</span>
-        <span>/ {currentLabel}</span>
-        <span className="relative h-0.5 w-20 overflow-hidden bg-foreground/15">
+      {/* Indicateur de défilement minimaliste (grand écran) : un trait fin et le pourcentage */}
+      <div data-scroll-hud className="pointer-events-none fixed bottom-6 left-[var(--gutter)] z-40 hidden items-center gap-3 font-mono text-[.62rem] tabular-nums text-muted-foreground opacity-0 transition-opacity duration-500 lg:flex" aria-hidden="true">
+        <span className="relative h-px w-12 overflow-hidden bg-foreground/20">
           <i ref={hudBar} className="absolute inset-0 origin-left scale-x-0 bg-primary" />
         </span>
-        <span ref={hudPct} className="led text-foreground">000%</span>
+        <span ref={hudPct}>0%</span>
       </div>
     </div>
   );

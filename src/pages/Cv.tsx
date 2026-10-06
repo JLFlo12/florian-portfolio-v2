@@ -97,14 +97,6 @@ const Cv = () => {
                 ))}
               </ul>
             </Block>
-
-            <Block title={cv.labels.tools}>
-              <ul className="space-y-1.5 text-sm">
-                {cv.tools.map((x) => (
-                  <li key={x.name}><span className="font-semibold">{x.name}</span> <span className="text-muted-foreground">: {x.text}</span></li>
-                ))}
-              </ul>
-            </Block>
           </aside>
 
           {/* Colonne principale */}
@@ -129,6 +121,15 @@ const Cv = () => {
                       {x.items.map((item) => <li key={item} className="cv-bullet">{item}</li>)}
                     </ul>
                   </li>
+                ))}
+              </ul>
+            </Block>
+
+            {/* Outils : dans la colonne principale, plus large (la liste ne tiendrait pas sur la page A4 dans la colonne latérale) */}
+            <Block title={cv.labels.tools}>
+              <ul className="space-y-1.5 text-sm">
+                {cv.tools.map((x) => (
+                  <li key={x.name}><span className="font-semibold">{x.name}</span> <span className="text-muted-foreground">: {x.text}</span></li>
                 ))}
               </ul>
             </Block>

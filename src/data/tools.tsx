@@ -1,5 +1,9 @@
 import React from 'react';
-import { Code, Database, Shield, Server, Globe, Terminal, FileText, Wifi, HardDrive, Monitor, Gamepad2, Cpu, Lock, Bug } from 'lucide-react';
+import {
+  Code, Database, Shield, Server, Globe, Terminal, FileText, Wifi, HardDrive, Monitor, Gamepad2, Cpu, Lock, Bug,
+  Network, Router, ShieldCheck, ShieldAlert, ClipboardCheck, Radio, RadioReceiver, FileCode, Container, Atom, Braces,
+  Activity, Gauge, BellRing, Type, Gem, GanttChart,
+} from 'lucide-react';
 
 /* Outils présentés sur l'accueil (section Outils).
    Aussi transmis à Jarvis pour qu'il reste à jour avec le site. */
@@ -13,151 +17,265 @@ export interface Tool {
 
 export const TOOLS: Tool[] = [
   // ── Cybersécurité (Base) ──
-  { 
-    name: 'Kali Linux', 
-    icon: <Shield className="h-8 w-8" />, 
+  {
+    name: 'Kali Linux',
+    icon: <Shield className="h-8 w-8" />,
     category: 'security',
     description: 'Distribution Linux spécialisée en sécurité informatique et tests de pénétration, avec plus de 600 outils de sécurité préinstallés.'
   },
-  { 
-    name: 'Wireshark', 
-    icon: <Wifi className="h-8 w-8" />, 
+  {
+    name: 'Wireshark',
+    icon: <Wifi className="h-8 w-8" />,
     category: 'security',
     description: 'Analyseur de protocoles réseau puissant pour capturer et examiner le trafic réseau en temps réel. Parfait pour le diagnostic et la sécurité réseau.'
   },
-  { 
-    name: 'pfSense', 
-    icon: <Shield className="h-8 w-8" />, 
+  {
+    name: 'pfSense',
+    icon: <Shield className="h-8 w-8" />,
     category: 'security',
     description: 'Pare-feu et routeur open-source basé sur FreeBSD, offrant des fonctionnalités de sécurité réseau avancées et une interface web intuitive.'
   },
-  { 
-    name: 'Nmap', 
-    icon: <Bug className="h-8 w-8" />, 
+  {
+    name: 'OPNsense',
+    icon: <ShieldCheck className="h-8 w-8" />,
+    category: 'security',
+    description: 'Pare-feu et routeur open-source issu de pfSense : filtrage, VPN, DNS et modules comme l\'IDS Suricata. Mis en place en TP de cybersécurité.'
+  },
+  {
+    name: 'Suricata',
+    icon: <ShieldAlert className="h-8 w-8" />,
+    category: 'security',
+    description: 'Système de détection et de prévention d\'intrusion (IDS/IPS) open-source qui analyse le trafic avec des règles comme Emerging Threats. Déployé sur OPNsense en TP.'
+  },
+  {
+    name: 'OpenSCAP',
+    icon: <ClipboardCheck className="h-8 w-8" />,
+    category: 'security',
+    description: 'Outil d\'audit de conformité qui compare la configuration d\'un système à un référentiel de sécurité. Utilisé pour mesurer un durcissement Linux avant / après.'
+  },
+  {
+    name: 'Nmap',
+    icon: <Bug className="h-8 w-8" />,
     category: 'security',
     description: 'Scanner de ports et outil d\'audit réseau open-source. Détecte les hôtes, services et vulnérabilités sur un réseau.'
   },
-  { 
-    name: 'Metasploit', 
-    icon: <Lock className="h-8 w-8" />, 
+  {
+    name: 'Metasploit',
+    icon: <Lock className="h-8 w-8" />,
     category: 'security',
     description: 'Framework de tests de pénétration pour découvrir et exploiter des vulnérabilités dans les systèmes informatiques.'
   },
-  { 
-    name: 'Burp Suite', 
-    icon: <Shield className="h-8 w-8" />, 
+  {
+    name: 'Burp Suite',
+    icon: <Shield className="h-8 w-8" />,
     category: 'security',
     description: 'Plateforme de test de sécurité des applications web. Proxy d\'interception, scanner de vulnérabilités et outils d\'intrusion.'
   },
   // ── Réseau ──
-  { 
-    name: 'GNS3', 
-    icon: <Globe className="h-8 w-8" />, 
+  {
+    name: 'GNS3',
+    icon: <Globe className="h-8 w-8" />,
     category: 'network',
     description: 'Simulateur de réseau graphique permettant de concevoir, construire et tester des topologies réseau complexes virtuellement.'
   },
+  {
+    name: 'Cisco Packet Tracer',
+    icon: <Network className="h-8 w-8" />,
+    category: 'network',
+    description: 'Simulateur réseau de Cisco pour configurer routeurs, switchs, VLAN et routage sans matériel réel. Utilisé dans de nombreux TP de BUT.'
+  },
+  {
+    name: 'Ubiquiti UniFi',
+    icon: <Router className="h-8 w-8" />,
+    category: 'network',
+    description: 'Bornes Wi-Fi et switchs pilotés depuis un contrôleur central. Utilisé pendant mon stage à l\'ESIROI pour moderniser le Wi-Fi et segmenter le réseau en VLAN.'
+  },
+  {
+    name: 'Zabbix',
+    icon: <Activity className="h-8 w-8" />,
+    category: 'network',
+    description: 'Solution de supervision open-source qui collecte les métriques des serveurs et des équipements réseau et déclenche des alertes. Étudiée dans mon projet de supervision réseau.'
+  },
+  {
+    name: 'Nagios',
+    icon: <BellRing className="h-8 w-8" />,
+    category: 'network',
+    description: 'Outil de supervision historique : il vérifie l\'état des hôtes et des services et prévient en cas de panne. Étudié dans mon projet de supervision réseau.'
+  },
+  {
+    name: 'Grafana',
+    icon: <Gauge className="h-8 w-8" />,
+    category: 'network',
+    description: 'Plateforme de tableaux de bord pour visualiser des métriques en temps réel (Zabbix, Prometheus…). Étudiée dans mon projet de supervision réseau.'
+  },
   // ── Game Dev ──
-  { 
-    name: 'Unreal Engine 5', 
-    icon: <Gamepad2 className="h-8 w-8" />, 
+  {
+    name: 'Unreal Engine 5',
+    icon: <Gamepad2 className="h-8 w-8" />,
     category: 'gamedev',
     description: 'Moteur de jeu AAA d\'Epic Games avec rendu Nanite, illumination Lumen et MetaHuman. Utilisé pour Thornfall et The Forgotten.'
   },
-  { 
-    name: 'Godot 4', 
-    icon: <Gamepad2 className="h-8 w-8" />, 
+  {
+    name: 'Godot 4',
+    icon: <Gamepad2 className="h-8 w-8" />,
     category: 'gamedev',
     description: 'Moteur de jeu open-source léger et flexible avec GDScript. Utilisé pour If You Stay — jeu narratif 2.5D.'
   },
-  { 
-    name: 'Blender', 
-    icon: <Cpu className="h-8 w-8" />, 
+  {
+    name: 'Blender',
+    icon: <Cpu className="h-8 w-8" />,
     category: 'gamedev',
     description: 'Suite 3D open-source complète : modélisation, sculpt, animation, rendu et compositing. Idéal pour créer des assets de jeux.'
   },
+  {
+    name: 'Roblox Studio',
+    icon: <Gamepad2 className="h-8 w-8" />,
+    category: 'gamedev',
+    description: 'Environnement de création de jeux Roblox, programmé en Luau. Utilisé avec Rojo pour mon jeu Monster Evolution.'
+  },
   // ── Virtualisation ──
-  { 
-    name: 'VMware Workstation', 
-    icon: <Monitor className="h-8 w-8" />, 
+  {
+    name: 'VMware Workstation',
+    icon: <Monitor className="h-8 w-8" />,
     category: 'virtualization',
     description: 'Plateforme de virtualisation professionnelle pour exécuter plusieurs systèmes d\'exploitation simultanément sur une seule machine.'
   },
-  { 
-    name: 'VirtualBox', 
-    icon: <HardDrive className="h-8 w-8" />, 
+  {
+    name: 'VirtualBox',
+    icon: <HardDrive className="h-8 w-8" />,
     category: 'virtualization',
     description: 'Solution de virtualisation open-source gratuite d\'Oracle, idéale pour tester différents OS et environnements de développement.'
   },
+  {
+    name: 'Docker',
+    icon: <Container className="h-8 w-8" />,
+    category: 'virtualization',
+    description: 'Plateforme de conteneurs qui empaquette une application et ses dépendances pour la lancer partout à l\'identique. Utilisé avec Docker Compose pour la SAÉ 2.02.'
+  },
   // ── Développement ──
-  { 
-    name: 'Visual Studio Code', 
-    icon: <Code className="h-8 w-8" />, 
+  {
+    name: 'Visual Studio Code',
+    icon: <Code className="h-8 w-8" />,
     category: 'development',
     description: 'Éditeur de code source léger et puissant de Microsoft avec support pour de nombreux langages et extensions.'
   },
-  { 
-    name: 'Git', 
-    icon: <Code className="h-8 w-8" />, 
+  {
+    name: 'Git',
+    icon: <Code className="h-8 w-8" />,
     category: 'development',
     description: 'Système de contrôle de version distribué pour suivre les modifications du code source et collaborer efficacement en équipe.'
   },
-  { 
-    name: 'Notepad++', 
-    icon: <FileText className="h-8 w-8" />, 
+  {
+    name: 'Notepad++',
+    icon: <FileText className="h-8 w-8" />,
     category: 'development',
     description: 'Éditeur de texte et de code source gratuit pour Windows avec coloration syntaxique et support de nombreux langages de programmation.'
   },
+  {
+    name: 'Python',
+    icon: <FileCode className="h-8 w-8" />,
+    category: 'development',
+    description: 'Langage polyvalent pour l\'automatisation, les scripts réseau et le traitement du signal. Utilisé en cours de programmation et dans mes blocs GNU Radio.'
+  },
+  {
+    name: 'TypeScript',
+    icon: <Braces className="h-8 w-8" />,
+    category: 'development',
+    description: 'JavaScript avec typage statique, qui repère les erreurs avant l\'exécution. C\'est le langage de ce portfolio.'
+  },
+  {
+    name: 'React',
+    icon: <Atom className="h-8 w-8" />,
+    category: 'development',
+    description: 'Bibliothèque JavaScript pour construire des interfaces web en composants. Utilisée pour ce portfolio et plusieurs projets web.'
+  },
+  {
+    name: 'Supabase',
+    icon: <Database className="h-8 w-8" />,
+    category: 'development',
+    description: 'Backend open-source basé sur PostgreSQL : base de données, authentification, stockage et fonctions. Il stocke les projets de ce portfolio.'
+  },
   // ── Serveurs ──
-  { 
-    name: 'Apache', 
-    icon: <Server className="h-8 w-8" />, 
+  {
+    name: 'Apache',
+    icon: <Server className="h-8 w-8" />,
     category: 'server',
     description: 'Serveur web HTTP open-source le plus utilisé au monde, robuste et modulaire pour héberger des sites web et applications.'
   },
-  { 
-    name: 'Nginx', 
-    icon: <Server className="h-8 w-8" />, 
+  {
+    name: 'Nginx',
+    icon: <Server className="h-8 w-8" />,
     category: 'server',
     description: 'Serveur web haute performance et proxy inverse, excellent pour servir du contenu statique et équilibrer la charge.'
   },
   // ── Télécom ──
-  { 
-    name: 'Asterisk', 
-    icon: <Globe className="h-8 w-8" />, 
+  {
+    name: 'Asterisk',
+    icon: <Globe className="h-8 w-8" />,
     category: 'telecom',
     description: 'Framework de communication open-source pour créer des solutions de téléphonie IP, PBX et centres d\'appels personnalisés.'
   },
+  {
+    name: 'GNU Radio',
+    icon: <Radio className="h-8 w-8" />,
+    category: 'telecom',
+    description: 'Boîte à outils de radio logicielle : on assemble en blocs des chaînes de traitement du signal (modulation, filtrage, spectre). Utilisée pour mes TP SDR, dont un récepteur FM.'
+  },
   // ── Hardware ──
-  { 
-    name: 'Raspberry Pi', 
-    icon: <HardDrive className="h-8 w-8" />, 
+  {
+    name: 'Raspberry Pi',
+    icon: <HardDrive className="h-8 w-8" />,
     category: 'hardware',
     description: 'Mini-ordinateur ARM économique parfait pour les projets IoT, domotique, serveurs personnels et apprentissage de l\'informatique.'
   },
+  {
+    name: 'ADALM-Pluto SDR',
+    icon: <RadioReceiver className="h-8 w-8" />,
+    category: 'hardware',
+    description: 'Radios logicielles (ADALM-Pluto en émission et réception, clé RTL-SDR en réception) pilotées par GNU Radio. Utilisées pour la réception FM et une liaison QPSK à 915 MHz.'
+  },
   // ── OS ──
-  { 
-    name: 'Debian', 
-    icon: <Terminal className="h-8 w-8" />, 
+  {
+    name: 'Debian',
+    icon: <Terminal className="h-8 w-8" />,
     category: 'os',
     description: 'Distribution Linux stable et sécurisée, base de nombreuses autres distributions, idéale pour les serveurs et postes de travail.'
   },
-  { 
-    name: 'Windows Server', 
-    icon: <Server className="h-8 w-8" />, 
+  {
+    name: 'Windows Server',
+    icon: <Server className="h-8 w-8" />,
     category: 'os',
     description: 'Système d\'exploitation serveur de Microsoft avec Active Directory, services réseau intégrés et outils d\'administration avancés.'
   },
   // ── Outils divers ──
-  { 
-    name: 'FileZilla', 
-    icon: <Database className="h-8 w-8" />, 
+  {
+    name: 'FileZilla',
+    icon: <Database className="h-8 w-8" />,
     category: 'tools',
     description: 'Client FTP/SFTP gratuit et multi-plateforme pour transférer des fichiers entre ordinateurs locaux et serveurs distants.'
   },
-  { 
-    name: 'Putty', 
-    icon: <Terminal className="h-8 w-8" />, 
+  {
+    name: 'Putty',
+    icon: <Terminal className="h-8 w-8" />,
     category: 'tools',
     description: 'Client SSH/Telnet léger et gratuit pour Windows, permettant la connexion sécurisée aux serveurs et équipements réseau distants.'
+  },
+  {
+    name: 'ProjectLibre',
+    icon: <GanttChart className="h-8 w-8" />,
+    category: 'tools',
+    description: 'Logiciel de gestion de projet open-source : diagramme de Gantt, chemin critique et ressources. Utilisé en gestion de projet en BUT 3.'
+  },
+  {
+    name: 'Typst',
+    icon: <Type className="h-8 w-8" />,
+    category: 'tools',
+    description: 'Langage de mise en page moderne, plus simple et plus rapide que LaTeX. J\'y rédige mes comptes rendus de TP.'
+  },
+  {
+    name: 'Obsidian',
+    icon: <Gem className="h-8 w-8" />,
+    category: 'tools',
+    description: 'Application de notes en Markdown, reliées entre elles. Elle me sert à organiser mes cours et mes projets.'
   },
 ];

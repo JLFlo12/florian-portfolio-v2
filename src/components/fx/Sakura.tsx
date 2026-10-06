@@ -287,7 +287,12 @@ const Sakura = ({ calm = false }: { calm?: boolean }) => {
           ))}
           {blooms.map((b, i) => (
             <g key={i} transform={`translate(${b.x.toFixed(1)} ${b.y.toFixed(1)})`}>
-              <g ref={(el) => { bloomEls.current[i] = el; }} className="sk-bloom" style={{ '--d': `${b.d.toFixed(2)}s` } as React.CSSProperties}>
+              <g
+                ref={(el) => { bloomEls.current[i] = el; }}
+                className="sk-bloom"
+                // Frémissement au vent : rythme et décalage propres à chaque fleur (tirés de son orientation et de sa taille)
+                style={{ '--d': `${b.d.toFixed(2)}s`, '--fd': `${(-b.r / 24).toFixed(2)}s`, '--ft': `${(2.2 + (b.s % 1) * 1.4).toFixed(2)}s` } as React.CSSProperties}
+              >
                 {b.bud
                   ? <circle r={b.s * 0.32} className={TINTS[b.c]} />
                   : <use href="#sk-flower" transform={`rotate(${b.r.toFixed(0)}) scale(${b.s.toFixed(2)})`} className={TINTS[b.c]} />}

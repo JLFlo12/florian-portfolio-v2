@@ -15,7 +15,7 @@ Ce fichier résume tout le travail fait sur la refonte du portfolio, les décisi
 | **Dossier local** | `PorteFolio/`, branche `refonte-moderne` |
 | **Stack** | React 18 + TypeScript + Vite 5, Tailwind + shadcn/ui, GSAP + Lenis, three.js + React Three Fiber, i18next (FR/EN), Supabase |
 
-La v2 est une **refonte complète** du portfolio d'origine, qui avait été généré avec Lovable. Le style s'inspire du site AMIGOS (`BUT 3/SiteWeb`), ambiance « pilote de F1 / HUD futuriste ». **Tout le contenu d'origine est conservé** : textes, 23 outils, compétences, 12 projets Supabase, mode admin, Jarvis, 5 mini-jeux, FR/EN, thème clair/sombre.
+La v2 est une **refonte complète** du portfolio d'origine, qui avait été généré avec Lovable. Le style s'inspire du site AMIGOS (`BUT 3/SiteWeb`), ambiance « pilote de F1 / HUD futuriste ». **Tout le contenu d'origine est conservé** : textes, outils (23 à l'origine, 42 depuis le 06/10/2026), compétences, 12 projets Supabase, mode admin, Jarvis, 5 mini-jeux, FR/EN, thème clair/sombre.
 
 ---
 
@@ -84,7 +84,8 @@ Pour pousser : `git push v2 refonte-moderne:main`.
   - Instrument Serif italique : accents
 
   Hubot Sans et Mona Sans sont préchargées dans `index.html`. Il n'y a plus aucune requête vers Google Fonts.
-- **Classes utiles** (`src/index.css`) : `container-x`, `section-y`, `display-xl`, `title-xl`, `serif-accent`, `label-mono`, `led`, `eyebrow`, `hud-frame`, `hud-panel`, `panel`, `btn-neon`, `btn-ghost`, `chip`, `liquid`, `liquid-strong`, `field`, `field__input`, `email-text`, `cv-*`, `track-*`, `dive-*`, `tools-*`, `tool-card`.
+- **À éviter (Florian, 06/10/2026)** : panneaux façon HUD (« SYS://… », statut, coordonnées, rotation), surtitres « // —— / … », indicateur « FLORIAN.SYS / … », pastille « ● En ligne » : « trop IA ». Ils ont été retirés de l'accueil, de la section Outils, de la page Contact et de l'indicateur de défilement. Préférer du texte simple et des touches faites à la main.
+- **Classes utiles** (`src/index.css`) : `container-x`, `section-y`, `display-xl`, `title-xl`, `serif-accent`, `label-mono`, `led`, `eyebrow`, `hud-frame`, `hud-panel`, `panel`, `btn-neon`, `btn-ghost`, `chip`, `liquid`, `liquid-strong`, `field`, `field__input`, `email-text`, `cv-*`, `track-*`, `dive-*`, `tools-*`, `tool-node`, `holo-*`, `jarvis-orb`.
 - **Animations** (`src/lib/motion.tsx`) :
   - attributs `data-reveal`, `data-stagger` (dont `flip`), `data-band`, `data-rule` et `data-count`, activés par `useReveal(ref)` ;
   - **`data-band` : bande de couleur façon landonorris.com.** Sur chaque ligne, une bande orange arrive de la gauche, couvre la ligne, puis se retire vers la droite en laissant le texte derrière elle. La valeur de l'attribut est un délai en secondes (ex. `data-band="0.35"`). Elle sert aux titres (`AccentTitle`, prop `band`), aux surtitres, aux intros de section, à la phrase d'intro d'À propos et aux sous-titres ;
@@ -105,9 +106,9 @@ Pour pousser : `git push v2 refonte-moderne:main`.
   - sur mobile : logo + bouton menu, avec menu plein écran.
 - Également dans le layout :
   - le rideau de transition orange entre les pages ;
-  - l'indicateur de défilement façon télémétrie ;
+  - l'indicateur de défilement (bas gauche, grand écran) : un trait fin et le pourcentage, rien d'autre ;
   - le grain (le curseur est celui du système : Florian ne veut pas de curseur personnalisé).
-- `src/components/fx/Preloader.tsx` : écran de chargement minimaliste, trois points en orbite (deux de la couleur du texte, un orange). Une fois la page prête (polices chargées, 1,3 s minimum, 0,35 s si déjà vu dans la session), les points se rejoignent au centre, puis l'écran s'ouvre en cercle depuis ce point, avec un liseré orange. Il envoie le signal `markReady()` (`src/lib/ready.ts`).
+- `src/components/fx/Preloader.tsx` : écran de chargement **dessiné à la main** (06/10/2026, d'après une référence envoyée par Florian) : croquis de la planète à anneau (trait de la couleur du texte, hachures, point orange sur La Réunion, deux étoiles) et « CHARGEMENT » en capitales tracées à la main (`GLYPHS`). Tout est généré en code avec une graine fixe : le dessin se trace (`pathLength` + `stroke-dashoffset`), puis trois versions légèrement différentes alternent toutes les 140 ms (`.loader__frame`, effet « trait qui bout »). Une fois la page prête (polices chargées, 1,6 s minimum, 0,35 s si déjà vu dans la session), le mot s'efface et l'écran s'ouvre en cercle **depuis le centre de la planète** (`--hx` / `--hy`), avec un liseré orange. Il envoie le signal `markReady()` (`src/lib/ready.ts`). Avant : trois points en orbite.
 - `src/components/fx/SmoothScroll.tsx` : Lenis synchronisé avec GSAP. Il se met en pause quand un menu ou une fenêtre Radix bloque le défilement.
 - `src/components/Footer.tsx` : grand appel à l'action, menu, contacts, heure de La Réunion (`useReunionTime`).
 - `src/App.tsx` : l'accueil est chargé tout de suite, les autres pages à la demande (`React.lazy`). Les notifications Sonner sont chargées après le premier affichage.
@@ -137,7 +138,7 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - mots « Réseaux / Systèmes / Cybersécurité » qui traversent l'écran ;
   - phrase « Voici avec quoi *je travaille* » construite lettre par lettre.
 
-  - sous la phrase, **Jarvis tape un message** (« Accès autorisé. 23 outils chargés, 10 catégories… »), avec un curseur plein. Les chiffres sont calculés depuis `tools.tsx` ;
+  - sous la phrase, **Jarvis tape un message** (« Accès autorisé. 42 outils chargés, 10 catégories… »), avec un curseur plein. Les chiffres sont calculés depuis `tools.tsx` ;
   - un **cercle se dessine autour de « Défile »** (flèche qui oscille).
 
   Tout est piloté par `gsap.ticker` et marche dans les deux sens.
@@ -149,17 +150,15 @@ Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
   - **la chute ne revient jamais en arrière** (Florian trouvait bizarre de la voir rejouée à l'envers en remontant) : timeline en pause, avancée jusqu'à la plus grande progression atteinte (amortie comme un scrub) ; en remontant, il reste où il en est, porté par la page ; elle repart de zéro quand la zone repasse sous l'écran (`onLeaveBack`). Opacité nulle aux deux bouts de la chute, donc invisible avant et après. `onRefresh` recalcule la trajectoire au même point. Mode clair : `mix-blend-mode: multiply`. Animations réduites : pas d'astronaute ;
   - image `public/astronaut.webp` (300 × 461, 28 Ko) : photo de Florian détourée (fond noir et étoiles retirés, silhouette pleine, bord sombre épluché). **Origine et licence de la photo non vérifiées** ;
   - ⚠️ l'effet est en `useEffect`, pas `useLayoutEffect` : la ref de la zone (posée par le parent) n'existe pas encore quand les effets « layout » des enfants s'exécutent.
-- **Outils : toile holographique « façon Jarvis »** (`src/components/ToolsSection.tsx`, données dans `src/data/tools.tsx`, styles `.tools-*` / `.tool-card` dans `index.css`) :
-  - les outils forment un **anneau 3D en CSS** (pas de three.js) posé au-dessus d'un socle de projecteur ;
-  - on le fait pivoter en le glissant (souris ou doigt, même en attrapant une carte), avec le pavé tactile (deux doigts à l'horizontale), les flèches du clavier ou les boutons précédent / suivant ;
-  - relâché, il garde son élan puis se cale sur la carte la plus proche ;
-  - au repos, il tourne lentement. Il se met en pause hors écran, au survol d'une carte, au clavier, quand la fenêtre de détail est ouverte, ou avec le bouton pause (exigé par WCAG) ;
-  - la carte de face est encadrée ; son nom se « décode » sous l'anneau (`scrambleText`) ; un panneau `SYS://TOOLKIT` affiche les compteurs et la rotation ;
-  - **entrée « allumage de l'hologramme »** (une seule fois, quand le haut de l'anneau passe aux 3/4 de l'écran) : le socle s'allume, un faisceau monte, un balayage lumineux passe, les cartes s'allument du centre vers l'arrière en scintillant, pendant que l'anneau remonte des profondeurs en tournant ; les commandes arrivent en dernier (`boot()`, classes `.is-on` / `.is-scan`) ;
-  - **les filtres gardent la roue entière** : les outils de la catégorie restent allumés, les autres s'estompent (`DIM`) et ne sont plus cliquables. La roue pivote vers le premier outil de la catégorie, avec un recul et un balayage. Ensuite, la rotation automatique passe d'un outil de la catégorie au suivant, et les flèches ne parcourent que ces outils (désactivées s'il n'y en a qu'un) ;
-  - un clic ouvre la fenêtre de détail, mais un glissement ne l'ouvre pas : le glissement ne démarre qu'après 6 px, et le clic qui suit est bloqué ;
-  - le rayon est calculé d'après la largeur réelle des cartes (`measure()`), donc les cartes voisines ne se chevauchent pas, quelle que soit la taille d'écran ;
-  - les cartes sont centrées par leur marge, pas par `translate(-50%)` : leur axe de rotation doit être celui de l'anneau, sinon la carte de face est décalée ;
+- **Outils : hologramme façon Jarvis, outils en orbite autour du socle** (06/10/2026, `src/components/ToolsSection.tsx`, données dans `src/data/tools.tsx`, styles `.tools-*`, `.tool-node`, `.holo-*` dans `index.css`). Avant : un anneau 3D de grandes cartes au-dessus du socle ; Florian voulait les outils **autour du halo orange** et un hologramme dans le style de l'interface Jarvis des films :
+  - le **socle orange** (ellipse aplatie, rapport 0,309 = sin 18°) projette un **faisceau** et un **hologramme** en SVG : couronne graduée, anneau pointillé, arcs épais et fins, bobine, chacun tournant à sa vitesse (`.holo-spin`, `--t`), lignes de balayage, léger scintillement. Au centre, **l'icône de l'outil de face** (rejouée à chaque changement) ;
+  - les 42 outils sont des **pastilles rondes** (icône dans un cercle à anneau pointillé) **en orbite autour du socle**. L'orbite est projetée en JS dans `render()` : position sur l'ellipse, taille et fondu selon la profondeur, `z-index` = 1000 + profondeur. L'hologramme est à 1000 : les pastilles passent devant ou derrière lui. Rayon = celui du socle (`measure()`, 410 px au plus, `--orbit-r`) ;
+  - l'outil de face est plus grand et lumineux, avec un arc qui tourne autour ; le nom d'une pastille s'affiche au survol ; le nom de l'outil de face se « décode » dans le panneau du bas (`scrambleText`), **centré sous la pastille de face** (le bouton pause est posé à droite hors du flux, dans la consigne sur mobile) ;
+  - on fait tourner l'orbite en la glissant (souris ou doigt), au pavé tactile, aux flèches du clavier ou avec précédent / suivant ; relâchée, elle garde son élan puis se cale sur l'outil le plus proche ; au repos, elle tourne lentement (pause hors écran, au survol, au clavier, fenêtre ouverte, ou bouton pause exigé par WCAG) ;
+  - **entrée** (une fois, quand la scène arrive aux 3/4 de l'écran) : le socle s'allume, le faisceau monte, l'hologramme s'allume en scintillant, les pastilles s'allument de l'avant vers l'arrière pendant que l'orbite se déploie depuis le centre en tournant ; les commandes arrivent en dernier (`boot()`, `.is-on` / `.is-scan`) ;
+  - **les filtres gardent l'orbite entière** : les outils de la catégorie restent allumés, les autres s'estompent (`DIM`) et ne sont plus cliquables ; l'orbite respire, un balayage passe et elle tourne vers le premier outil de la catégorie, puis passe d'un outil de la catégorie au suivant ;
+  - un clic ouvre la fenêtre de détail, mais un glissement ne l'ouvre pas (le glissement ne démarre qu'après 6 px, le clic qui suit est bloqué) ;
+  - le panneau `SYS://TOOLKIT` a été retiré le 06/10/2026 (« trop IA ») ;
   - **grille simple** seulement si `prefers-reduced-motion` est activé.
 - **Bande de projets 3D** (après les outils), inspirée de jesperlandberg.com, à la place de l'ancien bandeau défilant :
   - `src/components/ProjectBand.tsx` garde la place (hauteur fixe) et ne charge `ProjectBandBody.tsx` (projets Supabase) puis `three/ribbon.ts` qu'à l'approche : Supabase reste hors du premier chargement de l'accueil (≈ 77 Ko compressés pour le fichier principal) ;
@@ -194,17 +193,33 @@ Fichiers : `src/pages/Contact.tsx`, `TrackLinks.tsx`, `ContactForm.tsx` et `fx/T
 Fichiers : `src/pages/Cv.tsx` et `src/data/cv.ts`.
 - Version web du PDF (`public/mon-cv.pdf`), en français et en anglais.
 - Bouton « Imprimer / enregistrer en PDF » : une page A4 blanche et propre (règles `@media print` en fin de `index.css`).
+  - Depuis le 06/10/2026, le bloc « Outils » (8 lignes) est dans la colonne principale, et l'impression est réduite de 10 % (`zoom: .9` sur `.cv-sheet`) : tout tient sur une page.
+  - ⚠️ La règle d'impression masque `header:not(.cv-head)` : un simple `header` masquait aussi l'en-tête du CV, et le nom n'était plus imprimé.
+  - Le PDF original (`public/mon-cv.pdf`) n'a pas les nouveaux outils : à refaire par Florian.
 - Le téléphone est volontairement absent de la page web, pour éviter les robots. Il reste dans le PDF.
 - Liens vers `/cv` : page À propos (« Voir mon CV ») et page Contact (mot « CV »).
 
 ### Jarvis
-Fichiers : `src/pages/Chatbot.tsx` et `src/lib/jarvisContext.ts`.
+Fichiers : `src/pages/Chatbot.tsx`, `src/lib/jarvisContext.ts`, `src/components/fx/JarvisOrb.tsx` et `src/lib/voice.ts`.
+- **Page centrée sur Jarvis** (06/10/2026) : la sphère au centre, puis le titre « JARVIS », le sous-titre et une ligne d'état (« Touchez Jarvis ou le micro pour lui parler », « Je vous écoute… », « Jarvis réfléchit… », « Jarvis répond… », annoncée aux lecteurs d'écran), puis la discussion. Le surtitre « AI —— / jarvis » et l'icône robot de l'accueil ont été retirés (la sphère représente Jarvis).
+- **Sphère de Jarvis** (d'après sa sphère holographique dans *L'Ère d'Ultron*, image envoyée par Florian) : un canvas 2D avec environ 1 300 éclats orange et dorés (un tiers de petits traits, un sur sept bleu) sur une sphère qui tourne, des anneaux pointillés et un cœur lumineux. **Pas d'éclairs autour** : Florian les trouvait en trop, ils ont été retirés.
+  - **Au repos**, elle respire doucement. **À l'écoute** (micro), elle s'éclaire et un anneau ondule autour d'elle. **Quand Jarvis réfléchit** (avant le premier mot), elle tourne plus vite.
+  - **Quand il répond** (texte ou voix), elle bat **doucement** comme un cœur (« poum-poum », toutes les 0,8 s) : les éclats s'écartent un peu et une onde légère part. Les pulsations ont été adoucies à la demande de Florian (amplitude divisée par deux, battement plus ample dans le temps).
+  - **Thème sombre** : mélange additif (lumière). **Thème clair** : couleurs plus soutenues, sans mélange additif, directement sur le fond clair. Le thème est relu à chaque image (bascule sans rechargement).
+  - L'état (`orbMode`) vient de l'écoute, de `isLoading`, du dernier message et de la voix en cours. Elle est en pause hors écran et devient une image fixe si les animations sont réduites.
+- **Chat vocal** (`src/lib/voice.ts`, Web Speech API du navigateur, sans service ajouté) :
+  - **parler** : toucher la sphère ou le bouton micro. La question s'écrit en direct dans le champ, puis part toute seule ; toucher de nouveau termine et envoie. La reconnaissance est dans Chrome, Edge et Safari ; Firefox ne l'a pas, donc le micro y est masqué ;
+  - **voix de Jarvis** : une question posée à voix haute reçoit une réponse à voix haute, **phrase par phrase au fil de l'arrivée du texte**. Le Markdown, les liens, le code et les emojis sont retirés. Voix de la langue du site, de préférence « naturelle » et masculine ;
+  - **conversation** : après une réponse dite à voix haute, le micro se rouvre ; un silence (rien de compris) l'arrête, et taper au clavier aussi ;
+  - **bouton haut-parleur** (à gauche du champ) : coupe ou remet la voix, ce qui arrête aussitôt Jarvis. Le choix est mémorisé (`localStorage` `florian-jarvis-voice`, activée par défaut) ;
+  - la page **Mentions légales / confidentialité** explique où va le son : Chrome et Edge l'envoient à Google ou Microsoft, Safari à Apple. Seul le texte reconnu est envoyé à Jarvis.
+  - Vérifié avec un micro, une voix et une réponse factices (dans le navigateur de test seulement) : écoute, question envoyée (« Qui est Florian ? »), réflexion, réponse dite en deux phrases sans Markdown ni emoji, micro rouvert puis arrêté par le silence, voix coupée mémorisée.
 - Avant : pas de date (il se croyait en 2024), adresse e-mail fausse (un seul tiret), seulement 4 projets.
 - Maintenant, **le site envoie un message système à chaque question** avec :
   - la date et l'heure de La Réunion ;
   - l'année de BUT, calculée par `currentStudyYear()` (3e année en 2026-2027) ;
   - les contacts exacts ;
-  - les compétences et les 23 outils ;
+  - les compétences et les 42 outils ;
   - l'expérience tirée du CV ;
   - **les 12 projets lus en direct dans Supabase**.
 - Vérifié : il répond « 2026, 3e année de BUT, f.girardot--lahogue@rt-iut.re ».
@@ -237,7 +252,7 @@ Fichiers : `src/lib/ambient.ts` et `src/components/SoundToggle.tsx` (bouton dans
 
 ### Sakura (pages Jeux et Contact)
 Fichier : `src/components/fx/Sakura.tsx`, styles `.sakura-*` / `.sk-*` dans `index.css`, couleurs `--sakura-*` (clair et sombre).
-- Une branche de cerisier en fleurs sort du bord droit, sous l'en-tête. Elle est générée avec une graine fixe (toujours la même), dessinée en SVG, pousse à l'arrivée (fleurs qui éclosent), puis se balance doucement.
+- Une branche de cerisier en fleurs sort du bord droit, sous l'en-tête. Elle est générée avec une graine fixe (toujours la même), dessinée en SVG, pousse à l'arrivée (fleurs qui éclosent), puis se balance doucement. Chaque fleur frémit en plus au vent, à son propre rythme (`sk-flutter`, propriétés `rotate` / `translate` : elles s'ajoutent à l'éclosion et au frisson au survol, qui utilisent `transform`).
 - Des pétales tombent sur tout l'écran (canvas fixe) : ils tournoient et se retournent, suivent le vent (rafales avec traînées), s'écartent de la souris et suivent un peu le défilement.
 - Frôler une fleur avec la souris la fait frissonner et lâcher des pétales.
 - Pendant une partie : pétales derrière le jeu, moins nombreux, branche estompée.
@@ -283,7 +298,7 @@ Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style,
 | Fichier | Contenu | Utilisé par |
 | --- | --- | --- |
 | `src/data/profile.ts` | Contacts, compétences, soft skills, années de BUT | Accueil, CV, Contact, Jarvis |
-| `src/data/tools.tsx` | 23 outils (nom, icône, catégorie, description) | Section Outils, Jarvis |
+| `src/data/tools.tsx` | 42 outils (nom, icône, catégorie, description) | Section Outils, Jarvis |
 | `src/data/cv.ts` | Contenu du CV en français et en anglais | Page CV |
 | `src/i18n/config.ts` | Tous les textes FR/EN (`ui.*`, `home.dive.*`, `contact.form.*`, `cv.*`…) | Tout le site |
 

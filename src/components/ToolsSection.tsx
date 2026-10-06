@@ -8,32 +8,33 @@ import { TOOLS, type Tool } from '@/data/tools';
 import { gsap, prefersReducedMotion, scrambleText, useReveal } from '@/lib/motion';
 
 /* ───────────────────────────────────────────────────────────────
-   Section Outils : une toile holographique façon Jarvis.
-   Les 23 outils forment un anneau 3D qu'on attrape pour le faire pivoter
-   (souris, doigt, pavé tactile, flèches du clavier ou boutons).
-   - Entrée : le projecteur s'allume, un faisceau monte, un balayage passe,
-     l'anneau surgit des profondeurs en tournant et les cartes s'allument une à une.
-   - Au repos, il tourne lentement ; relâché, il se cale sur la carte la plus proche.
-   - Un filtre garde l'anneau entier : ses outils restent allumés, les autres
-     s'estompent, et la roue passe d'un outil du filtre à l'autre.
+   Section Outils : un hologramme façon Jarvis.
+   Le socle orange projette un hologramme (anneaux, graduations et arcs qui tournent,
+   icône de l'outil de face au centre). Les outils, en pastilles rondes, sont en orbite
+   autour du socle : on attrape l'orbite pour la faire tourner (souris, doigt, pavé tactile,
+   flèches du clavier ou boutons).
+   - Entrée : le socle s'allume, un faisceau monte, l'hologramme s'allume en scintillant,
+     puis les pastilles se déploient en orbite en tournant.
+   - Au repos, l'orbite tourne lentement ; relâchée, elle se cale sur l'outil le plus proche.
+   - Un filtre garde l'orbite entière : ses outils restent allumés, les autres
+     s'estompent, et l'orbite passe d'un outil du filtre à l'autre.
+   L'orbite est projetée en JS (ellipse vue d'un peu au-dessus, comme le socle) : les pastilles
+   restent nettes et passent devant ou derrière l'hologramme selon leur profondeur (z-index).
    Animations réduites : grille simple.
    ─────────────────────────────────────────────────────────────── */
 
 const COUNT = TOOLS.length;
-const STEP = 360 / COUNT;  // angle entre deux cartes (°)
-const FADE_SPAN = 76;      // angle depuis le centre (°) où une carte a fini de s'effacer
-const AUTO_SPEED = 4.5;    // rotation automatique (°/s)
+const STEP = 360 / COUNT;  // angle entre deux pastilles (°)
+const TILT = 0.309;        // aplatissement de l'orbite (sin 18° : vue d'un peu au-dessus), le même que le socle (index.css)
+const AUTO_SPEED = 6;      // rotation automatique (°/s)
 const IDLE_DELAY = 2600;   // reprise de la rotation après une interaction (ms)
 const HOP_DELAY = 2800;    // filtre actif : temps passé sur chaque outil avant le suivant (ms)
-const CARD_GAP = 22;       // écart entre deux cartes voisines (px)
 const DIM = 0.14;          // opacité des outils hors du filtre
 const ARRIVE_SPIN = 150;   // tour effectué pendant l'entrée (°)
-const ARRIVE_DEPTH = 1800; // profondeur d'où surgit l'anneau (px)
-const FLICK = 0.4;         // élan conservé quand on lance l'anneau (s)
+const FLICK = 0.4;         // élan conservé quand on lance l'orbite (s)
 const DEG = 180 / Math.PI;
 
 const wrap = (a: number) => ((a % 360) + 540) % 360 - 180; // angle ramené dans [-180, 180[
-const smooth = (x: number) => x * x * (3 - 2 * x);
 const pad = (n: number) => String(n).padStart(2, '0');
 // Scintillement d'hologramme pendant l'allumage d'une carte
 const flicker = (p: number) => (p >= 1 ? 1 : p * (Math.random() < 0.35 ? 0.2 : 1));
@@ -55,6 +56,65 @@ const CardBody = ({ tool, index, category }: { tool: Tool; index: number; catego
   </>
 );
 
+/* ——— Hologramme façon Jarvis (SVG 300 × 300, centre 150 ; angles en degrés, 0 en haut) ——— */
+const polar = (r: number, deg: number) => [150 + r * Math.sin(deg / DEG), 150 - r * Math.cos(deg / DEG)];
+const arc = (r: number, from: number, to: number) => {
+  const [x0, y0] = polar(r, from);
+  const [x1, y1] = polar(r, to);
+  return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+};
+const spin = (seconds: number) => ({ '--t': `${seconds}s` }) as React.CSSProperties;
+
+const Hologram = ({ icon, focusKey }: { icon: React.ReactNode; focusKey: number }) => (
+  <div className="tools-holo" aria-hidden="true">
+    <svg viewBox="0 0 300 300">
+      <defs>
+        <radialGradient id="tools-holo-core">
+          <stop offset="0" stopColor="currentColor" stopOpacity=".5" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* Couronne graduée (un trait long tous les 30°) */}
+      <g className="holo-spin" style={spin(90)}>
+        <circle cx="150" cy="150" r="142" className="holo-line" strokeOpacity=".35" />
+        {Array.from({ length: 72 }, (_, k) => {
+          const long = k % 6 === 0;
+          const [x0, y0] = polar(long ? 128 : 135, k * 5);
+          const [x1, y1] = polar(142, k * 5);
+          return <line key={k} x1={x0} y1={y0} x2={x1} y2={y1} className="holo-line" strokeWidth={long ? 1.6 : 0.8} strokeOpacity={long ? 0.85 : 0.45} />;
+        })}
+      </g>
+      <g className="holo-spin holo-rev" style={spin(50)}>
+        <circle cx="150" cy="150" r="121" className="holo-line" strokeWidth="1.5" strokeDasharray="2 7" strokeOpacity=".7" />
+      </g>
+      {/* Arcs épais */}
+      <g className="holo-spin" style={spin(22)}>
+        {[[0, 64], [150, 190], [236, 262]].map(([from, to]) => <path key={from} d={arc(107, from, to)} className="holo-line" strokeWidth="5" strokeOpacity=".75" />)}
+      </g>
+      <circle cx="150" cy="150" r="95" className="holo-line" strokeWidth=".8" strokeOpacity=".4" />
+      {[0, 90, 180, 270].map((a) => {
+        const [x0, y0] = polar(88, a);
+        const [x1, y1] = polar(101, a);
+        return <line key={a} x1={x0} y1={y0} x2={x1} y2={y1} className="holo-line" strokeWidth="2.5" />;
+      })}
+      {/* Arcs fins, rapides, en sens inverse */}
+      <g className="holo-spin holo-rev" style={spin(12)}>
+        {[[20, 110], [200, 290]].map(([from, to]) => <path key={from} d={arc(83, from, to)} className="holo-line" strokeWidth="1.6" strokeOpacity=".85" />)}
+      </g>
+      {/* Bobine */}
+      <g className="holo-spin" style={spin(36)}>
+        {Array.from({ length: 30 }, (_, k) => (
+          <rect key={k} x="148.5" y="74" width="3" height="8" rx=".8" transform={`rotate(${k * 12} 150 150)`} className="holo-fill" fillOpacity=".5" />
+        ))}
+      </g>
+      <circle cx="150" cy="150" r="58" className="holo-line" strokeOpacity=".55" />
+      <circle cx="150" cy="150" r="50" fill="url(#tools-holo-core)" />
+    </svg>
+    {/* Icône de l'outil de face : remontée à chaque changement d'outil (animation d'apparition) */}
+    <span key={focusKey} className="tools-holo__icon">{icon}</span>
+  </div>
+);
+
 const ToolsSection = () => {
   const { t } = useTranslation();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -73,14 +133,12 @@ const ToolsSection = () => {
   const current = TOOLS[focused];
   const position = Math.max(0, targets.indexOf(focused));
 
-  // ——— État de l'anneau, hors React (modifié à chaque image) ———
+  // ——— État de l'orbite, hors React (modifié à chaque image) ———
   const stage = useRef<HTMLDivElement>(null);
-  const ring = useRef<HTMLDivElement>(null);
   const controls = useRef<HTMLDivElement>(null);
-  const cards = useRef<(HTMLButtonElement | null)[]>([]);
+  const nodes = useRef<(HTMLButtonElement | null)[]>([]);
   const nameEl = useRef<HTMLSpanElement>(null);
-  const rotEl = useRef<HTMLSpanElement>(null);
-  const live = useRef({ rot: 0, arrive: 0, pulse: 0, radius: 600 }).current;
+  const live = useRef({ rot: 0, arrive: 0, pulse: 0, radius: 400 }).current;
   const fx = useRef({ dim: TOOLS.map(() => ({ v: 1 })), appear: TOOLS.map(() => ({ v: 0 })) }).current;
   const hold = useRef({ hover: false, focus: false, inView: false, booted: false, ready: false, until: 0, hop: 0 }).current;
   const targetsRef = useRef(targets);
@@ -94,43 +152,42 @@ const ToolsSection = () => {
   const dialogRef = useRef(false);
   dialogRef.current = !!selectedTool;
 
-  /* Applique la rotation : anneau, fondu et taille des cartes selon leur angle, carte de face */
+  /* Applique la rotation : position sur l'orbite, taille et fondu selon la profondeur, outil de face */
   const render = useCallback(() => {
-    const el = ring.current;
-    if (!el) return;
     const rot = live.rot + (1 - live.arrive) * ARRIVE_SPIN;
-    el.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
-    el.style.setProperty('--fly', `${((1 - live.arrive) * ARRIVE_DEPTH + live.pulse * 320).toFixed(1)}px`);
-    for (let i = 0; i < COUNT; i++) {
-      const card = cards.current[i];
-      if (!card) continue;
-      const k = Math.min(1, Math.abs(wrap(rot + i * STEP)) / FADE_SPAN);
-      const on = fx.appear[i].v;
-      const hidden = k >= 1 || on <= 0.001;
-      card.style.opacity = hidden ? '0' : (on * fx.dim[i].v * (1 - smooth(Math.max(0, (k - 0.55) / 0.45)))).toFixed(3);
-      card.style.setProperty('--s', ((1.08 - 0.22 * k) * (0.82 + 0.18 * Math.min(1, on))).toFixed(3));
-      const visibility = hidden ? 'hidden' : '';
-      if (card.style.visibility !== visibility) card.style.visibility = visibility;
-    }
-    // Carte de face : l'outil du filtre le plus proche du centre
+    // Pendant l'entrée, l'orbite se déploie depuis le centre ; un changement de filtre la fait respirer
+    const radius = live.radius * (0.3 + 0.7 * live.arrive) * (1 + 0.06 * live.pulse);
+    // Outil de face : l'outil du filtre le plus proche de l'avant de l'orbite
     let best = targetsRef.current[0] ?? 0;
     let bestDist = 360;
     for (const i of targetsRef.current) {
       const dist = Math.abs(wrap(rot + i * STEP));
       if (dist < bestDist) { bestDist = dist; best = i; }
     }
-    if (rotEl.current) {
-      const deg = `${String(Math.round(((-rot % 360) + 360) % 360)).padStart(3, '0')}°`;
-      if (rotEl.current.textContent !== deg) rotEl.current.textContent = deg;
+    for (let i = 0; i < COUNT; i++) {
+      const node = nodes.current[i];
+      if (!node) continue;
+      const a = wrap(rot + i * STEP) / DEG;
+      const z = Math.cos(a); // 1 devant, -1 derrière
+      const depth = (z + 1) / 2;
+      const on = fx.appear[i].v;
+      const hidden = on <= 0.001;
+      const scale = (0.55 + 0.5 * depth) * (0.5 + 0.5 * Math.min(1, on)) * (i === best ? 1.14 : 1);
+      // Devant : plus bas, plus grand, plus net ; derrière : plus haut, plus petit, estompé, caché par l'hologramme
+      node.style.transform = `translate(-50%, -50%) translate3d(${(radius * Math.sin(a)).toFixed(1)}px, ${(radius * TILT * z).toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
+      node.style.zIndex = String(1000 + Math.round(z * 100));
+      node.style.opacity = hidden ? '0' : (on * fx.dim[i].v * (0.3 + 0.7 * depth)).toFixed(3);
+      const visibility = hidden ? 'hidden' : '';
+      if (node.style.visibility !== visibility) node.style.visibility = visibility;
     }
     if (best !== focusedRef.current) { focusedRef.current = best; setFocused(best); }
   }, [live, fx]);
 
-  /* Rayon de l'anneau : deux cartes voisines ne se chevauchent jamais */
+  /* Rayon de l'orbite : celui du socle (au plus 410 px) ; un peu plus large sur mobile, où les pastilles se serrent */
   const measure = useCallback(() => {
-    const width = cards.current[0]?.offsetWidth || 180;
-    live.radius = Math.round((width + CARD_GAP) / (2 * Math.sin(Math.PI / COUNT)));
-    ring.current?.style.setProperty('--radius', `${live.radius}px`);
+    const w = window.innerWidth;
+    live.radius = Math.round(Math.min(410, Math.max(170, w * (w < 640 ? 0.5 : 0.36))));
+    stage.current?.style.setProperty('--orbit-r', `${live.radius}px`);
   }, [live]);
 
   const spinTo = useCallback((target: number, duration = 0.7, ease = 'power3.out') => {
@@ -175,19 +232,19 @@ const ToolsSection = () => {
   const boot = useCallback(() => {
     if (hold.booted || !stage.current) return;
     hold.booted = true;
-    // 1. le socle s'allume et le faisceau monte (CSS, .is-on)
+    // 1. le socle s'allume, le faisceau monte et l'hologramme s'allume en scintillant (CSS, .is-on)
     stage.current.classList.add('is-on');
-    // 2. le balayage "dessine" les cartes, qui s'allument du centre vers l'arrière en scintillant
-    // 3. pendant ce temps l'anneau remonte des profondeurs en tournant, puis les commandes arrivent
+    // 2. les pastilles s'allument de l'avant vers l'arrière en scintillant,
+    //    pendant que l'orbite se déploie depuis le centre en tournant ; puis les commandes arrivent
     const rank: number[] = [];
     TOOLS.map((_, i) => i)
       .sort((a, b) => Math.abs(wrap(live.rot + a * STEP)) - Math.abs(wrap(live.rot + b * STEP)))
       .forEach((i, r) => { rank[i] = r; });
     gsap.timeline({ onUpdate: render, onComplete: () => { hold.ready = true; hold.until = performance.now() + 800; } })
-      .to(live, { arrive: 1, duration: 2.8, ease: 'power3.out' }, 0.45)
+      .to(live, { arrive: 1, duration: 2.6, ease: 'power3.out' }, 0.8)
       .call(scan, [], 0.6)
-      .to(fx.appear, { v: 1, duration: 0.7, ease: flicker, stagger: (i: number) => 0.7 + rank[i] * 0.07 }, 0)
-      .fromTo(controls.current, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 1.8);
+      .to(fx.appear, { v: 1, duration: 0.6, ease: flicker, stagger: (i: number) => 0.9 + rank[i] * 0.035 }, 0)
+      .fromTo(controls.current, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 2);
   }, [hold, live, fx, render, scan]);
 
   // Mise en place : rayon, anneau éteint en attendant l'entrée
@@ -347,7 +404,7 @@ const ToolsSection = () => {
     const target = e.target as HTMLElement;
     if (!target.matches(':focus-visible')) return;
     hold.focus = true;
-    const i = cards.current.indexOf(target as HTMLButtonElement);
+    const i = nodes.current.indexOf(target as HTMLButtonElement);
     if (i >= 0 && inFilter.has(i)) goTo(i);
   };
   const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -357,11 +414,15 @@ const ToolsSection = () => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();
     const next = step(e.key === 'ArrowRight' ? 1 : -1);
-    if (next >= 0) cards.current[next]?.focus({ preventScroll: true });
+    if (next >= 0) nodes.current[next]?.focus({ preventScroll: true });
   };
 
   const control = 'liquid inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-[transform,color,opacity] duration-500 hover:-translate-y-0.5 hover:text-primary disabled:pointer-events-none disabled:opacity-40';
-  const filterLabel = filter === 'all' ? t('home.allTools') : t(`home.categories.${filter}`);
+  const pauseButton = (
+    <button type="button" onClick={() => setAutoplay((on) => !on)} aria-label={autoplay ? t('home.toolsPause') : t('home.toolsPlay')} aria-pressed={!autoplay} className={control}>
+      {autoplay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+    </button>
+  );
 
   return (
     <section ref={section} className="section-y relative">
@@ -412,48 +473,38 @@ const ToolsSection = () => {
           >
             <div className="tools-base" aria-hidden="true" />
             <div className="tools-beam" aria-hidden="true" />
-            <div ref={ring} className="tools-ring">
-              {TOOLS.map((tool, i) => {
-                const on = inFilter.has(i);
-                return (
-                  <button
-                    key={tool.name}
-                    ref={(el) => { cards.current[i] = el; }}
-                    type="button"
-                    onClick={() => { goTo(i); setSelectedTool(tool); }}
-                    onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.hover = true; }}
-                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') hold.hover = false; }}
-                    tabIndex={on ? undefined : -1}
-                    aria-hidden={on ? undefined : true}
-                    data-dim={!on}
-                    data-focused={i === focused}
-                    style={{ '--card-angle': `${i * STEP}deg`, opacity: 0, visibility: 'hidden' } as React.CSSProperties}
-                    className="tool-card panel group flex min-h-[158px] flex-col justify-between p-4 text-left"
-                  >
-                    <span className="card-frame" aria-hidden="true"><i /><i /><i /><i /></span>
-                    <CardBody tool={tool} index={i} category={t(`home.categories.${tool.category}`)} />
-                  </button>
-                );
-              })}
-            </div>
+            {/* Pastilles en orbite autour du socle (position, taille et profondeur calculées dans render) */}
+            {TOOLS.map((tool, i) => {
+              const on = inFilter.has(i);
+              return (
+                <button
+                  key={tool.name}
+                  ref={(el) => { nodes.current[i] = el; }}
+                  type="button"
+                  onClick={() => { goTo(i); setSelectedTool(tool); }}
+                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.hover = true; }}
+                  onPointerLeave={(e) => { if (e.pointerType === 'mouse') hold.hover = false; }}
+                  tabIndex={on ? undefined : -1}
+                  aria-hidden={on ? undefined : true}
+                  aria-label={tool.name}
+                  data-dim={!on}
+                  data-focused={i === focused}
+                  style={{ opacity: 0, visibility: 'hidden' }}
+                  className="tool-node"
+                >
+                  {tool.icon}
+                  <span className="tool-node__label" aria-hidden="true">{tool.name}</span>
+                </button>
+              );
+            })}
+            <Hologram icon={current.icon} focusKey={focused} />
             <div className="tools-scan" aria-hidden="true" />
           </div>
 
           {/* Commandes : précédent / outil de face / suivant / pause */}
           <div ref={controls} className="container-x relative z-[2] mt-2 flex flex-col items-center gap-4">
-            {/* Télémétrie de la boîte à outils */}
-            <div className="hud-panel absolute right-[var(--gutter)] top-0 hidden w-[220px] lg:block" aria-hidden="true">
-              <p className="mb-2 flex justify-between gap-4 border-b border-dashed border-primary/30 pb-2 tracking-[.08em] text-primary">
-                <span>SYS://TOOLKIT</span>
-                <span className={autoplay ? 'text-[hsl(var(--online))]' : ''}>{autoplay ? 'AUTO' : 'PAUSE'}</span>
-              </p>
-              <dl className="grid gap-0.5">
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsTools')}</dt><dd className="tabular-nums text-foreground">{pad(targets.length)}/{TOOLS.length}</dd></div>
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsFilter')}</dt><dd className="truncate text-foreground">{filterLabel}</dd></div>
-                <div className="flex justify-between gap-6"><dt className="uppercase tracking-[.08em]">{t('home.toolsStatsRotation')}</dt><dd className="tabular-nums text-foreground"><span ref={rotEl}>000°</span></dd></div>
-              </dl>
-            </div>
-
+            {/* Précédent / outil de face / suivant : le panneau reste centré sous la carte de face.
+                Le bouton pause est posé à droite, hors du flux (dans la consigne sur mobile, faute de place). */}
             <div className="flex items-center gap-2 sm:gap-3">
               <button type="button" onClick={() => step(-1)} disabled={targets.length < 2} aria-label={t('home.toolsPrev')} className={control}>
                 <ChevronLeft className="h-5 w-5" />
@@ -466,15 +517,16 @@ const ToolsSection = () => {
                 </p>
                 <p className="label-mono mt-1 !text-[.62rem]">{t(`home.categories.${current.category}`)}</p>
               </div>
-              <button type="button" onClick={() => step(1)} disabled={targets.length < 2} aria-label={t('home.toolsNext')} className={control}>
-                <ChevronRight className="h-5 w-5" />
-              </button>
-              <button type="button" onClick={() => setAutoplay((on) => !on)} aria-label={autoplay ? t('home.toolsPause') : t('home.toolsPlay')} aria-pressed={!autoplay} className={control}>
-                {autoplay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </button>
+              <div className="relative">
+                <button type="button" onClick={() => step(1)} disabled={targets.length < 2} aria-label={t('home.toolsNext')} className={control}>
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <span className="absolute left-full top-0 ml-3 hidden sm:block">{pauseButton}</span>
+              </div>
             </div>
             <p className="label-mono flex items-center gap-2 text-center">
               <Hand className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" /> {t('home.toolsWheelHint')}
+              <span className="ml-1 sm:hidden">{pauseButton}</span>
             </p>
           </div>
         </div>

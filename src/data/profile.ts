@@ -17,7 +17,7 @@ export const TECHNICAL_SKILLS: { name: string; level: Level }[] = [
   { name: 'Linux/Windows Server', level: 'maitrise' },
   { name: 'JavaScript/TypeScript', level: 'base' },
   { name: 'PHP & SQL', level: 'base' },
-  { name: 'Cybersécurité', level: 'fragile' },
+  { name: 'Cybersécurité', level: 'maitrise' },
   { name: 'Virtualisation', level: 'maitrise' },
 ];
 
@@ -27,6 +27,7 @@ export const SOFT_SKILLS: { name: string; level: Level }[] = [
   { name: 'Travail d\'équipe', level: 'maitrise' },
   { name: 'Discipline', level: 'maitrise' },
   { name: 'Esprit critique', level: 'avance' },
+  { name: 'Adaptabilité', level: 'avance' },
 ];
 
 /* Formation (années de début et de fin scolaires) */

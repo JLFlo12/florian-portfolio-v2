@@ -98,7 +98,6 @@
 
     /* ——— Réglages non-couleur ——— */
     --online: 145 70% 42%;
-    --tool-shadow: 0 1px 0 hsl(0 0% 100% / .8) inset, 0 18px 38px -22px hsl(24 45% 30% / .38);
     --sakura-wood: 20 34% 36%;
     --sakura-2: 24 96% 60%;
     --sakura-3: 20 92% 74%;
@@ -141,7 +140,6 @@
     --sidebar-ring: 22 100% 56%;
 
     --online: 145 70% 55%;
-    --tool-shadow: none;
     --sakura-wood: 20 30% 46%;
     --sakura-2: 26 100% 68%;
     --sakura-3: 32 100% 84%;
@@ -255,8 +253,21 @@
     animation: sk-draw .28s linear var(--d) forwards;
   }
   @keyframes sk-draw { to { stroke-dashoffset: 0; } }
-  .sk-bloom { transform-box: fill-box; transform-origin: center; animation: sk-pop .8s cubic-bezier(.34, 1.56, .64, 1) var(--d) both; }
+  .sk-bloom {
+    transform-box: fill-box; transform-origin: center;
+    animation: sk-pop .8s cubic-bezier(.34, 1.56, .64, 1) var(--d) both, sk-flutter var(--ft, 2.8s) ease-in-out var(--fd, 0s) infinite;
+  }
   @keyframes sk-pop { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* Vent : chaque fleur frémit un peu, à son propre rythme (--ft : durée, --fd : décalage).
+     Propriétés rotate / translate, distinctes de transform (éclosion et frisson au survol) : les mouvements s'additionnent */
+  @keyframes sk-flutter {
+    0%, 100% { rotate: 0deg; translate: 0 0; }
+    18% { rotate: 4deg; translate: .5px -.3px; }
+    34% { rotate: -2deg; translate: -.2px .2px; }
+    52% { rotate: 5deg; translate: .6px -.2px; }
+    70% { rotate: -3deg; translate: -.3px .3px; }
+    86% { rotate: 2deg; translate: .3px -.1px; }
+  }
   .sakura-branch use { stroke: hsl(var(--sakura-edge)); stroke-width: .045; }
   .sk-c0 { fill: hsl(var(--primary)); }
   .sk-c1 { fill: hsl(var(--sakura-2)); }
@@ -674,55 +685,72 @@
   .dive-hint-arrow { animation: dive-hint 2.2s var(--ease-out) infinite; }
   @keyframes dive-hint { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
 
-  /* ——— Toile 3D des outils : anneau de cartes qu'on fait pivoter (accueil, section Outils) ———
-     --radius : rayon de l'anneau (calculé en JS) · --rot : rotation · --fly : recul pendant l'arrivée.
-     L'anneau est reculé de son rayon : la carte de face garde sa taille réelle. */
+  /* ——— Section Outils : hologramme façon Jarvis et outils en orbite autour du socle ———
+     --orbit-r : rayon de l'orbite (calculé en JS) · --holo : taille de l'hologramme · --node : taille d'une pastille.
+     Socle, orbite et hologramme se placent par rapport à --base-y (centre du socle, depuis le haut de la scène). */
   .tools-stage {
+    --holo: clamp(190px, 21vw, 300px);
+    --node: clamp(30px, 3.4vw, 50px);
+    --base-y: calc(var(--holo) + var(--orbit-r, 400px) * .1 + 40px);
     position: relative;
-    perspective: 1900px;
+    height: calc(var(--base-y) + var(--orbit-r, 400px) * .309 + var(--node) + 30px);
     touch-action: pan-y;
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
   }
   .tools-stage:active { cursor: grabbing; }
-  .tools-ring {
-    position: relative;
-    height: clamp(250px, 25vw, 320px);
-    transform-style: preserve-3d;
-    transform: translateZ(calc(var(--radius, 320px) * -1 - var(--fly, 0px))) rotateX(6deg) rotateY(var(--rot, 0deg));
+  /* Pastille d'un outil : position, taille, fondu et z-index posés en JS à chaque image (devant > 1000 > derrière) */
+  .tool-node {
+    position: absolute; left: 50%; top: var(--base-y); width: var(--node); height: var(--node);
+    display: grid; place-items: center; border-radius: 50%;
+    color: hsl(var(--foreground) / .8);
+    background: radial-gradient(circle at 50% 35%, hsl(var(--primary) / .22), hsl(var(--background) / .6) 72%);
+    border: 1px solid hsl(var(--primary) / .45);
+    box-shadow: inset 0 0 12px hsl(var(--primary) / .22), 0 0 16px -6px hsl(var(--primary) / .6);
+    will-change: transform, opacity;
+    transition: color .3s, border-color .3s, box-shadow .3s;
   }
-  /* Centrée par la marge (et non par translate) : son axe de rotation est celui de l'anneau */
-  .tool-card {
-    --card-w: clamp(146px, 40vw, 188px);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: var(--card-w);
-    margin-left: calc(var(--card-w) / -2);
-    transform: rotateY(var(--card-angle, 0deg)) translateZ(var(--radius, 320px)) scale(var(--s, 1)) translateY(-50%);
-    backface-visibility: hidden;
-    background: linear-gradient(180deg, hsl(var(--card) / .82) 0%, hsl(var(--background) / .74) 100%);
-    box-shadow: var(--tool-shadow, none);
+  .tool-node svg { width: 46%; height: 46%; }
+  /* Anneau pointillé intérieur, comme les icônes rondes d'une interface de Jarvis */
+  .tool-node::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 1px dashed hsl(var(--primary) / .32); pointer-events: none; }
+  .tool-node:hover, .tool-node:focus-visible { color: hsl(var(--primary)); border-color: hsl(var(--primary)); }
+  .tool-node:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 4px; }
+  .tool-node[data-dim="true"] { pointer-events: none; }
+  /* Outil de face : plus lumineux, avec un arc qui tourne autour */
+  .tool-node[data-focused="true"] {
+    color: hsl(var(--primary)); border-color: hsl(var(--primary));
+    box-shadow: inset 0 0 16px hsl(var(--primary) / .45), 0 0 28px -2px hsl(var(--primary) / .75);
   }
-  .tool-card[data-dim="true"] { pointer-events: none; }
-  .tool-card[data-focused="true"] .tool-card__icon { color: hsl(var(--primary)); }
-  /* Socle du projecteur holographique, sous l'anneau (s'allume à l'entrée : .is-on) */
+  .tool-node[data-focused="true"]::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid transparent; border-top-color: hsl(var(--primary)); border-bottom-color: hsl(var(--primary) / .45);
+    animation: tools-spin 2.4s linear infinite;
+  }
+  /* Nom de l'outil, au survol ou au clavier */
+  .tool-node__label {
+    position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 4px; white-space: nowrap; pointer-events: none;
+    padding: .3rem .6rem; border-radius: 999px; border: 1px solid hsl(var(--primary) / .35); background: hsl(var(--background) / .85);
+    font-family: "Geist Mono", monospace; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: hsl(var(--foreground));
+    opacity: 0; transition: opacity .25s, translate .25s;
+  }
+  .tool-node:hover .tool-node__label, .tool-node:focus-visible .tool-node__label { opacity: 1; translate: -50% 0; }
+  /* Socle du projecteur : ellipse aplatie comme l'orbite (même rapport 0,309), s'allume à l'entrée (.is-on) */
   .tools-base {
-    position: absolute; left: 50%; top: 82%; width: min(90vw, 820px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
-    transform: translate(-50%, -50%) rotateX(80deg) scale(.2);
+    position: absolute; left: 50%; top: var(--base-y); width: calc(var(--orbit-r, 400px) * 2.15); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+    transform: translate(-50%, -50%) scale(.2, .062);
     opacity: 0;
     transition: transform 1.6s var(--ease-out), opacity .9s;
     border: 1px solid hsl(var(--primary) / .3);
     background: radial-gradient(closest-side, hsl(var(--primary) / .26), hsl(var(--primary) / .07) 55%, transparent 72%);
   }
-  .tools-stage.is-on .tools-base { transform: translate(-50%, -50%) rotateX(80deg) scale(1); opacity: 1; }
-  /* Faisceau de lumière qui monte du socle */
+  .tools-stage.is-on .tools-base { transform: translate(-50%, -50%) scale(1, .309); opacity: 1; }
+  /* Faisceau de lumière qui monte du socle jusqu'à l'hologramme */
   .tools-beam {
-    position: absolute; left: 50%; bottom: 17%; width: min(74vw, 640px); height: 96%; pointer-events: none;
-    transform: translateX(-50%) scaleY(0); transform-origin: 50% 100%; opacity: 0;
-    background: linear-gradient(to top, hsl(var(--primary) / .3), hsl(var(--primary) / .08) 55%, transparent);
-    clip-path: polygon(40% 100%, 60% 100%, 100% 0, 0 0);
+    position: absolute; left: 50%; z-index: 999; top: calc(var(--base-y) - var(--holo) * 1.05); width: calc(var(--holo) * 1.05); height: calc(var(--holo) * 1.05);
+    pointer-events: none; transform: translateX(-50%) scaleY(0); transform-origin: 50% 100%; opacity: 0;
+    background: linear-gradient(to top, hsl(var(--primary) / .32), hsl(var(--primary) / .08) 60%, transparent);
+    clip-path: polygon(42% 100%, 58% 100%, 100% 0, 0 0);
   }
   .tools-stage.is-on .tools-beam { animation: tools-beam 2.4s var(--ease-out) .1s forwards; }
   @keyframes tools-beam {
@@ -730,9 +758,36 @@
     25% { opacity: 1; transform: translateX(-50%) scaleY(1); }
     100% { opacity: .3; transform: translateX(-50%) scaleY(1); }
   }
+  /* Hologramme : au-dessus du socle, entre les pastilles de devant (z-index > 1000) et celles de derrière (< 1000) */
+  .tools-holo {
+    position: absolute; left: 50%; z-index: 1000; top: calc(var(--base-y) - var(--orbit-r, 400px) * .1 - var(--holo));
+    width: var(--holo); aspect-ratio: 1; translate: -50% 0; transform-origin: 50% 100%; pointer-events: none; opacity: 0;
+    color: hsl(var(--primary));
+  }
+  .tools-stage.is-on .tools-holo { animation: holo-boot 1.6s .5s both, holo-flicker 7s 2.3s steps(1, end) infinite; }
+  @keyframes holo-boot { 0% { opacity: 0; scale: .5; } 18% { opacity: .7; } 24% { opacity: .15; } 34% { opacity: .85; } 40% { opacity: .35; } 100% { opacity: 1; scale: 1; } }
+  @keyframes holo-flicker { 0%, 100% { opacity: 1; } 61% { opacity: .78; } 62% { opacity: 1; } 87% { opacity: .9; } 88% { opacity: 1; } }
+  .tools-holo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 3px hsl(var(--primary) / .8)) drop-shadow(0 0 14px hsl(var(--primary) / .35)); }
+  /* Lignes de balayage qui défilent dans l'hologramme */
+  .tools-holo::after {
+    content: ""; position: absolute; inset: 4%; border-radius: 50%; pointer-events: none; opacity: .5;
+    background: repeating-linear-gradient(0deg, hsl(var(--primary) / .16) 0 1px, transparent 1px 4px);
+    -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent); mask-image: radial-gradient(closest-side, #000 70%, transparent);
+    animation: holo-scan 5s linear infinite;
+  }
+  @keyframes holo-scan { to { background-position: 0 40px; } }
+  .holo-line { fill: none; stroke: currentColor; }
+  .holo-fill { fill: currentColor; }
+  /* Chaque anneau tourne autour du centre du SVG, à sa vitesse (--t) */
+  .holo-spin { transform-box: view-box; transform-origin: 50% 50%; animation: tools-spin var(--t, 30s) linear infinite; }
+  .holo-rev { animation-direction: reverse; }
+  /* Icône de l'outil de face, au cœur de l'hologramme */
+  .tools-holo__icon { position: absolute; left: 50%; top: 50%; translate: -50% -50%; filter: drop-shadow(0 0 8px hsl(var(--primary) / .8)); animation: holo-icon .55s cubic-bezier(.2, .8, .2, 1) both; }
+  .tools-holo__icon svg { width: calc(var(--holo) * .2); height: calc(var(--holo) * .2); }
+  @keyframes holo-icon { from { opacity: 0; scale: .55; } to { opacity: 1; scale: 1; } }
   /* Balayage lumineux (entrée et changement de filtre) */
   .tools-scan {
-    position: absolute; left: 6%; right: 6%; top: 0; height: 2px; pointer-events: none; opacity: 0;
+    position: absolute; left: 6%; right: 6%; top: 0; z-index: 1200; height: 2px; pointer-events: none; opacity: 0;
     background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
     box-shadow: 0 0 22px 3px hsl(var(--primary) / .45);
   }
@@ -746,14 +801,21 @@
   .tools-base::before { inset: 11%; border: 1px dashed hsl(var(--primary) / .5); animation: tools-spin 60s linear infinite; }
   .tools-base::after { inset: 31%; border: 2px solid hsl(var(--primary) / .28); box-shadow: inset 0 0 50px hsl(var(--primary) / .35); }
   @keyframes tools-spin { to { transform: rotate(360deg); } }
-  .tool-card .card-frame { position: absolute; inset: 6px; opacity: 0; transition: opacity .35s; }
-  .tool-card[data-focused="true"] .card-frame { opacity: 1; }
-  .tool-card .card-frame > i { position: absolute; width: 12px; height: 12px; border: 0 solid hsl(var(--primary)); }
-  .tool-card .card-frame > i:nth-child(1) { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
-  .tool-card .card-frame > i:nth-child(2) { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
-  .tool-card .card-frame > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
-  .tool-card .card-frame > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
-  .tool-card[data-focused="true"] { box-shadow: 0 0 0 1px hsl(var(--primary) / .55), 0 24px 60px -22px hsl(var(--primary) / .6); }
+
+  /* ——— Sphère de Jarvis (page Jarvis) : le canvas déborde de la boîte pour laisser place à l'onde des battements ——— */
+  .jarvis-orb { position: relative; width: clamp(150px, 22vw, 230px); aspect-ratio: 1; flex-shrink: 0; pointer-events: none; }
+  .jarvis-orb canvas { position: absolute; inset: -40%; width: 180%; height: 180%; }
+  /* La toucher lance le micro */
+  .jarvis-orb-btn { border-radius: 50%; cursor: pointer; }
+  .jarvis-orb-btn:disabled { cursor: default; }
+  .jarvis-orb-btn:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 10px; }
+  /* Micro en écoute : une onde se répète autour du bouton */
+  .mic-btn { position: relative; }
+  .mic-btn.is-on::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid hsl(var(--primary)); animation: mic-wave 1.4s var(--ease-out) infinite;
+  }
+  @keyframes mic-wave { from { opacity: .9; transform: scale(.9); } to { opacity: 0; transform: scale(1.35); } }
 
   /* Champs de formulaire */
   .field { display: grid; gap: .5rem; }
@@ -787,28 +849,31 @@
    ═══════════════════════════════════════════════════════════════ */
 .loader { display: none; }
 .is-loading .loader { display: block; position: fixed; inset: 0; z-index: 200; --hole: 0px; }
-/* Fond de l'écran : un cercle s'y ouvre depuis le centre à la fin du chargement */
+/* Fond de l'écran : un cercle s'y ouvre depuis le centre de la planète à la fin du chargement */
 .loader__veil {
   position: absolute; inset: 0; background: hsl(var(--background));
-  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--hole) - 1px), #000 var(--hole));
-  mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--hole) - 1px), #000 var(--hole));
+  -webkit-mask-image: radial-gradient(circle at var(--hx, 50%) var(--hy, 50%), transparent calc(var(--hole) - 1px), #000 var(--hole));
+  mask-image: radial-gradient(circle at var(--hx, 50%) var(--hy, 50%), transparent calc(var(--hole) - 1px), #000 var(--hole));
 }
-/* Trois points en orbite, l'orange en tête : ils ralentissent en bas du cercle, où ils se resserrent
-   (sans jamais se toucher : 36° d'écart au minimum), et s'étirent en filant vers le haut */
-.loader__orbit { --r: 21px; --d: 9px; position: absolute; left: 50%; top: 50%; }
-.loader__orbit i { position: absolute; left: 0; top: 0; animation: loader-orbit 1.5s cubic-bezier(.62, .05, .38, .95) infinite; }
-.loader__orbit i::before {
-  content: ""; position: absolute; left: calc(var(--d) / -2); top: calc(var(--r) - var(--d) / 2);
-  width: var(--d); height: var(--d); border-radius: 50%; background: hsl(var(--foreground));
+/* Croquis de la planète et mot écrit à la main : chaque trait se trace (--d : délai, --t : durée),
+   puis les trois versions du dessin se succèdent toutes les 140 ms pour que le trait « bouge » */
+.loader__sketch { position: absolute; left: 50%; top: 50%; width: clamp(150px, 15vw, 210px); translate: -50% -50%; overflow: visible; }
+.loader__sketch path {
+  stroke: hsl(var(--foreground)); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1 1; animation: loader-draw var(--t) cubic-bezier(.6, 0, .3, 1) var(--d) both;
 }
-.loader__orbit i:nth-child(1) { rotate: -72deg; }
-.loader__orbit i:nth-child(2) { rotate: -36deg; animation-delay: -.09s; }
-.loader__orbit i:nth-child(3) { animation-delay: -.18s; }
-.loader__orbit i:nth-child(3)::before { background: hsl(var(--primary)); }
-@keyframes loader-orbit { to { transform: rotate(360deg); } }
+.loader__dot { fill: hsl(var(--primary)); transform-box: fill-box; transform-origin: center; animation: loader-pop .45s cubic-bezier(.3, 1.6, .5, 1) .95s both; }
+.loader__frame { animation: loader-boil .42s steps(1, end) infinite; }
+.loader__frame:nth-of-type(2) { animation-delay: -.14s; }
+.loader__frame:nth-of-type(3) { animation-delay: -.28s; }
+/* Visite suivante dans la session : le dessin apparaît presque tout de suite */
+.loader.is-quick .loader__sketch path, .loader.is-quick .loader__dot { animation-duration: .2s; animation-delay: 0s; }
+@keyframes loader-draw { from { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes loader-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes loader-boil { 0% { opacity: 1; } 33.333%, 100% { opacity: 0; } }
 /* Liseré orange qui suit le bord du cercle pendant l'ouverture */
 .loader__ring {
-  position: absolute; left: 50%; top: 50%; width: calc(var(--hole) * 2); height: calc(var(--hole) * 2);
+  position: absolute; left: var(--hx, 50%); top: var(--hy, 50%); width: calc(var(--hole) * 2); height: calc(var(--hole) * 2);
   transform: translate(-50%, -50%); border-radius: 50%; border: 1.5px solid hsl(var(--primary)); opacity: 0;
 }
 
@@ -832,7 +897,8 @@
 @media print {
   @page { size: A4; margin: 10mm; }
   html, body, #root > div, main { background: #fff !important; }
-  header, footer, .no-print, .grain, .curtain, .loader, [data-scroll-hud] { display: none !important; }
+  /* header:not(.cv-head) : l'en-tête du CV (nom, titre) reste imprimé, seule la navigation du site disparaît */
+  header:not(.cv-head), footer, .no-print, .grain, .curtain, .loader, [data-scroll-hud] { display: none !important; }
   .cv-page { padding: 0 !important; }
   .cv-page .container-x { max-width: none; padding: 0; }
   .cv-page [data-reveal], .cv-page [data-band] { opacity: 1 !important; visibility: visible !important; transform: none !important; }
@@ -841,6 +907,7 @@
     --foreground: 24 22% 8%; --muted-foreground: 25 9% 36%; --primary: 20 95% 45%; --border: 30 16% 82%; --muted: 34 24% 93%; --card: 0 0% 100%;
     color: hsl(var(--foreground)); grid-template-columns: 70mm minmax(0, 1fr); border-radius: 0; border: 0; box-shadow: none; font-size: 10.5pt;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    zoom: .9; /* réduit de 10 % : le CV complet (avec les outils) tient sur une seule page A4 */
   }
   .cv-side { gap: 7mm; padding: 8mm 6mm; }
   .cv-main { gap: 7mm; padding: 8mm 0 0 8mm; }

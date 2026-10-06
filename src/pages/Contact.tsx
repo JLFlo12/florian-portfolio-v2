@@ -101,11 +101,6 @@ const Contact = () => {
         <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[46vh] w-[62vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[140px]" aria-hidden="true" />
 
         <h1 className="sr-only">{t('contact.title')}</h1>
-        <p className="eyebrow justify-center" data-contact-fade>
-          <span className="eyebrow__index">//</span>
-          <span className="eyebrow__rule" aria-hidden="true" />
-          <span className="eyebrow__label">contact</span>
-        </p>
         <p className="serif-accent mb-8 mt-3 text-[clamp(1.4rem,3vw,2.1rem)] leading-none" data-contact-fade>{t('contact.subtitle')}</p>
 
         <TrackLinks items={items} live={live} />

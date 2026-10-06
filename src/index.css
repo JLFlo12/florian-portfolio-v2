@@ -712,6 +712,7 @@
     transition: color .3s, border-color .3s, box-shadow .3s;
   }
   .tool-node svg { width: 46%; height: 46%; }
+  .tool-node .tool-logo { width: 40%; height: 40%; } /* logos pleins : un peu plus petits que les icônes au trait */
   /* Anneau pointillé intérieur, comme les icônes rondes d'une interface de Jarvis */
   .tool-node::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 1px dashed hsl(var(--primary) / .32); pointer-events: none; }
   .tool-node:hover, .tool-node:focus-visible { color: hsl(var(--primary)); border-color: hsl(var(--primary)); }
@@ -784,7 +785,10 @@
   /* Icône de l'outil de face, au cœur de l'hologramme */
   .tools-holo__icon { position: absolute; left: 50%; top: 50%; translate: -50% -50%; filter: drop-shadow(0 0 8px hsl(var(--primary) / .8)); animation: holo-icon .55s cubic-bezier(.2, .8, .2, 1) both; }
   .tools-holo__icon svg { width: calc(var(--holo) * .2); height: calc(var(--holo) * .2); }
+  .tools-holo__icon .tool-logo { width: calc(var(--holo) * .17); height: calc(var(--holo) * .17); }
   @keyframes holo-icon { from { opacity: 0; scale: .55; } to { opacity: 1; scale: 1; } }
+  /* Mode clair : icône foncée, sinon l'orange se perd dans la lueur orange du centre */
+  :root:not(.dark) .tools-holo__icon { color: hsl(var(--foreground)); filter: drop-shadow(0 0 6px hsl(var(--background))); }
   /* Balayage lumineux (entrée et changement de filtre) */
   .tools-scan {
     position: absolute; left: 6%; right: 6%; top: 0; z-index: 1200; height: 2px; pointer-events: none; opacity: 0;

@@ -21,6 +21,8 @@ import { gsap, prefersReducedMotion, scrambleText, useReveal } from '@/lib/motio
    L'orbite est projetée en JS (ellipse vue d'un peu au-dessus, comme le socle) : les pastilles
    restent nettes et passent devant ou derrière l'hologramme selon leur profondeur (z-index).
    Animations réduites : grille simple.
+   Icônes : les vrais logos (data/toolLogos.ts, chargés à part) remplacent les icônes génériques
+   dès qu'ils arrivent ; les outils sans logo libre gardent leur icône.
    ─────────────────────────────────────────────────────────────── */
 
 const COUNT = TOOLS.length;
@@ -41,14 +43,19 @@ const flicker = (p: number) => (p >= 1 ? 1 : p * (Math.random() < 0.35 ? 0.2 : 1
 
 type Drag = { id: number; x0: number; r0: number; moved: boolean; samples: { x: number; t: number }[] };
 
+/* Logo d'un outil (tracé de 24 × 24, une couleur) */
+const ToolLogo = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" className="tool-logo h-8 w-8" fill="currentColor" aria-hidden="true"><path d={d} /></svg>
+);
+
 /* Contenu d'une carte (anneau et grille) */
-const CardBody = ({ tool, index, category }: { tool: Tool; index: number; category: string }) => (
+const CardBody = ({ tool, icon, index, category }: { tool: Tool; icon: React.ReactNode; index: number; category: string }) => (
   <>
     <span className="flex items-start justify-between gap-2">
       <span className="led text-xs text-muted-foreground">{pad(index + 1)}</span>
       <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
     </span>
-    <span className="tool-card__icon text-muted-foreground transition-colors duration-300 group-hover:text-primary">{tool.icon}</span>
+    <span className="tool-card__icon text-muted-foreground transition-colors duration-300 group-hover:text-primary">{icon}</span>
     <span>
       <span className="block font-display text-[.95rem] font-bold leading-tight [font-stretch:110%]">{tool.name}</span>
       <span className="label-mono mt-1 block !text-[.62rem]">{category}</span>
@@ -131,6 +138,14 @@ const ToolsSection = () => {
   const targets = useMemo(() => TOOLS.flatMap((tool, i) => (filter === 'all' || tool.category === filter ? [i] : [])), [filter]);
   const inFilter = useMemo(() => new Set(targets), [targets]);
   const current = TOOLS[focused];
+  // Vrais logos (~50 Ko de tracés, chargés à part : la section n'arrive qu'après la plongée)
+  const [logos, setLogos] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    import('@/data/toolLogos').then((m) => { if (alive) setLogos(m.LOGOS); }).catch(() => { /* icônes génériques */ });
+    return () => { alive = false; };
+  }, []);
+  const iconOf = (tool: Tool) => (logos?.[tool.name] ? <ToolLogo d={logos[tool.name]} /> : tool.icon);
   const position = Math.max(0, targets.indexOf(focused));
 
   // ——— État de l'orbite, hors React (modifié à chaque image) ———
@@ -492,12 +507,12 @@ const ToolsSection = () => {
                   style={{ opacity: 0, visibility: 'hidden' }}
                   className="tool-node"
                 >
-                  {tool.icon}
+                  {iconOf(tool)}
                   <span className="tool-node__label" aria-hidden="true">{tool.name}</span>
                 </button>
               );
             })}
-            <Hologram icon={current.icon} focusKey={focused} />
+            <Hologram icon={iconOf(current)} focusKey={focused} />
             <div className="tools-scan" aria-hidden="true" />
           </div>
 
@@ -541,7 +556,7 @@ const ToolsSection = () => {
                 onClick={() => setSelectedTool(TOOLS[i])}
                 className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left"
               >
-                <CardBody tool={TOOLS[i]} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />
+                <CardBody tool={TOOLS[i]} icon={iconOf(TOOLS[i])} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />
               </button>
             ))}
           </div>
@@ -557,7 +572,7 @@ const ToolsSection = () => {
               <DialogHeader className="space-y-4 text-left">
                 <p className="label-mono">{t(`home.categories.${selectedTool.category}`)}</p>
                 <DialogTitle className="flex items-center gap-3 font-display text-2xl font-extrabold uppercase [font-stretch:118%]">
-                  <span className="text-primary">{selectedTool.icon}</span>
+                  <span className="text-primary">{iconOf(selectedTool)}</span>
                   {selectedTool.name}
                 </DialogTitle>
                 <DialogDescription className="text-base leading-relaxed text-muted-foreground">

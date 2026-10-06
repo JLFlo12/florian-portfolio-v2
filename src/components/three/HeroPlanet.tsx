@@ -9,8 +9,9 @@ const Planet = lazy(() => import('./Planet'));
 
 /* Conteneur de la planète 3D du hero : charge la scène, lui transmet la souris,
    met le rendu en pause quand le hero n'est plus visible.
-   (La plongée au scroll est pilotée par la page d'accueil via planetState.dive.) */
-const HeroPlanet = ({ section }: { section: React.RefObject<HTMLElement> }) => {
+   (La plongée au scroll est pilotée par la page d'accueil via planetState.dive.)
+   orbit : ajoute les satellites du menu en orbite (leurs liens sont dans OrbitNav). */
+const HeroPlanet = ({ section, orbit = false }: { section: React.RefObject<HTMLElement>; orbit?: boolean }) => {
   const { t } = useTranslation();
   const label = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
@@ -48,7 +49,7 @@ const HeroPlanet = ({ section }: { section: React.RefObject<HTMLElement> }) => {
     <div className="absolute inset-0" aria-hidden="true">
       {webgl ? (
         <Suspense fallback={fallback}>
-          <Planet label={label} visible={visible} />
+          <Planet label={label} visible={visible} orbit={orbit} />
         </Suspense>
       ) : fallback}
       {/* Étiquette qui suit la balise La Réunion sur la planète */}

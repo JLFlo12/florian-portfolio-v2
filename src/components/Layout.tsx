@@ -16,6 +16,8 @@ import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Preloader from '@/components/fx/Preloader';
 import LiquidGlass from '@/components/fx/LiquidGlass';
 import SoundToggle from '@/components/SoundToggle';
+import SatelliteNav from '@/components/SatelliteNav';
+import { useNavItems } from '@/lib/nav';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
 interface LayoutProps {
@@ -35,13 +37,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
   const curtain = useRef<HTMLDivElement>(null);
   const firstRoute = useRef(true);
 
-  const navItems = [
-    { path: '/', label: t('nav.home') },
-    { path: '/projects', label: t('nav.projects') },
-    { path: '/about', label: t('nav.about') },
-    { path: '/contact', label: t('nav.contact') },
-    { path: '/chatbot', label: t('nav.chatbot') }
-  ];
+  const navItems = useNavItems();
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
   const currentLabel = navItems.find((i) => isActive(i.path))?.label ?? (location.pathname.startsWith('/games') ? t('nav.games') : location.pathname === '/cv' ? 'CV' : ['/mentions-legales', '/legal'].includes(location.pathname) ? t('ui.legal') : '404');
@@ -159,20 +155,8 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
             </span>
           </Link>
 
-          {/* Pilule de navigation (ordinateur) */}
-          <div className="liquid hidden items-center gap-1 rounded-full p-1.5 md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive(item.path) ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-foreground/10 hover:text-foreground'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
+          {/* Navigation en satellites (ordinateur) : nom écrit à la main sous le satellite */}
+          <SatelliteNav items={navItems} isActive={isActive} />
 
           <div className="relative z-[2] flex items-center gap-1">
             <div className="liquid hidden items-center gap-0.5 rounded-full p-1 md:flex">{controls}</div>

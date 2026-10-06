@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { planetState } from './planetState';
+import { makeSatelliteKit, metalEnvironment } from './satellites';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -12,6 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
    - anneau + poussière d'anneau, lune en orbite, étoiles
    - liaisons réseau lumineuses parcourues par des "paquets"
    - balise sur La Réunion avec étiquette HTML qui la suit
+   - satellites du menu en orbite (accueil, ordinateur), avec leurs liens HTML
    ═══════════════════════════════════════════════════════════════ */
 
 const ACCENT = new THREE.Color('#ff6a1f');
@@ -406,9 +408,107 @@ function Stars({ palette }: { palette: Palette }) {
   );
 }
 
+/* ——— Satellites du menu en orbite (accueil, ordinateur) ———
+   Au repos, ils entourent la planète en arc, du haut à gauche jusqu'en bas à droite (le bas à gauche
+   est pris par le titre) — p : position, en rayons de planète, x vers la droite, y vers le haut,
+   z vers le visiteur. Au scroll (plongée), chacun tourne autour d'elle sur sa propre orbite (il part
+   vers w ; turn : angle parcouru), tous dans le même sens : Accueil passe devant la planète, Projets
+   descend à gauche, À propos puis Jarvis passent derrière, Contact passe dessous ; puis ils
+   s'effacent quand la caméra fonce vers La Réunion.
+   Les liens HTML (OrbitNav, via planetState.sats) suivent leur position à l'écran. */
+const ORBITS: { p: [number, number, number]; w: [number, number, number]; turn: number; s: number; rz: number }[] = [
+  { p: [-1.52, 0.88, 0.35], w: [0.3, -0.4, 1], turn: 2.6, s: 1, rz: 0.08 },      // Accueil : en haut à gauche
+  { p: [-0.39, 1.45, -0.25], w: [-1, 0, -0.6], turn: 2.8, s: 0.85, rz: -0.12 },   // Projets : au-dessus
+  { p: [0.82, 1.38, 0.2], w: [0.6, -0.2, -1], turn: 3.0, s: 0.9, rz: 0.05 },      // À propos : en haut à droite
+  { p: [1.58, 0.28, 0.45], w: [-0.2, -1, 0.3], turn: 2.6, s: 0.85, rz: -0.07 },   // Contact : à droite
+  { p: [1.13, -1.13, 0.3], w: [-1, -0.3, -0.8], turn: 3.0, s: 0.95, rz: 0.1 },    // Jarvis : en bas à droite
+];
+const SAT_SIZE = 0.011; // taille des modèles (environ 45 unités de large) en rayons de planète
+
+function OrbitSatellites({ system }: { system: React.RefObject<THREE.Group> }) {
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  const root = useRef<THREE.Group>(null);
+  const { kit, env, rigs, orbits } = useMemo(() => {
+    const env = metalEnvironment(gl);
+    const kit = makeSatelliteKit(env.texture);
+    const rigs = ORBITS.map((_, i) => kit.rig(i));
+    const orbits = ORBITS.map((o) => {
+      const p = new THREE.Vector3(...o.p);
+      return { ...o, p, axis: p.clone().cross(new THREE.Vector3(...o.w)).normalize() };
+    });
+    return { kit, env, rigs, orbits };
+  }, [gl]);
+  useEffect(() => () => { kit.dispose(); env.dispose(); }, [kit, env]);
+  const st = useRef({ dive: 0, appear: 0, on: true, moving: false, hidden: [] as boolean[] });
+  const tmp = useMemo(() => ({ q: new THREE.Quaternion(), world: new THREE.Vector3(), center: new THREE.Vector3(), toSat: new THREE.Vector3(), toCenter: new THREE.Vector3() }), []);
+
+  useFrame((state, dt) => {
+    const sys = system.current;
+    const group = root.current;
+    if (!sys || !group) return;
+    const { damp, smoothstep, clamp } = THREE.MathUtils;
+    const s = st.current;
+    const t = state.clock.elapsedTime;
+    s.dive = damp(s.dive, planetState.dive, 7, dt);
+    if (planetState.ready) s.appear = Math.min(1, s.appear + dt / 2.4);
+    const d = s.dive;
+    const vanish = 1 - smoothstep(d, 0.48, 0.66);
+    const run = Math.pow(clamp(d / 0.6, 0, 1), 1.15);
+
+    // Les orbites suivent la planète (position, taille ; pendant la plongée, elles grandissent moins
+    // vite qu'elle : les satellites restent à l'écran), avec un léger parallaxe à la souris
+    group.position.copy(sys.position);
+    const grow = sys.scale.x;
+    group.scale.setScalar(grow <= 1 ? grow : 1 + (grow - 1) * 0.5);
+    const free = 1 - smoothstep(d, 0, 0.32);
+    group.rotation.set(planetState.py * 0.08 * free, planetState.px * 0.12 * free, 0);
+    sys.getWorldPosition(tmp.center);
+    const radius = sys.scale.x;
+    kit.blink(t);
+
+    rigs.forEach((r, i) => {
+      const o = orbits[i];
+      kit.animate(r, dt, t, i === 0, planetState.satHover === i);
+      tmp.q.setFromAxisAngle(o.axis, o.turn * run + Math.sin(t * 0.25 + i * 1.9) * 0.035);
+      r.holder.position.copy(o.p).applyQuaternion(tmp.q);
+      r.holder.position.y += Math.sin(t * 1.1 + i * 0.9) * 0.025;
+      const pop = smoothstep(s.appear, 0.25 + i * 0.1, 0.55 + i * 0.1);
+      r.holder.scale.setScalar(Math.max(0.0001, SAT_SIZE * o.s * pop * vanish * (1.04 + r.h * 0.18)));
+      r.tilt.rotation.x = 0.28 + Math.sin(t * 0.8 + i) * 0.1 - r.h * 0.15;
+      r.tilt.rotation.z = o.rz + Math.sin(t * 0.6 + i * 1.7) * 0.08;
+
+      // Lien HTML posé sur le satellite ; masqué quand le satellite passe derrière la planète
+      const link = planetState.sats[i];
+      if (!link) return;
+      r.holder.getWorldPosition(tmp.world);
+      tmp.toSat.copy(tmp.world).sub(camera.position);
+      const dist = tmp.toSat.length();
+      tmp.toSat.divideScalar(dist);
+      tmp.toCenter.copy(tmp.center).sub(camera.position);
+      const along = tmp.toCenter.dot(tmp.toSat);
+      const off = Math.sqrt(Math.max(0, tmp.toCenter.lengthSq() - along * along));
+      const behind = off < radius && dist > along - Math.sqrt(radius * radius - off * off);
+      const hidden = behind || pop * vanish < 0.5;
+      if (hidden !== s.hidden[i]) { s.hidden[i] = hidden; link.dataset.hidden = String(hidden); }
+      const v = tmp.world.project(camera);
+      link.style.transform = `translate3d(${(v.x * 0.5 + 0.5) * size.width}px, ${(-v.y * 0.5 + 0.5) * size.height}px, 0)`;
+    });
+
+    // Menu de l'en-tête effacé tant que les satellites sont dans le ciel
+    const on = vanish > 0.5;
+    if (on !== s.on) { s.on = on; document.documentElement.toggleAttribute('data-orbit-nav', on); }
+    // Dès qu'on scrolle, le nom de la page en cours ne reste plus affiché (seulement au survol)
+    const moving = d > 0.04;
+    if (moving !== s.moving) { s.moving = moving; planetState.sats[0]?.parentElement?.toggleAttribute('data-moving', moving); }
+  });
+
+  return <group ref={root}>{rigs.map((r, i) => <primitive key={i} object={r.holder} />)}</group>;
+}
+
 /* ——— Assemblage + mouvements (intro, souris, scroll) ——— */
-function System({ label, reduced, palette }: { label: React.RefObject<HTMLDivElement>; reduced: boolean; palette: Palette }) {
-  const system = useRef<THREE.Group>(null);
+function System({ system, label, reduced, palette }: { system: React.RefObject<THREE.Group>; label: React.RefObject<HTMLDivElement>; reduced: boolean; palette: Palette }) {
   const spin = useRef<THREE.Group>(null);
   const intro = useRef(reduced ? 1 : 0);
   const dive = useRef(0);
@@ -459,8 +559,9 @@ function System({ label, reduced, palette }: { label: React.RefObject<HTMLDivEle
   );
 }
 
-const Planet = ({ label, visible }: { label: React.RefObject<HTMLDivElement>; visible: boolean }) => {
+const Planet = ({ label, visible, orbit }: { label: React.RefObject<HTMLDivElement>; visible: boolean; orbit: boolean }) => {
   const { theme } = useTheme();
+  const system = useRef<THREE.Group>(null);
   const palette = theme === 'light' ? LIGHT : DARK;
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
@@ -474,7 +575,9 @@ const Planet = ({ label, visible }: { label: React.RefObject<HTMLDivElement>; vi
       <ambientLight intensity={0.25} />
       <directionalLight position={[-6, 4, 5]} intensity={2.2} />
       <Stars palette={palette} />
-      <System label={label} reduced={reduced} palette={palette} />
+      <System system={system} label={label} reduced={reduced} palette={palette} />
+      {/* Après System : ses mouvements sont calculés avant ceux des satellites, à chaque image */}
+      {orbit && !reduced && <OrbitSatellites system={system} />}
     </Canvas>
   );
 };

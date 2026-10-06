@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { gsap } from '@/lib/motion';
 import { markReady } from '@/lib/ready';
+import { GLYPHS, TAU, random, type Pt } from '@/lib/handwriting';
 
 /* Écran de chargement : un croquis de la planète (trait de la couleur du texte, point orange
    sur La Réunion) et le mot « chargement » écrit à la main. Le dessin se trace, puis son trait
@@ -9,38 +10,10 @@ import { markReady } from '@/lib/ready';
    Quand la page est prête (polices chargées, durée minimale écoulée), le mot s'efface et l'écran
    s'ouvre en cercle depuis le centre de la planète. Plus court pendant la même session. */
 
-type Pt = [number, number];
 type Stroke = { pts: Pt[]; delay: number; dur: number; word?: boolean };
 
-const TAU = Math.PI * 2;
 const C: Pt = [80, 46]; // centre de la planète (unités du viewBox 160 × 108)
 const R = 25;           // rayon de la planète
-
-/* Pseudo-aléatoire à graine fixe : le croquis est identique à chaque visite */
-const random = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-
-const arc = (cx: number, cy: number, rx: number, ry: number, a0: number, a1: number, n = 14): Pt[] =>
-  Array.from({ length: n + 1 }, (_, i) => {
-    const a = a0 + ((a1 - a0) * i) / n;
-    return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
-  });
-
-/* Capitales tracées à la main, dans une boîte de 14 de haut : [largeur, traits] */
-const GLYPHS: Record<string, [number, Pt[][]]> = {
-  A: [10, [[[0, 14], [5, 0], [10, 14]], [[2.3, 8.6], [7.7, 8.6]]]],
-  C: [10, [arc(5, 7, 5, 7, -0.75, -5.55)]],
-  D: [10, [[[1, 14], [1, 0]], arc(1, 7, 9, 7, -Math.PI / 2, Math.PI / 2)]],
-  E: [9, [[[9, 0], [1, 0], [1, 14], [9, 14]], [[1, 7], [7, 7]]]],
-  G: [10, [[...arc(5, 7, 5, 7, -0.75, -5.6), [10, 7.6], [6, 7.6]]]],
-  H: [10, [[[1, 0], [1, 14]], [[9, 0], [9, 14]], [[1, 7], [9, 7]]]],
-  I: [2, [[[1, 0], [1, 14]]]],
-  L: [9, [[[1, 0], [1, 14], [8.5, 14]]]],
-  M: [12, [[[0.5, 14], [1, 0], [6, 9], [11, 0], [11.5, 14]]]],
-  N: [10, [[[1, 14], [1, 0], [9, 14], [9, 0]]]],
-  O: [10, [arc(5, 7, 5, 7, -1.4, -1.4 - TAU - 0.3, 18)]],
-  R: [10, [[[1, 14], [1, 0]], arc(1, 3.6, 7.5, 3.6, -Math.PI / 2, Math.PI / 2, 8), [[4, 7.2], [9.5, 14]]]],
-  T: [10, [[[0, 0.3], [10, 0]], [[5, 0], [5, 14]]]],
-};
 
 /* Une version du croquis : même dessin, trait qui bouge un peu selon la graine */
 const drawFrame = (seed: number, word: string) => {

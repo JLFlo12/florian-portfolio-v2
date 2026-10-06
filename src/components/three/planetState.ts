@@ -5,4 +5,6 @@ export const planetState = {
   py: 0,        // souris verticale (-1 → 1)
   dive: 0,      // plongée vers la section Outils (0 → 1, piloté par le scroll)
   ready: false, // intro lancée (fin de l'écran de chargement)
+  sats: [] as (HTMLElement | null)[], // liens du menu en orbite (accueil) : placés par la scène 3D
+  satHover: -1, // satellite survolé (-1 : aucun)
 };

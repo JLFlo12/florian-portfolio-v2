@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Github, Linkedin, Mail, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ToolsSection from '@/components/ToolsSection';
 import HeroPlanet from '@/components/three/HeroPlanet';
+import { hasWebGL } from '@/components/three/webgl';
+import OrbitNav from '@/components/OrbitNav';
 import ProjectBand from '@/components/ProjectBand';
 import SectionHeading from '@/components/SectionHeading';
 import DiveOverlay from '@/components/DiveOverlay';
@@ -23,6 +25,8 @@ const Home = () => {
   const cta = useRef<HTMLAnchorElement>(null);
   const time = useReunionTime();
   useReveal(skills);
+  // Satellites du menu en orbite autour de la planète : grand écran, WebGL, animations permises
+  const [orbit] = useState(() => hasWebGL() && !prefersReducedMotion() && window.matchMedia('(min-width: 768px)').matches);
 
   /* ——— Intro du hero (après l'écran de chargement) + plongée vers les outils au scroll ——— */
   useEffect(() => {
@@ -106,7 +110,7 @@ const Home = () => {
           style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/.06) 1px, transparent 1px)', backgroundSize: '64px 64px' }}
           aria-hidden="true"
         />
-        <HeroPlanet section={hero} />
+        <HeroPlanet section={hero} orbit={orbit} />
         <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-dive-ui><i /><i /><i /><i /></div>
         {/* Voile de fin de plongée : même lueur que le haut de la section Outils */}
         <div className="pointer-events-none invisible absolute inset-0 z-[3] bg-background bg-[radial-gradient(70%_48%_at_50%_48%,hsl(var(--primary)/.24),transparent_70%)] opacity-0" aria-hidden="true" data-dive-flash />
@@ -167,6 +171,7 @@ const Home = () => {
             </div>
           </div>
         </div>
+        {orbit && <OrbitNav />}
       </section>
 
       {/* ═══════════════ OUTILS (arrivée de la plongée) ═══════════════ */}

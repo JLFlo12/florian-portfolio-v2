@@ -1,6 +1,7 @@
 /* ───────────────────────────────────────────────────────────────
    Écriture et dessin « à la main » : capitales tracées en traits (boîte de 14 de haut)
-   et petit tremblé de crayon. Partagés par l'écran de chargement et le menu en satellites.
+   et petit tremblé de crayon. Partagés par l'écran de chargement, le menu en satellites et les
+   boutons de l'en-tête (planète, soucoupe volante, pulsar, soleil).
    Tout est tiré d'une graine fixe : le même mot s'écrit toujours de la même façon.
    ─────────────────────────────────────────────────────────────── */
 
@@ -23,22 +24,30 @@ export const GLYPHS: Record<string, [number, Pt[][]]> = {
   C: [10, [arc(5, 7, 5, 7, -0.75, -5.55)]],
   D: [10, [[[1, 14], [1, 0]], arc(1, 7, 9, 7, -Math.PI / 2, Math.PI / 2)]],
   E: [9, [[[9, 0], [1, 0], [1, 14], [9, 14]], [[1, 7], [7, 7]]]],
+  F: [9, [[[9, 0], [1, 0], [1, 14]], [[1, 7], [7, 7]]]],
   G: [10, [[...arc(5, 7, 5, 7, -0.75, -5.6), [10, 7.6], [6, 7.6]]]],
   H: [10, [[[1, 0], [1, 14]], [[9, 0], [9, 14]], [[1, 7], [9, 7]]]],
   I: [2, [[[1, 0], [1, 14]]]],
   J: [10, [[[9, 0], ...arc(5, 10, 4, 4, 0, Math.PI, 8)]]],
+  K: [10, [[[1, 0], [1, 14]], [[9, 0], [1, 8.5]], [[3.6, 6], [9.5, 14]]]],
   L: [9, [[[1, 0], [1, 14], [8.5, 14]]]],
   M: [12, [[[0.5, 14], [1, 0], [6, 9], [11, 0], [11.5, 14]]]],
   N: [10, [[[1, 14], [1, 0], [9, 14], [9, 0]]]],
   O: [10, [arc(5, 7, 5, 7, -1.4, -1.4 - TAU - 0.3, 18)]],
   P: [9, [[[1, 14], [1, 0]], arc(1, 3.6, 7.5, 3.6, -Math.PI / 2, Math.PI / 2, 8)]],
+  Q: [10, [arc(5, 7, 5, 7, -1.4, -1.4 - TAU - 0.3, 18), [[6, 10], [10, 14.5]]]],
   R: [10, [[[1, 14], [1, 0]], arc(1, 3.6, 7.5, 3.6, -Math.PI / 2, Math.PI / 2, 8), [[4, 7.2], [9.5, 14]]]],
   S: [10, [[...arc(5, 3.6, 4, 3.6, -0.45, -Math.PI * 1.5, 9), ...arc(5, 10.4, 4.5, 3.6, -Math.PI / 2, Math.PI + 0.45, 9).slice(1)]]],
   T: [10, [[[0, 0.3], [10, 0]], [[5, 0], [5, 14]]]],
   U: [10, [[[1, 0], ...arc(5, 9, 4, 5, Math.PI, 0, 10), [9, 0]]]],
   V: [10, [[[0, 0], [5, 14], [10, 0]]]],
+  X: [10, [[[0.5, 0], [9.5, 14]], [[9.5, 0], [0.5, 14]]]],
 };
-const GRAVE: Pt[] = [[2.5, -4.5], [6, -1.8]]; // accent du À
+/* Lettres accentuées : lettre de base + un trait (accent grave, aigu, cédille) */
+const GRAVE: Pt[] = [[2.5, -4.5], [6, -1.8]];
+const ACUTE: Pt[] = [[3, -1.8], [6.5, -4.5]];
+const CEDILLA: Pt[] = [[5.2, 14], [5.8, 15.6], [3.8, 17]];
+const ACCENTED: Record<string, [string, Pt[]]> = { 'À': ['A', GRAVE], 'É': ['E', ACUTE], 'È': ['E', GRAVE], 'Ç': ['C', CEDILLA] };
 
 /* Trait à main levée : chaque point bouge un peu et les longs segments se courbent légèrement */
 export const sketch = (strokes: Pt[][], seed: number, amp: number): Pt[][] => {
@@ -75,12 +84,13 @@ export const handwrite = (text: string, { cap = 10, gap = 3.6, seed = 7, jitter 
   let x = 0;
   for (const ch of text) {
     if (ch === ' ') { x += 6 * S; continue; }
-    const glyph = GLYPHS[ch === 'À' ? 'A' : ch];
+    const accent = ACCENTED[ch];
+    const glyph = GLYPHS[accent ? accent[0] : ch];
     if (!glyph) continue;
     const [gw, parts] = glyph;
     const rot = (shape() - 0.5) * 0.14;
     const cx = x + (gw * S) / 2, cy = top + 7 * S + (shape() - 0.5) * 1.6 * S;
-    for (const stroke of ch === 'À' ? [...parts, GRAVE] : parts) {
+    for (const stroke of accent ? [...parts, accent[1]] : parts) {
       strokes.push(stroke.map(([px, py]): Pt => {
         const lx = (px - gw / 2) * S + (noise() - 0.5) * 2 * jitter;
         const ly = (py - 7) * S + (noise() - 0.5) * 2 * jitter;

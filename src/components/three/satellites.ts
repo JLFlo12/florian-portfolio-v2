@@ -8,15 +8,13 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
    - À propos : Spoutnik chromé et ses quatre antennes ;
    - Contact : satellite de télécommunication qui émet des ondes ;
    - Jarvis : sphère sombre au cœur orange, dans son anneau.
-   Les modèles (makeSatelliteKit) servent à deux scènes :
-   - le menu en haut de page (createSatellites, ci-dessous) ;
-   - le ciel de l'accueil, où ils tournent autour de la planète (three/Planet.tsx).
+   Les modèles (makeSatelliteKit) servent au ciel de l'accueil, où ils tournent autour de la planète
+   (three/Planet.tsx) ; metalEnvironment sert aussi aux boutons 3D (three/spaceControls.ts).
    Ils tournent lentement ; au survol, ils grossissent et tournent plus vite ; la page en cours
    porte une balise orange qui clignote (et Contact émet ses ondes).
    ─────────────────────────────────────────────────────────────── */
 
-export type SatelliteScene = { setActive: (i: number) => void; setHover: (i: number) => void; dispose: () => void };
-/* Place de chaque satellite (px, depuis le centre du canvas ; y vers le bas), taille et inclinaison */
+/* Place d'un objet dans une scène à caméra orthographique (px, depuis le centre du canvas ; y vers le bas), taille et inclinaison */
 export type SatelliteSpot = { x: number; y: number; s: number; rz: number };
 /* Un satellite monté : holder (position, taille) → tilt (inclinaison) → body (rotation sur lui-même) */
 export type SatelliteRig = {
@@ -25,7 +23,6 @@ export type SatelliteRig = {
 };
 
 const ORANGE = 0xff6a1f;
-const BASE = 1.55; // taille dans le menu (1 = environ 45 px de large)
 
 /* Reflets du métal : une pièce éclairée, précalculée (à libérer avec dispose) */
 export const metalEnvironment = (renderer: THREE.WebGLRenderer) => {
@@ -197,69 +194,5 @@ export const makeSatelliteKit = (envMap: THREE.Texture) => {
     animate,
     blink: (t: number) => { beaconMat.opacity = Math.sin(t * 5) > 0 ? 1 : 0.25; },
     dispose: () => disposables.forEach((d) => d.dispose()),
-  };
-};
-
-/* ——— Menu en haut de page : une seule scène WebGL pour les cinq satellites ———
-   Placés un peu en désordre (spots : position, taille, inclinaison), ils flottent doucement.
-   Caméra orthographique : 1 unité = 1 px CSS. */
-export const createSatellites = (canvas: HTMLCanvasElement, spots: SatelliteSpot[], width: number, height: number): SatelliteScene => {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(width, height, false);
-  renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-
-  const env = metalEnvironment(renderer);
-  const kit = makeSatelliteKit(env.texture);
-  const scene = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, -200, 200);
-  camera.position.set(0, 0, 100);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-  const key = new THREE.DirectionalLight(0xfff1dc, 1.6);
-  key.position.set(-40, 60, 80);
-  const rim = new THREE.DirectionalLight(ORANGE, 0.5); // léger liseré orange venu de l'arrière
-  rim.position.set(60, 10, -60);
-  scene.add(key, rim);
-
-  const items = spots.map((spot, i) => {
-    const r = kit.rig(i);
-    r.holder.position.x = spot.x;
-    scene.add(r.holder);
-    return r;
-  });
-
-  let active = -1;
-  let hover = -1;
-  let raf = 0;
-  let last = performance.now();
-  let t = 0;
-  const frame = (now: number) => {
-    raf = requestAnimationFrame(frame);
-    const dt = Math.min((now - last) / 1000, 0.05);
-    last = now;
-    t += dt;
-    kit.blink(t);
-    items.forEach((r, i) => {
-      const spot = spots[i];
-      kit.animate(r, dt, t, active === i, hover === i);
-      r.tilt.rotation.x = 0.28 + Math.sin(t * 0.8 + i) * 0.1 - r.h * 0.15;
-      r.tilt.rotation.z = spot.rz + Math.sin(t * 0.6 + i * 1.7) * 0.08;
-      r.holder.position.y = -spot.y + Math.sin(t * 1.3 + i * 0.9) * 1.6;
-      r.holder.scale.setScalar(BASE * spot.s * ((active === i ? 1.06 : 0.96) + r.h * 0.15));
-    });
-    renderer.render(scene, camera);
-  };
-  raf = requestAnimationFrame(frame);
-
-  return {
-    setActive: (i) => { active = i; },
-    setHover: (i) => { hover = i; },
-    dispose: () => {
-      cancelAnimationFrame(raf);
-      kit.dispose();
-      env.dispose();
-      renderer.dispose();
-    },
   };
 };

@@ -496,7 +496,7 @@ function OrbitSatellites({ system }: { system: React.RefObject<THREE.Group> }) {
       link.style.transform = `translate3d(${(v.x * 0.5 + 0.5) * size.width}px, ${(-v.y * 0.5 + 0.5) * size.height}px, 0)`;
     });
 
-    // Menu de l'en-tête effacé tant que les satellites sont dans le ciel
+    // Tant que les satellites sont dans le ciel : pas de pilule en verre liquide, boutons 3D dans l'en-tête
     const on = vanish > 0.5;
     if (on !== s.on) { s.on = on; document.documentElement.toggleAttribute('data-orbit-nav', on); }
     // Dès qu'on scrolle, le nom de la page en cours ne reste plus affiché (seulement au survol)

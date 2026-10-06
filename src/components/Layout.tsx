@@ -16,7 +16,7 @@ import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Preloader from '@/components/fx/Preloader';
 import LiquidGlass from '@/components/fx/LiquidGlass';
 import SoundToggle from '@/components/SoundToggle';
-import SatelliteNav from '@/components/SatelliteNav';
+import SpaceControls from '@/components/SpaceControls';
 import { useNavItems } from '@/lib/nav';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
@@ -88,6 +88,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
     if (menuOpen) lenis.stop(); else lenis.start();
   }, [menuOpen, lenis]);
 
+  // Langue, jeux, musique, thème : pilule en verre liquide (ordinateur) et menu mobile
   const controls = (
     <>
       {/* Langue */}
@@ -155,11 +156,25 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
             </span>
           </Link>
 
-          {/* Navigation en satellites (ordinateur) : nom écrit à la main sous le satellite */}
-          <SatelliteNav items={navItems} isActive={isActive} />
+          {/* Pilule de navigation (ordinateur) ; sur l'accueil, elle laisse la place aux satellites tant qu'ils sont dans le ciel */}
+          <div className="glass-nav liquid hidden items-center gap-1 rounded-full p-1.5 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive(item.path) ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-foreground/10 hover:text-foreground'
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
 
           <div className="relative z-[2] flex items-center gap-1">
-            <div className="liquid hidden items-center gap-0.5 rounded-full p-1 md:flex">{controls}</div>
+            <div className="glass-controls liquid hidden items-center gap-0.5 rounded-full p-1 md:flex">{controls}</div>
+            {/* Accueil : planète, soucoupe, pulsar et soleil en 3D tant que les satellites sont dans le ciel */}
+            {location.pathname === '/' && <SpaceControls />}
             {/* Bouton menu (mobile) */}
             <button
               type="button"

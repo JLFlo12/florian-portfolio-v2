@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Callout } from '@/components/SatelliteNav';
+import { Callout } from '@/components/Callout';
 import { planetState } from '@/components/three/planetState';
 import { useNavItems } from '@/lib/nav';
 
@@ -9,7 +9,8 @@ import { useNavItems } from '@/lib/nav';
    ciel autour de la planète (scène 3D : three/Planet.tsx). Ici, les liens : posés sur chaque
    satellite par la scène, ils le suivent quand il tourne au scroll et disparaissent quand il passe
    derrière la planète. Au survol, le nom s'écrit à la main au bout d'un trait, comme dans l'en-tête.
-   Tant que ces satellites sont visibles, le menu de l'en-tête s'efface (attribut data-orbit-nav).
+   Tant que ces satellites sont visibles (attribut data-orbit-nav), la pilule en verre liquide de l'en-tête
+   s'efface et les boutons 3D (SpaceControls) la remplacent ; ils partent ensemble au scroll.
    ─────────────────────────────────────────────────────────────── */
 
 // Côté où s'écrit chaque nom : vers l'extérieur de la planète (Contact, au bord de l'écran, vers la gauche)

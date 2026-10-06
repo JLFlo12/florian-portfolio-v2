@@ -43,14 +43,14 @@ const games: GameCard[] = [
   {
     id: 'guess-building',
     name: 'Guess the Building',
-    description: 'Reconnais les bâtiments iconiques du monde.',
+    description: 'Reconnais 39 bâtiments iconiques du monde.',
     icon: <Building2 className="h-9 w-9 text-primary" strokeWidth={1.5} />,
     available: true,
   },
   {
     id: 'tower-crane',
     name: 'Tower Crane Challenge',
-    description: 'Construis la tour la plus stable possible.',
+    description: 'Monte la tour la plus haute possible, étage par étage, sans en faire tomber trois.',
     icon: <Construction className="h-9 w-9 text-primary" strokeWidth={1.5} />,
     available: true,
   },

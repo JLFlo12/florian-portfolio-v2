@@ -11,13 +11,18 @@ const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 600;
 const BIRD_SIZE = 24;
 const BIRD_X = 80;
-const GRAVITY = 0.52;
-const FLAP_FORCE = -6.8;
+// Physique à pas fixe (60 pas par seconde) : même vitesse et même gravité sur un écran 60, 120 ou 144 Hz
+// (avant, tout était calculé à chaque image : deux fois plus rapide sur un écran à 120 Hz)
+const STEP_MS = 1000 / 60;
+const GRAVITY = 0.36; // gravité adoucie (était 0,52)
+const FLAP_FORCE = -6.6;
+const MAX_FALL = 8.5; // vitesse de chute maximale
 const PIPE_WIDTH = 50;
-const PIPE_GAP = 150;
-const PIPE_GAP_MIN = 120;
-const PIPE_SPEED_INITIAL = 4.5;
-const PIPE_SPAWN_INTERVAL = 80; // frames
+const PIPE_GAP = 165;
+const PIPE_GAP_MIN = 135;
+const PIPE_SPEED_INITIAL = 3.4;
+const PIPE_SPEED_MAX = 5.2;
+const PIPE_SPACING = 250; // distance entre deux tuyaux (px)
 const HITBOX_SHRINK = 4; // pixels to shrink bird hitbox
 
 const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
@@ -32,12 +37,12 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
 
   const isDark = document.documentElement.classList.contains('dark');
 
+  // Chaque tuyau garde la taille de son passage : la collision correspond toujours à ce qui est dessiné
   const gameStateRef = useRef({
     birdY: CANVAS_HEIGHT / 2,
     birdVelocity: 0,
-    pipes: [] as { x: number; topH: number; scored: boolean }[],
+    pipes: [] as { x: number; topH: number; gap: number; scored: boolean }[],
     score: 0,
-    frameCount: 0,
     gameOver: false,
     speed: PIPE_SPEED_INITIAL,
     birdRotation: 0,
@@ -49,7 +54,6 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
       birdVelocity: 0,
       pipes: [],
       score: 0,
-      frameCount: 0,
       gameOver: false,
       speed: PIPE_SPEED_INITIAL,
       birdRotation: 0,
@@ -107,7 +111,7 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
         ctx.roundRect(pipe.x, 0, PIPE_WIDTH, pipe.topH, [0, 0, 8, 8]);
         ctx.fill();
         // Bottom pipe
-        const bottomY = pipe.topH + PIPE_GAP;
+        const bottomY = pipe.topH + pipe.gap;
         ctx.beginPath();
         ctx.roundRect(pipe.x, bottomY, PIPE_WIDTH, CANVAS_HEIGHT - bottomY - 40, [8, 8, 0, 0]);
         ctx.fill();
@@ -175,16 +179,22 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
       }
     };
 
-    const update = () => {
+    const endGame = (state: typeof gameStateRef.current) => {
+      state.gameOver = true;
+      setGameOver(true);
+      setScore(Math.floor(state.score));
+      const best = Math.max(Math.floor(state.score), parseInt(localStorage.getItem('flappy-best') || '0', 10));
+      localStorage.setItem('flappy-best', String(best));
+      setBestScore(best);
+    };
+
+    // Un pas de simulation (1/60 s)
+    const step = () => {
       const state = gameStateRef.current;
-      if (state.gameOver || !started) {
-        draw();
-        animationRef.current = requestAnimationFrame(update);
-        return;
-      }
+      if (state.gameOver || !started) return;
 
       // Physics
-      state.birdVelocity += GRAVITY;
+      state.birdVelocity = Math.min(state.birdVelocity + GRAVITY, MAX_FALL);
       state.birdY += state.birdVelocity;
 
       // Ceiling
@@ -195,30 +205,24 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
 
       // Ground collision
       if (state.birdY + BIRD_SIZE >= CANVAS_HEIGHT - 40) {
-        state.gameOver = true;
-        setGameOver(true);
-        setScore(Math.floor(state.score));
-        const best = Math.max(Math.floor(state.score), parseInt(localStorage.getItem('flappy-best') || '0', 10));
-        localStorage.setItem('flappy-best', String(best));
-        setBestScore(best);
+        endGame(state);
+        return;
       }
 
-      // Spawn pipes
-      state.frameCount++;
-      if (state.frameCount % PIPE_SPAWN_INTERVAL === 0) {
-        const minTop = 60;
-        const maxTop = CANVAS_HEIGHT - PIPE_GAP - 100;
-        const topH = minTop + Math.random() * (maxTop - minTop);
-        state.pipes.push({ x: CANVAS_WIDTH, topH, scored: false });
-      }
-
-      // Speed increase — after 3 points, moderate
+      // Speed increase — after 3 points, moderate, capped
       if (state.score >= 3) {
-        state.speed = PIPE_SPEED_INITIAL + (state.score - 3) * 0.045;
+        state.speed = Math.min(PIPE_SPEED_MAX, PIPE_SPEED_INITIAL + (state.score - 3) * 0.03);
       }
 
-      // Update gap — moderate reduction, never below PIPE_GAP_MIN
-      const currentGap = Math.max(PIPE_GAP_MIN, PIPE_GAP - Math.floor(state.score / 5) * 4);
+      // Spawn pipes at a fixed distance (same spacing whatever the speed); the gap narrows slowly
+      const last = state.pipes[state.pipes.length - 1];
+      if (!last || last.x < CANVAS_WIDTH - PIPE_SPACING) {
+        const gap = Math.max(PIPE_GAP_MIN, PIPE_GAP - Math.floor(state.score / 5) * 3);
+        const minTop = 60;
+        const maxTop = CANVAS_HEIGHT - gap - 100;
+        const topH = minTop + Math.random() * (maxTop - minTop);
+        state.pipes.push({ x: CANVAS_WIDTH, topH, gap, scored: false });
+      }
 
       // Move pipes & check collision
       state.pipes = state.pipes.filter(pipe => {
@@ -231,29 +235,36 @@ const FlappyBird: React.FC<FlappyBirdProps> = ({ onBack }) => {
           setScore(state.score);
         }
 
-        // Collision with pipes (shrunken hitbox)
+        // Collision with pipes (shrunken hitbox), with this pipe's own gap
         if (
+          !state.gameOver &&
           BIRD_X + BIRD_SIZE - HITBOX_SHRINK > pipe.x &&
           BIRD_X + HITBOX_SHRINK < pipe.x + PIPE_WIDTH
         ) {
-          if (state.birdY + HITBOX_SHRINK < pipe.topH || state.birdY + BIRD_SIZE - HITBOX_SHRINK > pipe.topH + currentGap) {
-            state.gameOver = true;
-            setGameOver(true);
-            setScore(Math.floor(state.score));
-            const best = Math.max(Math.floor(state.score), parseInt(localStorage.getItem('flappy-best') || '0', 10));
-            localStorage.setItem('flappy-best', String(best));
-            setBestScore(best);
+          if (state.birdY + HITBOX_SHRINK < pipe.topH || state.birdY + BIRD_SIZE - HITBOX_SHRINK > pipe.topH + pipe.gap) {
+            endGame(state);
           }
         }
 
         return pipe.x > -PIPE_WIDTH;
       });
-
-      draw();
-      animationRef.current = requestAnimationFrame(update);
     };
 
-    animationRef.current = requestAnimationFrame(update);
+    // Boucle : autant de pas de 1/60 s que le temps écoulé en demande, puis un dessin
+    let last = performance.now();
+    let acc = 0;
+    const loop = (now: number) => {
+      acc += Math.min(now - last, 250);
+      last = now;
+      while (acc >= STEP_MS) {
+        step();
+        acc -= STEP_MS;
+      }
+      draw();
+      animationRef.current = requestAnimationFrame(loop);
+    };
+
+    animationRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationRef.current);
   }, [started, isDark]);
 

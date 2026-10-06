@@ -279,6 +279,25 @@ Fichiers : `src/pages/Legal.tsx` (routes `/mentions-legales` et `/legal`), conte
 Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style, avec la même logique qu'avant (hooks Supabase, admin, galeries, Canva).
 - **À propos** (`src/pages/About.tsx`, textes `about.*`) : 01 Formation, 02 Expérience (stage en informatique à l'ESIROI, 2e année de BUT, ajouté le 05/10 à la demande de Florian ; sans le point « en cours » qui clignote, puisque le stage est fini), 03 Expertise, 04 CV.
 
+### Mini-jeux (corrigés le 06/10/2026, à la demande de Florian)
+Fichiers : `src/pages/Games.tsx` et `src/components/games/*`.
+- **Physique à pas fixe (60 pas par seconde)** pour Flappy Bird et Tower Crane : avant, tout était calculé à chaque image, donc deux fois plus vite (gravité comprise) sur un écran à 120 Hz.
+- **Flappy Bird** (« gravité trop forte ») :
+  - gravité 0,52 → 0,36, avec une vitesse de chute plafonnée ;
+  - passage de 165 px (135 au minimum), tuyaux espacés de 250 px, vitesse de départ plus basse ;
+  - bug corrigé : la collision utilisait un passage plus petit que celui dessiné. Chaque tuyau garde maintenant son propre passage.
+- **Guess the Building** :
+  - 39 bâtiments : 18 ajoutés, le musée du Qatar retiré faute de vraie photo libre de l'extérieur ;
+  - les images générées par IA de l'ancien site qui ne ressemblaient pas au vrai bâtiment ont été remplacées : Elbphilharmonie, Guggenheim, Heydar Aliyev, The Interlace, CCTV, Habitat 67, Atomium, Lotus Temple, Niterói ;
+  - les photos ajoutées viennent de **Wikimedia Commons** (licences libres), recadrées sur le bâtiment et converties en WebP. Leur auteur, leur licence et leur lien sont dans `COMMONS` (dans `GuessBuilding.tsx`) et s'affichent sous la photo après la réponse ; les Mentions légales le signalent ;
+  - chaque photo est affichée **en entière** (`object-contain`) sur la même photo floutée : les bâtiments en hauteur ne sont plus coupés ;
+  - la photo suivante est préchargée.
+- **Tower Crane** (`towerCraneGame.ts` : moteur et dessin sans React, testables seuls ; `TowerCrane.tsx` : boucle, commandes, React) :
+  - **gravité** : l'étage pendule au bout du câble (à-coups du chariot, vent) et garde une partie de l'élan quand on le lâche. Il tombe en accélérant ; s'il dépasse de plus de la moitié dans le vide, il bascule autour du bord et tombe (raté) ;
+  - **infini** : la caméra suit la tour et la grue « grimpe » avec elle. Le ciel passe du jour au coucher de soleil, à la nuit (fenêtres allumées, lune, étoiles) puis à l'espace. Le vent apparaît au 8e étage, et la tour se balance d'autant plus qu'elle est haute et mal alignée ;
+  - **dessin** : étages en façades avec fenêtres (le style change tous les 8 étages), ville en deux plans de profondeur, nuages, grue en treillis, poussière, « Parfait ! » avec bonus de série (plafonné à +5), image nette sur les écrans haute densité ;
+  - vérifié par une simulation (joueur automatique) : 150 étages sans valeur invalide, caméra à environ 10 px de sa cible. Le câble penche de 12° en général et de 37° au plus haut. Les ratés et la bascule fonctionnent.
+
 ---
 
 ## 6. Performance et statistiques
@@ -287,7 +306,7 @@ Projets, fiches projet, À propos, Jeux et 404 sont refaits dans le même style,
 - **Découpage** : `vendor-react`, `vendor-motion` (GSAP + Lenis) et `vendor-i18n` sont des fichiers séparés, gardés en cache d'une version à l'autre. Une mise à jour ne fait retélécharger qu'environ 67 Ko.
 - **Modules retirés** : les toasts Radix et le `TooltipProvider`, jamais utilisés.
 - **Notifications Sonner** : elles suivent maintenant le thème du site (`ThemeContext`) au lieu de `next-themes`.
-- **Images du jeu Guess the Building** : 22 fichiers en WebP (1 280 px max), soit 1,8 Mo au lieu de 2,5 Mo.
+- **Images du jeu Guess the Building** : 39 fichiers en WebP (1 280 px max), 4,8 Mo en tout ; une partie n'en charge que 10.
 - **Statistiques** : `@vercel/analytics` est injecté en production (`src/main.tsx`), sans cookies.
   - ⚠️ **À activer** par Florian : projet Vercel `florian-portfolio-v2`, onglet Analytics, puis Enable. On peut aussi lancer `vercel project web-analytics enable florian-portfolio-v2` dans un terminal interactif.
 

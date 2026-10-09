@@ -555,6 +555,7 @@
   .case-detail__list { display: grid; gap: .75rem; margin-top: 1.2rem; }
   .case-detail__list li { position: relative; padding-left: 1.5rem; line-height: 1.6; color: hsl(var(--muted-foreground)); }
   .case-detail__list li::before { content: ""; position: absolute; left: 0; top: .8em; width: .75rem; height: 1px; background: hsl(var(--primary)); }
+  .case-reflect { display: grid; gap: .9rem; margin-top: 1.2rem; font-size: clamp(1.05rem, 1.25vw, 1.18rem); line-height: 1.65; color: hsl(var(--foreground)); }
   /* Fichiers (anciens projets) */
   .case-files { display: grid; border-top: 1px solid hsl(var(--border)); }
   .case-files li { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid hsl(var(--border)); }

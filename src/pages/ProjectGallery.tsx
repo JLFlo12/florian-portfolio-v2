@@ -23,7 +23,8 @@ const canvaLinks: { [key: string]: string } = {
   'des-jeux-pour-professionnels-du-btiment': 'https://gamma.app/docs/Des-Jeux-pour-Professionnels-du-Batiment-h5a4244sqx07syb'
 };
 
-interface Detail { section: string; content: string[] }
+// Rubrique de la base. `kind: 'reflection'` la range dans « Ce que j'en retiens » (version anglaise dans section_en / content_en).
+interface Detail { section: string; content: string[]; kind?: string; section_en?: string; content_en?: string[] }
 interface Shot { url?: string; title: string; description?: string }
 interface Neighbour { href: string; title: string }
 
@@ -136,6 +137,7 @@ interface CaseStudyProps {
   slides: ReturnType<typeof slidesOf>;
   details: Detail[];
   detailsTitle: string;
+  reflection?: Detail[];
   files?: ProjectFile[];
   shots: Shot[];
   counter?: { index: number; total: number; prev?: Neighbour; next?: Neighbour };
@@ -143,7 +145,7 @@ interface CaseStudyProps {
   editor?: React.ReactNode;
 }
 
-const CaseStudy = ({ title, status, done, description, tags, cover, slides, details, detailsTitle, files = [], shots, counter, toolbar, editor }: CaseStudyProps) => {
+const CaseStudy = ({ title, status, done, description, tags, cover, slides, details, detailsTitle, reflection = [], files = [], shots, counter, toolbar, editor }: CaseStudyProps) => {
   const { t } = useTranslation();
   let section = 0;
   const next = () => pad(++section);
@@ -254,6 +256,24 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
             </section>
           )}
 
+          {/* Ce que j'en retiens : ce que j'ai appris, ce que ça m'a apporté */}
+          {reflection.length > 0 && (
+            <section className="case-section container-x">
+              <SectionHead index={next()} title={t('gallery.reflection')} />
+              <div className="case-details" data-stagger>
+                {reflection.map((item, i) => (
+                  <article key={i} className="case-detail">
+                    <p className="led text-sm text-primary">{pad(i + 1)}</p>
+                    <h3 className="case-detail__title">{cleanSection(item.section)}</h3>
+                    <div className="case-reflect">
+                      {item.content.map((text, j) => <p key={j}>{text}</p>)}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Fichiers (anciens projets) */}
           {files.length > 0 && (
             <section className="case-section container-x">
@@ -295,7 +315,7 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
             </section>
           )}
 
-          {!slides && details.length === 0 && files.length === 0 && shots.length === 0 && !description && (
+          {!slides && details.length === 0 && reflection.length === 0 && files.length === 0 && shots.length === 0 && !description && (
             <p className="container-x py-16 text-center text-lg text-muted-foreground">{t('gallery.empty')}</p>
           )}
         </>
@@ -362,7 +382,13 @@ const ProjectGallery = () => {
 
   // ——— Projet Supabase ———
   if (isDynamic && dynamicProject) {
-    const details: Detail[] = dynamicProject.detailed_content || [];
+    const rubrics: Detail[] = dynamicProject.detailed_content || [];
+    const en = i18n.language === 'en';
+    const details = rubrics.filter((d) => d.kind !== 'reflection');
+    const reflection = rubrics.filter((d) => d.kind === 'reflection').map((d) => ({
+      section: (en && d.section_en) || d.section,
+      content: en && d.content_en?.length ? d.content_en : d.content,
+    }));
     const images: GalleryImage[] = dynamicProject.gallery_images || [];
     const position = allProjects.findIndex((p) => p.id === dynamicProject.id);
     const at = (i: number) => {
@@ -401,11 +427,12 @@ const ProjectGallery = () => {
           slides={slidesOf(dynamicProject.slideshow_url)}
           details={details}
           detailsTitle={t('gallery.details')}
+          reflection={reflection}
           shots={images}
           counter={counter}
           toolbar={toolbar}
           editor={editing && isAdmin
-            ? <GalleryEditor projectId={dynamicId as string} detailedContent={details} galleryImages={images} onSave={handleSaveGallery} />
+            ? <GalleryEditor projectId={dynamicId as string} detailedContent={rubrics} galleryImages={images} onSave={handleSaveGallery} />
             : undefined}
         />
         <AdminLoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} onLogin={login} />

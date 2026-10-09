@@ -279,67 +279,6 @@ export const projectGalleries: ProjectGallery[] = [
     ]
   },
   {
-    projectId: 'creation-dun-portfolio-personnel',
-    projectTitle: 'Création d\'un portfolio personnel',
-    images: [
-      {
-        id: '1',
-        url: '/portfolio-v1/images/pfp.jpg',
-        title: 'Photo de profil',
-        description: 'Photo utilisée dans le portfolio V1'
-      },
-      {
-        id: '2',
-        url: '/portfolio-v1/images/hacker.jpg',
-        title: 'Image thématique',
-        description: 'Image d\'ambiance cybersécurité'
-      },
-      {
-        id: '3',
-        url: '/portfolio-v1/images/raspberry.jpg',
-        title: 'Raspberry Pi',
-        description: 'Photo du Raspberry Pi utilisé dans les projets'
-      }
-    ],
-    files: [
-      {
-        id: '1',
-        url: '/portfolio-v1/index.html',
-        title: 'Page d\'accueil (index.html)',
-        description: 'Page principale du portfolio V1',
-        type: 'html'
-      },
-      {
-        id: '2',
-        url: '/portfolio-v1/cv.html',
-        title: 'Page CV (cv.html)',
-        description: 'Page curriculum vitae détaillé',
-        type: 'html'
-      },
-      {
-        id: '3',
-        url: '/portfolio-v1/style.css',
-        title: 'Feuille de style (style.css)',
-        description: 'Styles CSS du portfolio',
-        type: 'css'
-      },
-      {
-        id: '4',
-        url: '/portfolio-v1/script.js',
-        title: 'Script JavaScript (script.js)',
-        description: 'Fonctionnalités interactives (mode sombre, traduction)',
-        type: 'js'
-      },
-      {
-        id: '5',
-        url: '/portfolio-v1/TEST.html',
-        title: 'Test mode jour/nuit (TEST.html)',
-        description: 'Page de test pour le basculement jour/nuit',
-        type: 'html'
-      }
-    ]
-  },
-  {
     projectId: 'if-you-stay--science-fiction-motionnelle',
     projectTitle: 'If You Stay — Science-fiction émotionnelle',
     images: [
@@ -1130,24 +1069,6 @@ export const projectGalleries: ProjectGallery[] = [
           '⚔️ Combat Souls-like solide avec boss mémorable',
           '💻 Build final compilé et testé sous Windows (clavier/manette)'
         ]
-      }
-    ]
-  },
-  {
-    projectId: 'reseau-gns3',
-    projectTitle: 'Réseau pour petite entreprise (GNS3)',
-    images: [
-      {
-        id: '1',
-        url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=600&fit=crop',
-        title: 'Topologie réseau',
-        description: 'Architecture du réseau GNS3'
-      },
-      {
-        id: '2',
-        url: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=600&fit=crop',
-        title: 'Configuration VLAN',
-        description: 'Paramétrage des réseaux virtuels'
       }
     ]
   },

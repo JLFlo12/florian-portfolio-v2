@@ -114,8 +114,6 @@ const resources = {
           'hygiene-cybersecurite': 'Hygiène et cybersécurité',
           'pilotage-led-raspberry': 'Pilotage de LED avec Raspberry Pi',
           'analyse-transmission-wifi': 'Analyse de transmission WiFi',
-          'creation-portfolio': 'Création d\'un portfolio personnel',
-          'reseau-entreprise-gns3': 'Réseau pour petite entreprise (GNS3)',
           'mesure-signal': 'Mesure et caractérisation d\'un signal',
           'projet-integratif-gns3': 'Projet intégratif : Topologie centralisée + succursale (GNS3)',
           'site-suivi-commande': 'Création d\'un site web de suivi de commande'
@@ -126,8 +124,6 @@ const resources = {
           'hygiene-cybersecurite': 'Apprentissage des bonnes pratiques de sécurité (mots de passe, antivirus, pare-feu, etc.)',
           'pilotage-led-raspberry': 'Contrôle de LED à distance via un serveur web sur Raspberry Pi',
           'analyse-transmission-wifi': 'Étude de la puissance des signaux WiFi avec WiFi Analyzer et documentation des résultats',
-          'creation-portfolio': 'Premier site portfolio simple en HTML/CSS/JS',
-          'reseau-entreprise-gns3': 'Conception d\'une infrastructure réseau complète dans GNS3 avec routage, VLAN, NAT, etc.',
           'mesure-signal': 'Analyse de signaux physiques à l\'oscilloscope, calcul de fréquence et d\'amplitude',
           'projet-integratif-gns3': 'Réseau GNS3 simulant un site principal et une succursale interconnectée',
           'site-suivi-commande': 'Développement d\'une web app permettant la gestion et le suivi de commandes, triées par statut, type et fournisseur'
@@ -356,8 +352,6 @@ const resources = {
           'hygiene-cybersecurite': 'IT Hygiene and Cybersecurity',
           'pilotage-led-raspberry': 'LED Control with Raspberry Pi',
           'analyse-transmission-wifi': 'WiFi Transmission Analysis',
-          'creation-portfolio': 'Personal Portfolio Creation',
-          'reseau-entreprise-gns3': 'Small Business Network (GNS3)',
           'mesure-signal': 'Signal Measurement and Characterization',
           'projet-integratif-gns3': 'Integrative Project: Centralized Topology + Branch (GNS3)',
           'site-suivi-commande': 'Order Tracking Website Creation'
@@ -368,8 +362,6 @@ const resources = {
           'hygiene-cybersecurite': 'Learning security best practices (passwords, antivirus, firewall, etc.)',
           'pilotage-led-raspberry': 'Remote LED control via web server on Raspberry Pi',
           'analyse-transmission-wifi': 'WiFi signal strength study with WiFi Analyzer and results documentation',
-          'creation-portfolio': 'First simple portfolio website using HTML/CSS/JS',
-          'reseau-entreprise-gns3': 'Complete network infrastructure design in GNS3 with routing, VLAN, NAT, etc.',
           'mesure-signal': 'Physical signal analysis with oscilloscope, frequency and amplitude calculation',
           'projet-integratif-gns3': 'GNS3 network simulating a main site and an interconnected branch',
           'site-suivi-commande': 'Web app development for order management and tracking, sorted by status, type and supplier'

@@ -53,9 +53,7 @@ Tu es une IA polyvalente capable de :
 
 ## Projets notables de Florian
 - "The Forgotten" : Jeu survival horror en Unreal Engine 5 (en équipe de 3, 10 mois de développement)
-- Réseau entreprise GNS3 : Infrastructure réseau complète avec routage, VLAN, NAT
 - Pilotage LED Raspberry Pi : Contrôle de LED à distance via serveur web
-- Portfolio personnel : Site web moderne avec React/TypeScript (version 2 : planète 3D, animations GSAP)
 
 ## Règles
 - Réponds dans la langue utilisée par le visiteur.

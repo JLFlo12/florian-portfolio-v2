@@ -14,11 +14,11 @@ const GALACTIC_NORMAL = new THREE.Vector3(0.25, 0.9, 0.35).normalize();
 const skyFragment = /* glsl */ `
 varying vec3 vDir;
 uniform vec3 uGalaxy;
+uniform samplerCube uGlow;
 ${NOISE}
-void main() {
-  vec3 d = normalize(vDir);
-  float lat = dot(d, uGalaxy);
-  float band = exp(-lat * lat * 9.0);
+// PART 0 : ciel complet. PART 1 : lueurs seules (précalculées une fois dans une carte cubique).
+// PART 2 : rendu de chaque image = lueurs lues dans la carte + poussière d'étoiles fine calculée au pixel.
+vec3 glow(vec3 d, float band) {
   float n = fbm(d * 3.0 + 4.0);
   float n2 = fbm(d * 7.0 + vec3(n * 1.5));
 
@@ -32,6 +32,19 @@ void main() {
   float neb = pow(nd, 10.0) * smoothstep(0.3, 0.75, fbm(d * 6.0 + 2.0));
   col += neb * mix(vec3(0.30, 0.09, 0.06), vec3(0.10, 0.16, 0.30), fbm(d * 11.0)) * 0.55;
 
+  return col;
+}
+
+void main() {
+  vec3 d = normalize(vDir);
+  float lat = dot(d, uGalaxy);
+  float band = exp(-lat * lat * 9.0);
+#if PART == 2
+  vec3 col = textureLod(uGlow, d, 0.0).rgb;
+#else
+  vec3 col = glow(d, band);
+#endif
+#if PART != 1
   // Poussière d'étoiles lointaines, plus dense dans le plan galactique
   vec3 p = d * 240.0;
   vec3 id = floor(p);
@@ -40,6 +53,7 @@ void main() {
   float dist = length(fract(p) - 0.5 - jitter * 0.6);
   float star = (1.0 - smoothstep(0.0, 0.11, dist)) * step(0.985 - band * 0.03, h);
   col += star * (0.25 + 0.9 * hash13(id + 5.0)) * mix(vec3(0.75, 0.84, 1.0), vec3(1.0, 0.86, 0.7), hash13(id + 3.0));
+#endif
 
   gl_FragColor = vec4(col, 1.0);
 }`;
@@ -67,14 +81,17 @@ export class Sky {
   private sunMaterial: THREE.ShaderMaterial;
   private disposables: { dispose: () => void }[] = [];
   cube: THREE.WebGLCubeRenderTarget | null = null;
+  private glow: THREE.WebGLCubeRenderTarget | null = null;
+  private stars: THREE.Points;
+  private sun: THREE.Mesh;
 
   constructor(quality: QualityPreset) {
     // Voûte
     this.skyMaterial = new THREE.ShaderMaterial({
       vertexShader: dirVertex,
       fragmentShader: skyFragment,
-      uniforms: { uGalaxy: { value: GALACTIC_NORMAL } },
-      defines: { OCTAVES: quality.octaves },
+      uniforms: { uGalaxy: { value: GALACTIC_NORMAL }, uGlow: { value: null } },
+      defines: { OCTAVES: quality.octaves, PART: 0 },
       side: THREE.BackSide,
       depthWrite: false,
     });
@@ -132,6 +149,7 @@ export class Sky {
       depthWrite: false,
     });
     const stars = new THREE.Points(starGeometry, this.starMaterial);
+    this.stars = stars;
     stars.frustumCulled = false;
     this.group.add(stars);
 
@@ -154,6 +172,7 @@ export class Sky {
     });
     const sunGeometry = new THREE.PlaneGeometry(SUN_RADIUS * 0.5, SUN_RADIUS * 0.5);
     const sun = new THREE.Mesh(sunGeometry, this.sunMaterial);
+    this.sun = sun;
     sun.position.copy(SUN_DIR).multiplyScalar(SUN_RADIUS);
     sun.lookAt(0, 0, 0);
     sun.frustumCulled = false;
@@ -166,7 +185,7 @@ export class Sky {
    * Photographie le ciel dans une carte cubique HDR. Elle sert de fond aux rayons courbés
    * par le trou noir (lentille gravitationnelle) et de source de reflets pour les matériaux PBR.
    */
-  capture(renderer: THREE.WebGLRenderer, size: number) {
+  capture(renderer: THREE.WebGLRenderer, size: number, glowSize: number) {
     const target = new THREE.WebGLCubeRenderTarget(size, {
       type: THREE.HalfFloatType,
       generateMipmaps: true,
@@ -177,8 +196,21 @@ export class Sky {
     this.group.position.set(0, 0, 0);
     scene.add(this.group);
     this.starMaterial.uniforms.uScale.value = Math.max(1, size / 1024) * 1.25;
-    const camera = new THREE.CubeCamera(10, SKY_RADIUS * 1.2, target);
-    camera.update(renderer, scene);
+    new THREE.CubeCamera(10, SKY_RADIUS * 1.2, target).update(renderer, scene);
+
+    // Les lueurs de la galaxie et de la nébuleuse varient lentement d'une direction à l'autre :
+    // on les calcule une seule fois ici au lieu de le refaire pour chaque pixel à chaque image.
+    // Seule la poussière d'étoiles, trop fine pour une carte, reste calculée au pixel.
+    this.glow = new THREE.WebGLCubeRenderTarget(glowSize, { type: THREE.HalfFloatType, generateMipmaps: false, minFilter: THREE.LinearFilter });
+    this.skyMaterial.defines.PART = 1;
+    this.skyMaterial.needsUpdate = true;
+    this.stars.visible = this.sun.visible = false;
+    new THREE.CubeCamera(10, SKY_RADIUS * 1.2, this.glow).update(renderer, scene);
+    this.stars.visible = this.sun.visible = true;
+    this.skyMaterial.defines.PART = 2;
+    this.skyMaterial.uniforms.uGlow.value = this.glow.texture;
+    this.skyMaterial.needsUpdate = true;
+
     scene.remove(this.group);
     parent?.add(this.group);
     this.cube = target;
@@ -197,5 +229,6 @@ export class Sky {
   dispose() {
     this.disposables.forEach((d) => d.dispose());
     this.cube?.dispose();
+    this.glow?.dispose();
   }
 }

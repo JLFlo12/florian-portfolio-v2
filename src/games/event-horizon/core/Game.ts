@@ -144,7 +144,7 @@ export class Game {
 
     // Ciel, puis sa photographie HDR : fond de la lentille gravitationnelle et reflets des matériaux
     this.sky = new Sky(preset);
-    const cube = this.sky.capture(this.renderer, preset.skyCube);
+    const cube = this.sky.capture(this.renderer, preset.skyCube, preset.skyCube >= 1024 ? 1024 : 768);
     this.scene.add(this.sky.group);
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.environment = pmrem.fromCubemap(cube.texture);

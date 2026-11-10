@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { hashSeed, makeRng } from '../utils/rng';
 
 const ORANGE = 0xe58a32;
@@ -320,6 +321,14 @@ export class ShipModel {
     // à chaque fois qu'elle entre ou sort du champ, et forcerait à recompiler tous les matériaux.
     if (!dead) this.model.add(this.engineLight);
 
+    // Les ~150 pièces sont regroupées par matériau : même rendu, mais une dizaine d'appels
+    // de dessin au lieu de 150, et autant d'économisés dans le rendu des ombres.
+    this.mergeStatic(this.model);
+    const used = new Set<THREE.BufferGeometry>();
+    this.group.traverse((o) => { if (o instanceof THREE.Mesh) used.add(o.geometry); });
+    this.geometries.forEach((g) => { if (!used.has(g)) g.dispose(); });
+    this.geometries = [...used];
+
     if (dead) {
       for (const material of this.materials) {
         if (material instanceof THREE.MeshStandardMaterial) {
@@ -330,6 +339,44 @@ export class ShipModel {
       }
       this.plumes.forEach((plume) => { plume.mesh.visible = false; });
       this.model.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+    }
+  }
+
+  /**
+   * Fusionne les meshes fixes d'un groupe qui partagent un matériau. Les sous-groupes animés
+   * (anneau, antenne) sont traités séparément ; panaches et instances ne sont pas touchés.
+   */
+  private mergeStatic(group: THREE.Object3D) {
+    const buckets = new Map<string, { material: THREE.Material; shadow: boolean; meshes: THREE.Mesh[] }>();
+    for (const child of [...group.children]) {
+      if (child instanceof THREE.InstancedMesh || child instanceof THREE.Light) continue;
+      if (child instanceof THREE.Mesh && !(child.material instanceof THREE.ShaderMaterial) && !Array.isArray(child.material)) {
+        const key = `${child.material.uuid}:${child.castShadow}`;
+        const bucket = buckets.get(key) ?? { material: child.material, shadow: child.castShadow, meshes: [] };
+        bucket.meshes.push(child);
+        buckets.set(key, bucket);
+      } else if (!(child instanceof THREE.Mesh)) {
+        this.mergeStatic(child);
+      }
+    }
+    for (const { material, shadow, meshes } of buckets.values()) {
+      if (meshes.length < 2) continue;
+      // Les polyèdres n'ont pas d'index : si le groupe en contient, tout passe en non indexé
+      const mixed = meshes.some((mesh) => !mesh.geometry.index);
+      const parts = meshes.map((mesh) => {
+        mesh.updateMatrix();
+        const g = mixed && mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+        return g.applyMatrix4(mesh.matrix);
+      });
+      const merged = mergeGeometries(parts, false);
+      parts.forEach((g) => g.dispose());
+      if (!merged) continue;
+      meshes.forEach((mesh) => group.remove(mesh));
+      const mesh = new THREE.Mesh(merged, material);
+      mesh.castShadow = shadow;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      this.geometries.push(merged);
     }
   }
 

@@ -76,7 +76,15 @@ void main() {
   float k = 8.4 / float(STEPS);
 
   // Géodésique lumineuse dans la métrique de Schwarzschild : a = -1.5 h² p / r⁵
+  // Rayon qui passe au large : il ne touche ni le disque ni les jets, et la déviation est
+  // fondue dans le ciel normal (w = 1 plus bas). Le résultat est le même, sans intégration.
+  if (h2 > PROXY * PROXY * 0.9409) {
+    gl_FragColor = vec4(textureLod(uEnv, uRot * rd, 0.0).rgb, 1.0);
+    return;
+  }
   for (int i = 0; i < STEPS; i++) {
+    // Disque devenu opaque : plus rien derrière ne peut apparaître
+    if (trans < 0.004) break;
     float r2 = dot(p, p);
     float r = sqrt(r2);
     if (r < 1.0) { captured = true; break; }

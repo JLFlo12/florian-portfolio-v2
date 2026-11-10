@@ -134,8 +134,19 @@ Deux pièges rencontrés, à connaître avant de modifier le rendu :
 
 ## Performances mesurées
 
-Chrome, 1600 × 900, qualité « Élevée », carte Intel Arc intégrée : 60 à 90 images/s selon la scène
-(le plus lourd est Morne ou le trou noir vus de près), sans à-coup à l'arrivée sur un nouvel objet.
+Chrome, 1600 × 900, qualité « Élevée », carte Intel Arc intégrée, sans limite d'images/s :
+environ 130 à 150 images/s au départ et près de Morne, 100 à 170 près du trou noir (les mesures
+varient beaucoup sur cette carte). Avant optimisation : 70 à 90. Aucun à-coup à l'arrivée sur un
+nouvel objet.
+
+Ce qui a été optimisé, à rendu identique (écart mesuré : 4/255 au maximum sur le ciel) :
+
+- **Vaisseau** : ses ~150 pièces sont fusionnées par matériau au chargement, ce qui divise par
+  plus de dix les appels de dessin, dans le rendu normal comme dans celui des ombres.
+- **Ciel** : les lueurs de la galaxie et de la nébuleuse, qui varient lentement, sont calculées
+  une fois dans une carte cubique. Seule la poussière d'étoiles reste calculée au pixel.
+- **Trou noir** : les rayons trop éloignés pour être déviés ne sont plus intégrés, et l'intégration
+  s'arrête dès que le disque devient opaque devant le rayon.
 
 ## Page projet du portfolio
 

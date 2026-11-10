@@ -14,6 +14,8 @@ export class ChaseCamera {
   private pull = 0;
   private offset = new THREE.Vector3();
   private look = new THREE.Vector3();
+  private min = MIN_DISTANCE;
+  private max = MAX_DISTANCE;
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
@@ -24,10 +26,17 @@ export class ChaseCamera {
     if (immediate) this.distance = distance;
   }
 
+  /** Le mode photo élargit la plage de zoom. */
+  setLimits(min = MIN_DISTANCE, max = MAX_DISTANCE) {
+    this.min = min;
+    this.max = max;
+    this.targetDistance = THREE.MathUtils.clamp(this.targetDistance, min, max);
+  }
+
   orbit(dx: number, dy: number, wheel: number) {
     this.azimuth -= dx * 0.005;
     this.elevation = THREE.MathUtils.clamp(this.elevation + dy * 0.004, -1.25, 1.4);
-    if (wheel) this.targetDistance = THREE.MathUtils.clamp(this.targetDistance * (1 + wheel * 0.13), MIN_DISTANCE, MAX_DISTANCE);
+    if (wheel) this.targetDistance = THREE.MathUtils.clamp(this.targetDistance * (1 + wheel * 0.13), this.min, this.max);
   }
 
   /**

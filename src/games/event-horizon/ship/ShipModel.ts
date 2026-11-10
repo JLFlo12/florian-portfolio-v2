@@ -99,7 +99,8 @@ export class ShipModel {
   private pitchLean = 0;
   private power = 0;
 
-  constructor() {
+  /** @param dead épave : plus aucune lumière, moteurs éteints, coque ternie */
+  constructor(private dead = false) {
     this.group.add(this.model);
     const hullMap = makePanelTexture('hull', [176, 181, 190]);
     const darkMap = makePanelTexture('dark', [66, 71, 82]);
@@ -315,7 +316,21 @@ export class ShipModel {
 
     this.engineLight = new THREE.PointLight(ORANGE_BRIGHT, 0, 90, 2);
     this.engineLight.position.set(0, 0, 37);
-    this.model.add(this.engineLight);
+    // L'épave n'a pas de lumière : en ajouter une changerait le nombre de lumières de la scène
+    // à chaque fois qu'elle entre ou sort du champ, et forcerait à recompiler tous les matériaux.
+    if (!dead) this.model.add(this.engineLight);
+
+    if (dead) {
+      for (const material of this.materials) {
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.emissiveIntensity = 0;
+          material.color.multiplyScalar(0.55);
+          material.roughness = Math.min(1, material.roughness + 0.25);
+        }
+      }
+      this.plumes.forEach((plume) => { plume.mesh.visible = false; });
+      this.model.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+    }
   }
 
   /**
@@ -325,6 +340,7 @@ export class ShipModel {
    * @param surge accélération longitudinale normalisée (-1 à 1)
    */
   update(dt: number, time: number, power: number, turn: number, pitch: number, surge: number) {
+    if (this.dead) return;
     const ease = 1 - Math.exp(-dt * 4);
     this.power += (power - this.power) * (1 - Math.exp(-dt * 3));
     this.bank += (-turn * 0.42 - this.bank) * ease;

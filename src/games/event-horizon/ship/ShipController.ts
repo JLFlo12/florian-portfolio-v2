@@ -34,13 +34,16 @@ export class ShipController {
   surge = 0;
   boosting = false;
   state: EngineState = 'Arrêt';
+  /** Modificateurs apportés par les améliorations. */
+  mods = { thrust: 1, topSpeed: 1, energyMax: 100, regen: 7 };
 
   private lateral = new THREE.Vector3();
   private q = new THREE.Quaternion();
 
   get maxSpeed() { return (this.cruise ? CRUISE : IMPULSE).maxSpeed; }
 
-  update(dt: number, input: Input | null, gravity: THREE.Vector3) {
+  /** @param drain énergie perdue par seconde (radiations) */
+  update(dt: number, input: Input | null, gravity: THREE.Vector3, drain = 0) {
     const mode = this.cruise ? CRUISE : IMPULSE;
     const thrust = !!input && input.down('KeyW');
     const reverse = !!input && input.down('KeyS');
@@ -60,9 +63,9 @@ export class ShipController {
 
     // Surrégime : plus de poussée tant qu'il reste de l'énergie
     this.boosting = shift && thrust && this.energy > 0;
-    this.energy = THREE.MathUtils.clamp(this.energy + (this.boosting ? -14 : 7) * dt, 0, 100);
-    const acceleration = mode.acceleration * (this.boosting ? 2.2 : 1);
-    const maxSpeed = mode.maxSpeed * (this.boosting ? 1.6 : 1);
+    this.energy = THREE.MathUtils.clamp(this.energy + ((this.boosting ? -14 : this.mods.regen) - drain) * dt, 0, this.mods.energyMax);
+    const acceleration = mode.acceleration * this.mods.thrust * (this.boosting ? 2.2 : 1);
+    const maxSpeed = mode.maxSpeed * this.mods.topSpeed * (this.boosting ? 1.6 : 1);
 
     const before = this.velocity.dot(this.forward);
     if (thrust) this.velocity.addScaledVector(this.forward, acceleration * dt);
@@ -101,7 +104,7 @@ export class ShipController {
     this.quaternion.identity();
     this.yawRate = this.pitchRate = 0;
     this.cruise = false;
-    this.energy = 100;
+    this.energy = this.mods.energyMax;
   }
 
   snapshot(): ShipSnapshot {

@@ -93,6 +93,17 @@ void main() {
         trans *= 1.0 - d.a;
       }
     }
+    // Jets relativistes : deux colonnes de plasma le long de l'axe de rotation, courbées
+    // par la lentille comme le reste puisqu'elles sont intégrées le long du même rayon.
+    float hy = abs(p.y);
+    float jw = 0.2 + 0.07 * hy;
+    float rho2 = dot(p.xz, p.xz);
+    if (hy > 1.3 && rho2 < jw * jw * 7.0) {
+      float core = exp(-rho2 / (jw * jw));
+      float fade = smoothstep(1.3, 2.8, hy) * (1.0 - smoothstep(5.0, 12.0, hy));
+      float knots = 0.5 + 0.95 * vnoise(vec3(p.xz * 2.5, hy * 1.3 - uTime * 1.5));
+      col += trans * vec3(0.3, 0.5, 0.95) * core * fade * knots * dt * 0.55;
+    }
     p = pn;
   }
 

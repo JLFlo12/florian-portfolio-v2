@@ -14,13 +14,14 @@ export interface QualityPreset {
   msaa: number;
   octaves: number;
   planetSegments: number;
+  asteroids: number;
 }
 
 export const QUALITY: Record<QualityLevel, QualityPreset> = {
-  low: { label: 'Basse', maxPixelRatio: 0.75, blackHoleSteps: 48, stars: 3000, skyCube: 512, shadowMap: 0, msaa: 0, octaves: 4, planetSegments: 64 },
-  medium: { label: 'Moyenne', maxPixelRatio: 1, blackHoleSteps: 80, stars: 6000, skyCube: 1024, shadowMap: 1024, msaa: 2, octaves: 5, planetSegments: 96 },
-  high: { label: 'Élevée', maxPixelRatio: 1.5, blackHoleSteps: 112, stars: 9000, skyCube: 1024, shadowMap: 2048, msaa: 4, octaves: 5, planetSegments: 128 },
-  ultra: { label: 'Ultra', maxPixelRatio: 2, blackHoleSteps: 160, stars: 14000, skyCube: 2048, shadowMap: 4096, msaa: 4, octaves: 6, planetSegments: 192 },
+  low: { label: 'Basse', maxPixelRatio: 0.75, blackHoleSteps: 48, stars: 3000, skyCube: 512, shadowMap: 0, msaa: 0, octaves: 4, planetSegments: 64, asteroids: 250 },
+  medium: { label: 'Moyenne', maxPixelRatio: 1, blackHoleSteps: 80, stars: 6000, skyCube: 1024, shadowMap: 1024, msaa: 2, octaves: 5, planetSegments: 96, asteroids: 450 },
+  high: { label: 'Élevée', maxPixelRatio: 1.5, blackHoleSteps: 112, stars: 9000, skyCube: 1024, shadowMap: 2048, msaa: 4, octaves: 5, planetSegments: 128, asteroids: 700 },
+  ultra: { label: 'Ultra', maxPixelRatio: 2, blackHoleSteps: 160, stars: 14000, skyCube: 2048, shadowMap: 4096, msaa: 4, octaves: 6, planetSegments: 192, asteroids: 1100 },
 };
 
 export const QUALITY_ORDER: QualityLevel[] = ['low', 'medium', 'high', 'ultra'];

@@ -1,7 +1,7 @@
 # Crédits des ressources
 
-La version 0.1 d'EVENT HORIZON n'utilise **aucune ressource externe** : aucun modèle 3D, aucune
-texture, aucune image, aucun son téléchargé.
+EVENT HORIZON n'utilise **aucune ressource externe** : aucun modèle 3D, aucune
+texture, aucune image, aucun son téléchargé. Tout est généré par le code.
 
 | Élément | Origine | Licence |
 | --- | --- | --- |
@@ -10,6 +10,11 @@ texture, aucune image, aucun son téléchargé.
 | Planètes, lune, anneaux | Shaders procéduraux (`astronomy/Planet.ts`) | Celle du dépôt |
 | Trou noir NEMESIS-01 | Shader de tracé de rayons original (`astronomy/BlackHole.ts`) | Celle du dépôt |
 | Ciel, étoiles, nébuleuse | Shaders procéduraux (`engine/Sky.ts`) | Celle du dépôt |
+| Épaves, balise, sonde, capsule, Témoin | Géométrie construite par code (`astronomy/Derelicts.ts`) | Celle du dépôt |
+| Anomalies | Shader original (`astronomy/Anomaly.ts`) | Celle du dépôt |
+| Ceinture d'astéroïdes | Rochers générés par code (`astronomy/AsteroidBelt.ts`) | Celle du dépôt |
+| Tous les sons | Synthèse Web Audio en direct (`audio/AudioEngine.ts`) | Celle du dépôt |
+| Captures d'écran (`public/event-horizon/`) | Prises dans le jeu | Celle du dépôt |
 
 ## Bibliothèques
 

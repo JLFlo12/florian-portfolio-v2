@@ -205,6 +205,7 @@ class Engine {
 const engine = new Engine();
 const listeners = new Set<() => void>();
 let wanted = true;
+let held = false;
 try { wanted = localStorage.getItem(KEY) !== 'off'; } catch { /* stockage indisponible */ }
 let snapshot = { wanted, playing: false };
 const emit = () => {
@@ -216,12 +217,21 @@ export const sound = {
   toggle() {
     wanted = !wanted;
     try { localStorage.setItem(KEY, wanted ? 'on' : 'off'); } catch { /* stockage indisponible */ }
-    if (wanted) engine.start(); else engine.stop();
+    if (wanted && !held) engine.start(); else engine.stop();
+    emit();
+  },
+  /** Suspend la musique sans toucher au choix du visiteur (par exemple pendant un jeu qui a son propre son). */
+  hold(on: boolean) {
+    held = on;
+    if (on) { if (engine.playing) engine.stop(); }
+    else if (wanted && armedOnce) engine.start();
     emit();
   },
 };
 
 let armed = false;
+/** Vrai dès qu'une interaction a autorisé le son dans le navigateur. */
+let armedOnce = false;
 /* Démarre la musique à la première interaction (clic, toucher, touche) si elle est voulue ;
    met en pause quand l'onglet est caché. */
 export function armSound() {
@@ -231,7 +241,8 @@ export function armSound() {
     if ((e.target as Element | null)?.closest?.('[data-sound-toggle]')) return; // le bouton gère lui-même
     window.removeEventListener('click', onGesture, true);
     window.removeEventListener('keydown', onGesture, true);
-    if (wanted && !engine.playing) { engine.start(); emit(); }
+    armedOnce = true;
+    if (wanted && !held && !engine.playing) { engine.start(); emit(); }
   };
   window.addEventListener('click', onGesture, true);
   window.addEventListener('keydown', onGesture, true);

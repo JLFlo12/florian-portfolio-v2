@@ -58,7 +58,7 @@ const games: GameCard[] = [
   {
     id: 'event-horizon',
     name: 'Event Horizon',
-    description: 'Exploration spatiale en 3D : pilote le vaisseau AETHER-01 jusqu’au trou noir NEMESIS-01.',
+    description: 'Exploration spatiale en 3D. Seul à bord d’AETHER-01, remonte un signal de détresse jusqu’au trou noir NEMESIS-01.',
     icon: <Orbit className="h-9 w-9 text-primary" strokeWidth={1.5} />,
     available: true,
   },

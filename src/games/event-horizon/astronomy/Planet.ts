@@ -3,9 +3,9 @@ import { NOISE } from '../shaders/noise';
 import { SUN_DIR } from '../universe/bodies';
 import type { QualityPreset } from '../engine/quality';
 
-export type PlanetKind = 'ocean' | 'moon' | 'gas';
+export type PlanetKind = 'ocean' | 'moon' | 'gas' | 'lava' | 'ice';
 
-const KIND_ID: Record<PlanetKind, number> = { ocean: 0, moon: 1, gas: 2 };
+const KIND_ID: Record<PlanetKind, number> = { ocean: 0, moon: 1, gas: 2, lava: 3, ice: 4 };
 
 const vertex = /* glsl */ `
 varying vec3 vObj;
@@ -47,6 +47,14 @@ float height(vec3 p) {
   float size = 0.12 + 0.2 * hash13(id + 3.0);
   float crater = (1.0 - smoothstep(size * 0.75, size, d)) * 0.12 - (1.0 - smoothstep(size, size * 1.15, d)) * smoothstep(size * 0.8, size, d) * 0.07;
   return h - crater * step(0.45, hash13(id + 21.0));
+}
+#elif KIND == 3 || KIND == 4
+float height(vec3 p) {
+  return fbm(p * 2.6 + uSeed) * 0.7 + fbm(p * 9.0 + uSeed) * 0.3;
+}
+// Réseau de lignes fines (failles, fractures) : crêtes d'un bruit replié sur lui-même
+float veins(vec3 p) {
+  return 1.0 - abs(fbm(p + fbm(p * 1.7 + 4.0) * 0.6) * 2.0 - 0.96);
 }
 #endif
 
@@ -115,6 +123,29 @@ void main() {
   vec3 base = mix(vec3(0.12, 0.115, 0.11), vec3(0.38, 0.36, 0.34), smoothstep(0.25, 0.75, h));
   base = mix(base, vec3(0.2, 0.17, 0.15), smoothstep(0.5, 0.7, fbm(p * 1.7 + uSeed + 5.0)) * 0.6);
   col = base * max(dot(Ns, uSun), 0.0) * 1.15 + base * 0.003;
+#elif KIND == 3
+  // Planète volcanique : croûte sombre, failles et lacs de lave qui luisent aussi côté nuit
+  float h = height(p);
+  vec3 Ns = toWorld * bumped(p, p, h, 0.07);
+  vec3 base = mix(vec3(0.03, 0.026, 0.025), vec3(0.15, 0.11, 0.09), smoothstep(0.3, 0.75, h));
+  float cracks = smoothstep(0.9, 0.985, veins(p * 3.0 + uSeed));
+  float pools = 1.0 - smoothstep(0.2, 0.27, h);
+  float glow = max(cracks, pools * 0.85) * (0.75 + 0.25 * sin(uTime * 0.5 + h * 22.0));
+  col = base * max(dot(Ns, uSun), 0.0) * (1.0 - glow);
+  col += mix(vec3(1.0, 0.2, 0.02), vec3(1.0, 0.62, 0.2), pools) * glow * 1.5;
+  col += vec3(0.6, 0.16, 0.05) * fres * 0.2;
+#elif KIND == 4
+  // Planète glacée : banquise claire, grandes fractures bleu sombre, reflets nets
+  float h = height(p);
+  vec3 Ns = toWorld * bumped(p, p, h, 0.03);
+  float cracks = smoothstep(0.9, 0.98, veins(p * 4.0 + uSeed));
+  vec3 base = mix(vec3(0.3, 0.36, 0.43), vec3(0.46, 0.49, 0.52), smoothstep(0.3, 0.7, h));
+  base = mix(base, vec3(0.07, 0.15, 0.25), cracks * 0.85);
+  float ndl = dot(Ns, uSun);
+  vec3 H = normalize(uSun + V);
+  col = base * max(ndl, 0.0);
+  col += vec3(0.9, 0.95, 1.0) * pow(max(dot(Ns, H), 0.0), 70.0) * 0.35 * smoothstep(0.0, 0.2, ndl);
+  col += vec3(0.4, 0.6, 0.9) * fres * smoothstep(-0.1, 0.3, dot(N, uSun)) * 0.25;
 #else
   // Géante gazeuse : bandes en latitude, cisaillées par des vents de vitesses différentes
   float y = p.y;

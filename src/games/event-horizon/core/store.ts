@@ -17,6 +17,22 @@ export interface NavEntry {
   current: boolean;
 }
 
+/** Un système sur la carte galactique, positionné par rapport au système actuel. */
+export interface MapEntry {
+  key: string;
+  name: string;
+  starType: string;
+  color: [number, number, number];
+  /** Écart avec le système actuel, en années-lumière. */
+  dx: number;
+  dy: number;
+  dz: number;
+  distance: number;
+  visited: boolean;
+  discoveries: number;
+  home: boolean;
+}
+
 export interface EndStats {
   /** Secondes de jeu écoulées à bord. */
   shipTime: number;
@@ -60,7 +76,12 @@ export interface HudState {
   sheet: ScienceSheet | null;
   journal: ScienceSheet[];
   nav: NavEntry[];
-  panel: 'journal' | 'nav' | 'upgrades' | null;
+  map: MapEntry[];
+  /** Saut en cours : nom de la destination, et si le vaisseau vient d'arriver. */
+  jump: { name: string; arrived: boolean } | null;
+  /** Sous la dernière orbite stable du trou noir. */
+  falling: boolean;
+  panel: 'journal' | 'nav' | 'upgrades' | 'map' | null;
   helpOpen: boolean;
   photo: boolean;
   end: EndStats | null;
@@ -94,6 +115,9 @@ const initial: HudState = {
   sheet: null,
   journal: [],
   nav: [],
+  map: [],
+  jump: null,
+  falling: false,
   panel: null,
   helpOpen: true,
   photo: false,

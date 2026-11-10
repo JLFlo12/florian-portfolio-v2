@@ -27,6 +27,8 @@ export class ShipController {
   yawRate = 0;
   pitchRate = 0;
   cruise = false;
+  /** Vitesse maximale de croisière à cet endroit, fixée par la distance à l'astre le plus proche. */
+  cruiseLimit = CRUISE.maxSpeed;
   energy = 100;
   /** Niveau de poussée visible sur les moteurs. */
   power = 0;
@@ -40,11 +42,13 @@ export class ShipController {
   private lateral = new THREE.Vector3();
   private q = new THREE.Quaternion();
 
-  get maxSpeed() { return (this.cruise ? CRUISE : IMPULSE).maxSpeed; }
+  get maxSpeed() { return this.cruise ? this.cruiseLimit : IMPULSE.maxSpeed; }
 
   /** @param drain énergie perdue par seconde (radiations) */
   update(dt: number, input: Input | null, gravity: THREE.Vector3, drain = 0) {
-    const mode = this.cruise ? CRUISE : IMPULSE;
+    const mode = this.cruise
+      ? { maxSpeed: this.cruiseLimit, acceleration: Math.max(CRUISE.acceleration, this.cruiseLimit * 0.9), turn: CRUISE.turn }
+      : IMPULSE;
     const thrust = !!input && input.down('KeyW');
     const reverse = !!input && input.down('KeyS');
     const brake = !!input && input.down('Space');
@@ -80,7 +84,7 @@ export class ShipController {
     this.velocity.addScaledVector(this.lateral, -(1 - Math.exp(-(this.cruise ? 1.1 : 1.6) * dt)));
 
     const speed = this.velocity.length();
-    if (speed > maxSpeed) this.velocity.multiplyScalar(1 - (1 - maxSpeed / speed) * (1 - Math.exp(-2.5 * dt)));
+    if (speed > maxSpeed) this.velocity.multiplyScalar(1 - (1 - maxSpeed / speed) * (1 - Math.exp(-(this.cruise ? 6 : 2.5) * dt)));
     if (speed < 0.05 && !thrust && !reverse) this.velocity.set(0, 0, 0);
 
     this.surge += (THREE.MathUtils.clamp((this.velocity.dot(this.forward) - before) / (dt * mode.acceleration * 2.2 || 1), -1, 1) - this.surge) * (1 - Math.exp(-dt * 5));

@@ -5,7 +5,15 @@ export const KM_PER_UNIT = 10;
 export const SECTOR_NAME = 'Seuil de Némésis';
 export const UNIVERSE_SEED = 'EH-0001';
 
-/** Direction de l'étoile Hélice (source de lumière du système). */
+/** Unité astronomique, en unités de scène (149,6 millions de km). */
+export const AU = 14_960_000;
+/** Rayon de l'étoile Hélice : 710 000 km. */
+export const STAR_RADIUS = 71_000;
+
+/**
+ * Direction de l'étoile vue du vaisseau. Ce vecteur est partagé par tous les shaders et mis à jour
+ * à chaque image : à l'échelle réelle, la direction de la lumière change quand on traverse le système.
+ */
 export const SUN_DIR = new THREE.Vector3(0.55, 0.28, 0.62).normalize();
 
 export type BodyKind =
@@ -25,6 +33,30 @@ export interface ScienceSheet {
   notes: string;
   /** Enregistrement récupéré à bord ou dans le signal, s'il y en a un. */
   log?: string;
+  /** Nom du système où l'objet a été découvert. */
+  system?: string;
+}
+
+/** Apparence d'une planète ou d'une lune (les surfaces sont calculées par shader à partir de la seed). */
+export interface PlanetSpec {
+  seed: number;
+  /** Tours par seconde. */
+  spin: number;
+  tilt?: number;
+  atmosphere?: [number, number, number];
+  rings?: { inner: number; outer: number };
+  /** Teinte appliquée à la surface, pour varier d'un monde à l'autre. */
+  tint?: [number, number, number];
+}
+
+/** Orbite d'un satellite autour d'un autre objet du système. */
+export interface OrbitSpec {
+  parent: string;
+  radius: number;
+  /** Radians par seconde. */
+  speed: number;
+  phase: number;
+  tilt: number;
 }
 
 export interface Body {
@@ -44,16 +76,24 @@ export interface Body {
   detectRange?: number;
   /** Message affiché juste après l'analyse (fil de l'histoire). */
   after?: string;
+  planet?: PlanetSpec;
+  orbit?: OrbitSpec;
+  star?: { color: [number, number, number] };
   sheet: ScienceSheet;
 }
 
-export const BLACK_HOLE_RS = 420;
+/** Rayon de Schwarzschild de NEMESIS-01 : 12,7 millions de km, soit 4,3 millions de masses solaires. */
+export const BLACK_HOLE_RS = 1_270_000;
+const RS = BLACK_HOLE_RS;
 
 const THALIS = new THREE.Vector3(1400, -250, -3600);
-const MORNE = new THREE.Vector3(-13000, 900, 4500);
-const NEMESIS = new THREE.Vector3(-1500, 1200, -19000);
-const CENDRE = new THREE.Vector3(9500, -600, 6500);
-const GIVRE = new THREE.Vector3(16000, 1800, -14000);
+// Distances réelles : Thalis est à 1 UA de son étoile, Cendre à 0,4 UA, Morne à 4,7 UA, Givre à 13 UA.
+// NEMESIS-01 est à 45 rayons de Schwarzschild du point de départ, soit 3,8 UA.
+const HELICE = SUN_DIR.clone().multiplyScalar(AU);
+const MORNE = new THREE.Vector3(-0.94, 0.07, 0.33).normalize().multiplyScalar(4.1 * AU);
+const NEMESIS = new THREE.Vector3(-0.08, 0.06, -1).normalize().multiplyScalar(45 * RS);
+const CENDRE = HELICE.clone().multiplyScalar(0.62).add(new THREE.Vector3(0.45, -0.3, -0.35).multiplyScalar(0.25 * AU));
+const GIVRE = new THREE.Vector3(0.75, 0.08, -0.65).normalize().multiplyScalar(12.6 * AU);
 const at = (origin: THREE.Vector3, x: number, y: number, z: number) => origin.clone().add(new THREE.Vector3(x, y, z));
 
 /** Ordre de l'histoire : chaque analyse révèle la suivante. */
@@ -74,6 +114,7 @@ export const OBJECTIVES: Record<string, string> = {
 export const createStartSystem = (): Body[] => [
   {
     kind: 'ocean', world: THALIS.clone(), radius: 620, scanRange: 4200, research: 15,
+    planet: { seed: 4.2, spin: 0.0016, tilt: 0.3, atmosphere: [0.2, 0.42, 0.85] },
     sheet: {
       id: 'HEL-II', name: 'Thalis', designation: 'Hélice II', type: 'Planète océanique',
       diameter: '12 400 km', mass: '0,94 masse terrestre', temperature: '288 K en moyenne',
@@ -84,6 +125,9 @@ export const createStartSystem = (): Body[] => [
   },
   {
     kind: 'moon', world: new THREE.Vector3(), radius: 105, scanRange: 1500, research: 10,
+    planet: { seed: 12.7, spin: 0.0006 },
+    // 260 000 km de Thalis : à l'échelle réelle, une lune est loin de sa planète
+    orbit: { parent: 'HEL-II', radius: 26000, speed: 0.004, phase: 1.1, tilt: 0.14 },
     sheet: {
       id: 'HEL-II-a', name: 'Ostra', designation: 'Hélice II a', type: 'Satellite rocheux',
       diameter: '2 100 km', mass: '0,006 masse terrestre', temperature: '95 K (nuit) à 370 K (jour)',
@@ -94,6 +138,7 @@ export const createStartSystem = (): Body[] => [
   },
   {
     kind: 'gas', world: MORNE.clone(), radius: 2400, scanRange: 14000, research: 15,
+    planet: { seed: 2.3, spin: 0.003, tilt: -0.42, atmosphere: [0.34, 0.33, 0.36], rings: { inner: 3100, outer: 5400 } },
     sheet: {
       id: 'HEL-V', name: 'Morne', designation: 'Hélice V', type: 'Géante gazeuse à anneaux',
       diameter: '48 000 km', mass: '19 masses terrestres', temperature: '72 K au sommet des nuages',
@@ -104,6 +149,7 @@ export const createStartSystem = (): Body[] => [
   },
   {
     kind: 'lava', world: CENDRE.clone(), radius: 380, scanRange: 3000, research: 20,
+    planet: { seed: 7.9, spin: 0.0011, tilt: 0.1, atmosphere: [0.5, 0.14, 0.05] },
     sheet: {
       id: 'HEL-I', name: 'Cendre', designation: 'Hélice I', type: 'Planète volcanique',
       diameter: '7 600 km', mass: '0,31 masse terrestre', temperature: '740 K, lave à 1 400 K',
@@ -114,6 +160,7 @@ export const createStartSystem = (): Body[] => [
   },
   {
     kind: 'ice', world: GIVRE.clone(), radius: 300, scanRange: 2600, research: 20,
+    planet: { seed: 21.4, spin: 0.0009, tilt: -0.2, atmosphere: [0.3, 0.42, 0.6] },
     sheet: {
       id: 'HEL-VII', name: 'Givre', designation: 'Hélice VII', type: 'Planète glacée',
       diameter: '6 000 km', mass: '0,12 masse terrestre', temperature: '48 K',
@@ -130,11 +177,12 @@ export const createStartSystem = (): Body[] => [
       temperature: 'Disque d’accrétion : 10⁵ à 10⁷ K',
       composition: 'Singularité. Disque de plasma ionisé (hydrogène, hélium, fer). Deux jets relativistes',
       atmosphere: 'Sans objet',
-      notes: 'Lentille gravitationnelle forte. Zone de radiations intenses autour du disque. Le temps de bord ralentit à l’approche de l’horizon.',
+      notes: 'Lentille gravitationnelle forte. Radiations intenses autour du disque. Aucune orbite stable sous 3 rayons de l’horizon. Le temps de bord ralentit à l’approche.',
     },
   },
   {
-    kind: 'star', world: SUN_DIR.clone().multiplyScalar(600000), radius: 7100, scanRange: Infinity, research: 10,
+    kind: 'star', world: HELICE.clone(), radius: STAR_RADIUS, scanRange: Infinity, research: 10,
+    star: { color: [1, 0.93, 0.82] },
     sheet: {
       id: 'HEL', name: 'Hélice', designation: 'EH-0001 A', type: 'Étoile naine jaune (G1 V)',
       diameter: '1,42 million de km', mass: '1,08 masse solaire', temperature: '5 840 K en surface',
@@ -185,7 +233,7 @@ export const createStartSystem = (): Body[] => [
     },
   },
   {
-    kind: 'twin', world: at(NEMESIS, 1300, 2000, 1900), radius: 45, scanRange: 1300, research: 40,
+    kind: 'twin', world: at(NEMESIS, 3.1 * RS, 4.76 * RS, 4.52 * RS), radius: 45, scanRange: 1300, research: 40,
     alias: 'Épave non identifiée', requires: 'FAILLE',
     after: 'Le signal continue, plus bas. Il vient de l’horizon.',
     sheet: {
@@ -235,8 +283,9 @@ export const createStartSystem = (): Body[] => [
     },
   },
   {
-    kind: 'megastructure', world: new THREE.Vector3(6500, -2500, -24000), radius: 900, scanRange: 7000, research: 45,
-    alias: 'Masse sombre', detectRange: 9000,
+    // Sur la route entre le système et le trou noir : on le détecte en allant vers NEMESIS-01
+    kind: 'megastructure', world: NEMESIS.clone().multiplyScalar(1 - 21 / 45).add(new THREE.Vector3(2.4 * RS, -1.6 * RS, 0)), radius: 900, scanRange: 9000, research: 45,
+    alias: 'Masse sombre', detectRange: 5 * RS,
     sheet: {
       id: 'TEMOIN', name: 'Le Témoin', designation: 'Objet X-1', type: 'Structure artificielle, origine inconnue',
       diameter: '18 000 km', mass: '4 × 10¹⁹ kg', temperature: '2,7 K, à l’équilibre avec le vide',

@@ -220,6 +220,14 @@ export class AudioEngine {
   /** Un grain du compteur de radiations. */
   click() { this.burst(2600 + Math.random() * 1800, 3, 0.018, 0.5); }
 
+  /** Charge du saut : une note qui monte pendant toute la durée, puis le choc de l'arrivée. */
+  jump(duration: number) {
+    this.tone(55, duration, 0.13, 'sawtooth', false, 440);
+    this.tone(82, duration, 0.07, 'sine', true, 1320);
+    this.tone(60, 1.8, 0.3, 'sine', true, 28, duration);
+    setTimeout(() => this.burst(180, 0.8, 1.2, 0.5, 60), duration * 1000);
+  }
+
   /** Chute vers l'horizon : tout descend, puis plus rien. */
   ending(duration: number) {
     const ctx = this.ctx;

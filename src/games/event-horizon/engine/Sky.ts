@@ -63,6 +63,8 @@ varying vec3 vDir;
 void main() {
   vDir = position;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  // Profondeur maximale : le fond reste derrière tout, même un astre à des millions de km
+  gl_Position.z = gl_Position.w;
 }`;
 
 const STAR_TINTS = [
@@ -82,6 +84,7 @@ export class Sky {
   private disposables: { dispose: () => void }[] = [];
   cube: THREE.WebGLCubeRenderTarget | null = null;
   private glow: THREE.WebGLCubeRenderTarget | null = null;
+  private inverse = new THREE.Quaternion();
   private stars: THREE.Points;
   private sun: THREE.Mesh;
 
@@ -135,6 +138,7 @@ export class Sky {
           vColor = color;
           gl_PointSize = aSize * uScale;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_Position.z = gl_Position.w;
         }`,
       fragmentShader: /* glsl */ `
         varying vec3 vColor;
@@ -155,16 +159,18 @@ export class Sky {
 
     // Étoile du système
     this.sunMaterial = new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Vector3(1, 0.93, 0.82) } },
       vertexShader: /* glsl */ `
         varying vec2 vUv;
-        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }`,
       fragmentShader: /* glsl */ `
         varying vec2 vUv;
+        uniform vec3 uColor;
         void main() {
           float r = length(vUv - 0.5) * 2.0;
           float core = (1.0 - smoothstep(0.034, 0.05, r)) * 55.0;
           float glow = 0.012 / (r * r + 0.0016) * pow(max(1.0 - r, 0.0), 2.0);
-          gl_FragColor = vec4(vec3(1.0, 0.93, 0.82) * (core + glow), 1.0);
+          gl_FragColor = vec4(uColor * (core + glow), 1.0);
         }`,
       blending: THREE.AdditiveBlending,
       transparent: true,
@@ -196,6 +202,9 @@ export class Sky {
     this.group.position.set(0, 0, 0);
     scene.add(this.group);
     this.starMaterial.uniforms.uScale.value = Math.max(1, size / 1024) * 1.25;
+    // L'étoile du système n'est pas dans la photographie : sa direction change pendant le voyage,
+    // le trou noir la redessine lui-même au bon endroit.
+    this.sun.visible = false;
     new THREE.CubeCamera(10, SKY_RADIUS * 1.2, target).update(renderer, scene);
 
     // Les lueurs de la galaxie et de la nébuleuse varient lentement d'une direction à l'autre :
@@ -219,6 +228,23 @@ export class Sky {
 
   setPixelRatio(ratio: number) {
     this.starMaterial.uniforms.uScale.value = Math.max(0.9, ratio);
+  }
+
+  /**
+   * Oriente et dimensionne l'étoile du système.
+   * @param angular demi-taille apparente du halo, en radians (le disque en occupe 4 %)
+   */
+  setSun(direction: THREE.Vector3, angular: number) {
+    this.sun.position.copy(direction).applyQuaternion(this.inverse).multiplyScalar(SUN_RADIUS);
+    this.sun.scale.setScalar(Math.tan(Math.min(angular, 1.2)) / 0.25);
+    this.sun.lookAt(this.group.position);
+  }
+
+  /** Change de ciel : autre orientation du fond d'étoiles, autre couleur d'étoile. */
+  setSystem(rotation: [number, number, number], starColor: [number, number, number]) {
+    this.group.rotation.set(rotation[0], rotation[1], rotation[2]);
+    this.inverse.copy(this.group.quaternion).invert();
+    (this.sunMaterial.uniforms.uColor.value as THREE.Vector3).set(starColor[0], starColor[1], starColor[2]);
   }
 
   /** Le fond est à l'infini : il suit la caméra. */

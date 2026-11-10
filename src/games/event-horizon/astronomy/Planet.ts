@@ -23,6 +23,7 @@ const fragment = /* glsl */ `
 uniform vec3 uSun;
 uniform float uTime;
 uniform float uSeed;
+uniform vec3 uTint;
 uniform mat4 modelMatrix;
 varying vec3 vObj;
 varying vec3 vNormalW;
@@ -173,7 +174,7 @@ void main() {
   col *= 0.72;
 #endif
 
-  gl_FragColor = vec4(col * 1.7, 1.0);
+  gl_FragColor = vec4(col * 1.7 * uTint, 1.0);
 }`;
 
 const atmosphereFragment = /* glsl */ `
@@ -225,6 +226,7 @@ export interface PlanetOptions {
   spin: number;
   tilt?: number;
   atmosphere?: THREE.Color;
+  tint?: THREE.Vector3;
   rings?: { inner: number; outer: number };
 }
 
@@ -241,7 +243,7 @@ export class Planet {
     const segments = kind === 'moon' ? Math.round(quality.planetSegments / 2) : quality.planetSegments;
     const geometry = new THREE.SphereGeometry(radius, segments, Math.round(segments / 2));
     const material = new THREE.ShaderMaterial({
-      uniforms: { uSun: { value: SUN_DIR }, uTime: { value: 0 }, uSeed: { value: options.seed } },
+      uniforms: { uSun: { value: SUN_DIR }, uTime: { value: 0 }, uSeed: { value: options.seed }, uTint: { value: options.tint ?? new THREE.Vector3(1, 1, 1) } },
       defines: { KIND: KIND_ID[kind], OCTAVES: quality.octaves },
       vertexShader: vertex,
       fragmentShader: fragment,

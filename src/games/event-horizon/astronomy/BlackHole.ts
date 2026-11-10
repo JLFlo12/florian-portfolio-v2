@@ -12,6 +12,8 @@ uniform mat3 uRot;
 uniform mat3 uInv;
 uniform samplerCube uEnv;
 uniform float uTime;
+uniform vec3 uSunDir;
+uniform float uSunSize;
 varying vec3 vWorld;
 
 #define PROXY ${PROXY.toFixed(1)}
@@ -19,6 +21,15 @@ varying vec3 vWorld;
 #define ROUT 9.5
 #define PERIOD 36.0
 ${NOISE}
+
+// L'étoile du système, vue dans la direction (éventuellement déviée) du rayon
+vec3 sunGlow(vec3 dirW) {
+  float r = acos(clamp(dot(dirW, uSunDir), -1.0, 1.0)) / uSunSize;
+  if (r >= 1.0) return vec3(0.0);
+  float core = (1.0 - smoothstep(0.034, 0.05, r)) * 55.0;
+  float glow = 0.012 / (r * r + 0.0016) * (1.0 - r) * (1.0 - r);
+  return vec3(1.0, 0.93, 0.82) * (core + glow);
+}
 
 float diskNoise(float a, float rr) {
   vec2 cs = vec2(cos(a), sin(a));
@@ -79,7 +90,8 @@ void main() {
   // Rayon qui passe au large : il ne touche ni le disque ni les jets, et la déviation est
   // fondue dans le ciel normal (w = 1 plus bas). Le résultat est le même, sans intégration.
   if (h2 > PROXY * PROXY * 0.9409) {
-    gl_FragColor = vec4(textureLod(uEnv, uRot * rd, 0.0).rgb, 1.0);
+    vec3 away = uRot * rd;
+    gl_FragColor = vec4(textureLod(uEnv, away, 0.0).rgb + sunGlow(away), 1.0);
     return;
   }
   for (int i = 0; i < STEPS; i++) {
@@ -119,7 +131,7 @@ void main() {
     // Loin du centre la déviation devient négligeable : raccord sans couture avec le vrai ciel.
     float w = smoothstep(PROXY * 0.7, PROXY * 0.97, sqrt(h2));
     vec3 dir = uRot * normalize(mix(normalize(v), rd, w));
-    col += trans * textureLod(uEnv, dir, 0.0).rgb;
+    col += trans * (textureLod(uEnv, dir, 0.0).rgb + sunGlow(dir));
   }
   gl_FragColor = vec4(max(col, vec3(0.0)), 1.0);
 }`;
@@ -145,6 +157,8 @@ export class BlackHole {
         uInv: { value: rot.clone().transpose() },
         uEnv: { value: env },
         uTime: { value: 0 },
+        uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+        uSunSize: { value: 0.1 },
       },
       defines: { STEPS: quality.blackHoleSteps, OCTAVES: Math.min(quality.octaves, 5) },
       vertexShader: /* glsl */ `
@@ -168,11 +182,18 @@ export class BlackHole {
     this.material.uniforms.uTime.value = time;
   }
 
-  /** Accélération gravitationnelle simplifiée, en unités/s², à la distance r du centre. */
-  gravityAt(r: number) {
-    const x = this.rs / r;
-    const fade = THREE.MathUtils.smoothstep(r, this.rs * 14, this.rs * 26);
-    return 1100 * x * x * (1 - fade);
+  setSun(direction: THREE.Vector3, angular: number) {
+    this.material.uniforms.uSunDir.value.copy(direction);
+    this.material.uniforms.uSunSize.value = angular;
+  }
+
+  /**
+   * Vitesse de dérive vers le centre, en unités/s. Au-dessus de 3 rayons de l'horizon, une orbite
+   * stable existe et le vaisseau s'y maintient. En dessous, plus aucune orbite ne tient :
+   * tout ce qui s'y trouve spirale vers l'horizon, de plus en plus vite.
+   */
+  pullSpeed(r: number) {
+    return 0.22 * this.rs * (1 - THREE.MathUtils.smoothstep(r, this.rs * 1.6, this.rs * 3.3));
   }
 
   /** Dilatation temporelle (Schwarzschild, observateur statique) : 1 loin, 0 à l'horizon. */

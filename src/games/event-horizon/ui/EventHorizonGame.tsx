@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Game, type GameSnapshot } from '../core/Game';
-import { hud, useHud, type EndStats, type GameMode, type HudState, type NavEntry } from '../core/store';
+import { hud, useHud, type EndStats, type GameMode, type HudState, type MapEntry, type NavEntry } from '../core/store';
 import { QUALITY, QUALITY_ORDER, loadQuality, saveQuality, type QualityLevel } from '../engine/quality';
 import { UPGRADES, type UpgradeId } from '../progression/Progression';
 import type { ScienceSheet } from '../universe/bodies';
@@ -16,8 +16,17 @@ interface Props {
 const number = (value: number, digits = 0) =>
   value.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-const distance = (km: number) =>
-  km >= 1e6 ? `${number(km / 1e6, 2)} millions de km` : `${number(Math.round(km / 10) * 10)} km`;
+/** Distances : en km de près, en millions de km ensuite, en unités astronomiques à l'échelle du système. */
+const distance = (km: number) => {
+  if (km >= 1.5e7) return `${number(km / 1.496e8, 2)} UA`;
+  if (km >= 1e6) return `${number(km / 1e6, 2)} millions de km`;
+  return `${number(Math.round(km / 10) * 10)} km`;
+};
+
+const LIGHT_SPEED = 299_792;
+/** Vitesse : en km/s, puis en multiples de la vitesse de la lumière en croisière lointaine. */
+const speedParts = (kms: number): [string, string] =>
+  kms >= LIGHT_SPEED ? [number(kms / LIGHT_SPEED, kms >= LIGHT_SPEED * 10 ? 0 : 1), '× c'] : [number(Math.round(kms)), 'km/s'];
 
 const clockTime = (seconds: number) => {
   const s = Math.floor(seconds);
@@ -30,11 +39,12 @@ const COMMANDS: [string, string][] = [
   ['Q / A · D', 'Tourner à gauche · à droite'],
   ['↑ · ↓', 'Cabrer · piquer'],
   ['Espace · Maj', 'Freiner · surrégime'],
-  ['C', 'Croisière / impulsion'],
+  ['C', 'Croisière (rapide loin des astres)'],
   ['Souris', 'Caméra (glisser), zoom (molette)'],
   ['T · N', 'Cible suivante · navigation'],
   ['F', 'Scanner la cible'],
   ['J · U', 'Journal · améliorations'],
+  ['M', 'Carte galactique, saut'],
   ['P', 'Mode photo'],
   ['Échap', 'Pause'],
 ];
@@ -96,7 +106,7 @@ const Journal = ({ entries, onOpen, onClose }: { entries: ScienceSheet[]; onOpen
       {entries.map((entry) => (
         <li key={entry.id}>
           <button type="button" onClick={() => onOpen(entry)}>
-            <span>{entry.name}{entry.log ? ' · enregistrement' : ''}</span>
+            <span>{entry.name}{entry.log ? ' · enregistrement' : ''}<small>{entry.system ? `Système ${entry.system}` : ''}</small></span>
             <span>{entry.type}</span>
           </button>
         </li>
@@ -150,13 +160,69 @@ const Upgrades = ({ points, owned, onBuy, onClose }: { points: number; owned: Up
   </aside>
 );
 
+/** Carte galactique : les systèmes voisins vus de dessus, le système actuel au centre. */
+const GalaxyMap = ({ entries, onJump, onClose }: { entries: MapEntry[]; onJump: (key: string) => void; onClose: () => void }) => {
+  const [selected, setSelected] = useState<string | null>(null);
+  const reach = Math.max(8, ...entries.slice(0, 40).map((e) => Math.hypot(e.dx, e.dz)));
+  const shown = entries.filter((e) => Math.hypot(e.dx, e.dz) <= reach);
+  const current = entries.find((e) => e.key === selected) ?? null;
+  const css = (c: [number, number, number]) => `rgb(${c.map((v) => Math.round(Math.min(1, v) * 255)).join(',')})`;
+  return (
+    <aside className="eh-panel eh-panel--map" aria-label="Carte galactique">
+      <span className="eh-label">Carte galactique</span>
+      <h3>Systèmes voisins</h3>
+      <p className="eh-target-type">Vue de dessus, vous êtes au centre. La carte n’a pas de bord : chaque saut en révèle d’autres.</p>
+      <svg className="eh-chart" viewBox="-110 -110 220 220" role="img" aria-label="Positions des systèmes voisins">
+        <circle r="50" className="eh-chart-ring" />
+        <circle r="100" className="eh-chart-ring" />
+        <circle r="2.2" className="eh-chart-here" />
+        {shown.map((e) => {
+          const x = (e.dx / reach) * 100, y = (e.dz / reach) * 100;
+          const r = 1.4 + Math.max(0, 1.6 - Math.abs(e.dy) / 6);
+          return (
+            <g key={e.key} onClick={() => setSelected(e.key)} className="eh-chart-star" data-selected={e.key === selected}>
+              <circle cx={x} cy={y} r="7" fill="transparent" />
+              <circle cx={x} cy={y} r={r} fill={css(e.color)} opacity={e.visited ? 1 : 0.75} />
+              {(e.key === selected || e.home) && <circle cx={x} cy={y} r={r + 3} className="eh-chart-pick" />}
+            </g>
+          );
+        })}
+      </svg>
+      {current ? (
+        <div className="eh-map-detail">
+          <div>
+            <strong>{current.name}</strong>
+            <p>{current.starType} · {number(current.distance, 1)} années-lumière</p>
+            <p>{current.home ? 'Système de départ' : current.visited ? `Déjà visité · ${current.discoveries} découverte${current.discoveries > 1 ? 's' : ''}` : 'Jamais visité'}</p>
+          </div>
+          <button type="button" className="eh-btn eh-btn--primary" onClick={() => onJump(current.key)}>Sauter</button>
+        </div>
+      ) : (
+        <p className="eh-target-type">Choisissez une étoile sur la carte ou dans la liste.</p>
+      )}
+      <ul className="eh-list">
+        {entries.filter((e, i) => i < 7 || e.home).map((e) => (
+          <li key={e.key}>
+            <button type="button" aria-current={e.key === selected} onClick={() => setSelected(e.key)}>
+              <span>{e.name}<small>{e.home ? 'Système de départ' : e.visited ? `${e.starType} · visité` : e.starType}</small></span>
+              <span className="eh-mono">{number(e.distance, 1)} al</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="eh-note">Un saut demande 50 % d’énergie et de s’éloigner à 3 millions de km de tout astre.</p>
+      <button type="button" className="eh-btn eh-panel-close" onClick={onClose}>Fermer (M)</button>
+    </aside>
+  );
+};
+
 const Hud = ({ state }: { state: HudState }) => (
   <div className="eh-hud">
     <div className="eh-corner eh-tl">
-      <div className="eh-label">Secteur</div>
+      <div className="eh-label">Système</div>
       <div className="eh-sector">{state.sector}</div>
-      <div className="eh-coords eh-mono">
-        X {number(state.coords[0], 1)} · Y {number(state.coords[1], 1)} · Z {number(state.coords[2], 1)}
+      <div className="eh-coords eh-mono" title="Position dans le système, en millions de km">
+        X {number(state.coords[0], 2)} · Y {number(state.coords[1], 2)} · Z {number(state.coords[2], 2)} Mkm
       </div>
       {state.objective && (
         <div className="eh-objective">
@@ -186,8 +252,8 @@ const Hud = ({ state }: { state: HudState }) => (
     <div className="eh-corner eh-bl">
       <div className="eh-label">Vitesse</div>
       <div className="eh-speed">
-        <span className="eh-speed-value eh-mono">{number(Math.round(state.speed))}</span>
-        <span className="eh-speed-unit">km/s</span>
+        <span className="eh-speed-value eh-mono">{speedParts(state.speed)[0]}</span>
+        <span className="eh-speed-unit">{speedParts(state.speed)[1]}</span>
       </div>
       <div className="eh-flight">
         <span>Mode <b className={state.cruise ? 'is-on' : ''}>{state.cruise ? 'croisière' : 'impulsion'}</b></span>
@@ -201,6 +267,9 @@ const Hud = ({ state }: { state: HudState }) => (
         </span>
         <span className="eh-mono">{Math.round(state.energy)} %</span>
       </div>
+      {state.falling && (
+        <div className="eh-warning eh-mono">Sous la dernière orbite stable : dérive vers l’horizon</div>
+      )}
       {state.radiation > 0.02 && (
         <div className="eh-warning eh-mono">Radiations : {Math.round(state.radiation * 100)} %, l’énergie se vide</div>
       )}
@@ -378,6 +447,9 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
           {!state.sheet && state.panel === 'nav' && (
             <Navigation entries={state.nav} onSelect={(id) => game.current?.selectTarget(id)} onClose={() => hud.set({ panel: null })} />
           )}
+          {!state.sheet && state.panel === 'map' && (
+            <GalaxyMap entries={state.map} onJump={(key) => game.current?.requestJump(key)} onClose={() => hud.set({ panel: null })} />
+          )}
           {!state.sheet && state.panel === 'upgrades' && (
             <Upgrades points={state.research} owned={state.upgrades} onBuy={(id) => game.current?.buy(id)} onClose={() => hud.set({ panel: null })} />
           )}
@@ -389,6 +461,12 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
           <span>{state.message.startsWith('Image') ? state.message : 'Mode photo · glisser pour tourner · molette pour le zoom'}</span>
           <button type="button" className="eh-btn" onClick={() => game.current?.savePhoto()}>Enregistrer l’image (Entrée)</button>
           <button type="button" className="eh-btn" onClick={() => game.current?.setPhoto(false)}>Quitter (P)</button>
+        </div>
+      )}
+
+      {playing && state.jump && (
+        <div className="eh-jump" data-arrived={state.jump.arrived} aria-live="polite">
+          {!state.jump.arrived && <span className="eh-label">Saut vers {state.jump.name}</span>}
         </div>
       )}
 
@@ -409,7 +487,7 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
             <span className="eh-label">Exploration spatiale · en développement</span>
             <h1 className="eh-title">Event Horizon</h1>
             <p className="eh-tagline">
-              Seul à bord du vaisseau scientifique AETHER-01, vous captez un signal de détresse aux abords du trou noir NEMESIS-01. Personne n’aurait dû arriver ici avant vous.
+              Seul à bord du vaisseau scientifique AETHER-01, vous captez un signal de détresse aux abords du trou noir NEMESIS-01. Personne n’aurait dû arriver ici avant vous. Au-delà, des étoiles sans fin, et personne non plus.
             </p>
             <div className="eh-actions">
               <button type="button" className="eh-btn eh-btn--primary" onClick={() => setMode('play')} autoFocus>
@@ -422,7 +500,7 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
             <p className="eh-note">
               {coarse
                 ? 'Ce jeu se pilote au clavier et à la souris : il n’est pas jouable sur écran tactile.'
-                : 'Clavier et souris, de préférence au casque. Z pour accélérer, Q et D pour tourner, C pour la croisière, F pour scanner.'}
+                : 'Clavier et souris, de préférence au casque. Z pour accélérer, Q et D pour tourner, C pour la croisière, F pour scanner, M pour la carte.'}
             </p>
           </div>
         </div>

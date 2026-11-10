@@ -342,3 +342,44 @@
 @media (prefers-reduced-motion: reduce) {
   .eh-end { animation: none; }
 }
+
+/* ── Carte galactique et saut ── */
+.eh-panel--map { width: min(430px, calc(100vw - 32px)); }
+.eh-chart { display: block; width: 100%; max-width: 300px; margin: 14px auto 6px; }
+.eh-chart-ring { fill: none; stroke: var(--eh-line); stroke-width: 0.4; }
+.eh-chart-here { fill: none; stroke: var(--eh-orange-bright); stroke-width: 0.8; }
+.eh-chart-star { cursor: pointer; }
+.eh-chart-pick { fill: none; stroke: var(--eh-orange-bright); stroke-width: 0.6; }
+.eh-chart-star:hover circle:nth-child(2) { opacity: 1; }
+.eh-map-detail { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 8px; padding: 12px 14px; border: 1px solid var(--eh-line); border-radius: 3px; }
+.eh-map-detail p { margin: 2px 0 0; font-size: 13px; color: var(--eh-dim); }
+.eh-jump {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 14vh;
+  pointer-events: none;
+  overflow: hidden;
+}
+.eh-jump .eh-label { position: relative; text-shadow: 0 0 8px #000; }
+/* Disque de lumière deux fois plus grand que l'écran : son bord transparent ne se voit jamais */
+.eh-jump::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(circle closest-side, #fff 0%, rgba(214, 230, 255, 0.95) 22%, rgba(71, 124, 186, 0.45) 46%, rgba(5, 7, 13, 0) 72%);
+  opacity: 0;
+  transform: scale(0.05);
+  animation: eh-jump-charge 3.6s cubic-bezier(0.75, 0, 0.95, 0.35) forwards;
+}
+.eh-jump[data-arrived="true"]::before { animation: eh-jump-arrive 1.5s ease-out forwards; }
+@keyframes eh-jump-charge {
+  0% { opacity: 0; transform: scale(0.05); }
+  70% { opacity: 0.55; transform: scale(0.4); }
+  100% { opacity: 1; transform: scale(4); }
+}
+@keyframes eh-jump-arrive {
+  0% { opacity: 1; transform: scale(4); }
+  100% { opacity: 0; transform: scale(4); }
+}

@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { hashSeed, makeRng } from '../utils/rng';
 
 const BOX = 800;
+/** Au-delà, les traits ne s'allongent plus : en croisière le vaisseau dépasse le million d'unités par seconde. */
+const MAX_SHOWN_SPEED = 5200;
 
 /**
  * Poussières interstellaires autour du vaisseau : elles donnent la sensation de vitesse.
@@ -12,6 +14,7 @@ export class Dust {
   readonly lines: THREE.LineSegments;
   private material: THREE.ShaderMaterial;
   private geometry: THREE.BufferGeometry;
+  private travelled = new THREE.Vector3();
 
   constructor(count = 900) {
     const rng = makeRng(hashSeed('dust'));
@@ -55,10 +58,13 @@ export class Dust {
     this.lines.frustumCulled = false;
   }
 
-  update(shipPosition: THREE.Vector3, velocity: THREE.Vector3) {
+  update(dt: number, velocity: THREE.Vector3) {
     const wrap = (v: number) => ((v % BOX) + BOX) % BOX;
-    this.material.uniforms.uOffset.value.set(wrap(shipPosition.x), wrap(shipPosition.y), wrap(shipPosition.z));
-    this.material.uniforms.uVelocity.value.copy(velocity);
+    const shown = this.material.uniforms.uVelocity.value as THREE.Vector3;
+    shown.copy(velocity).clampLength(0, MAX_SHOWN_SPEED);
+    this.travelled.addScaledVector(shown, dt);
+    this.travelled.set(wrap(this.travelled.x), wrap(this.travelled.y), wrap(this.travelled.z));
+    this.material.uniforms.uOffset.value.copy(this.travelled);
     this.material.uniforms.uAlpha.value = THREE.MathUtils.smoothstep(velocity.length(), 4, 160) * 0.55;
   }
 

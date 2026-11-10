@@ -1,9 +1,6 @@
 import * as THREE from 'three';
 import { hashSeed, makeRng } from '../utils/rng';
 
-const INNER = 6200;
-const OUTER = 7900;
-const NAMED_LOCAL = new THREE.Vector3(6900, 30, 0);
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 
@@ -38,8 +35,13 @@ export class AsteroidBelt {
   private bigGeometry: THREE.BufferGeometry;
   private material: THREE.MeshStandardMaterial;
   private angle = 0;
+  private namedLocal = new THREE.Vector3();
 
-  constructor(count: number, private tilt: number, namedRadius: number) {
+  /** @param namedRadius rayon du plus gros astéroïde, ou 0 s'il n'y en a pas */
+  constructor(count: number, private tilt: number, inner: number, outer: number, namedRadius: number) {
+    const INNER = inner, OUTER = outer;
+    const thickness = (outer - inner) * 0.11;
+    this.namedLocal.set((inner + outer) / 2, thickness * 0.15, 0);
     const rng = makeRng(hashSeed('morne-belt'));
     this.geometry = makeRock(7, 2);
     this.bigGeometry = makeRock(217, 4);
@@ -56,7 +58,7 @@ export class AsteroidBelt {
       const a = rng() * Math.PI * 2;
       // Plus dense au milieu de la ceinture
       const r = INNER + (OUTER - INNER) * (rng() + rng()) / 2;
-      p.set(Math.cos(a) * r, (rng() + rng() - 1) * 190, Math.sin(a) * r);
+      p.set(Math.cos(a) * r, (rng() + rng() - 1) * thickness, Math.sin(a) * r);
       const size = 7 + Math.pow(rng(), 3.2) * 62;
       s.set(size * (0.7 + rng() * 0.6), size * (0.6 + rng() * 0.5), size * (0.7 + rng() * 0.6));
       e.set(rng() * 6.28, rng() * 6.28, rng() * 6.28);
@@ -67,10 +69,12 @@ export class AsteroidBelt {
     rocks.frustumCulled = false;
     this.spin.add(rocks);
 
-    const named = new THREE.Mesh(this.bigGeometry, this.material);
-    named.position.copy(NAMED_LOCAL);
-    named.scale.set(namedRadius, namedRadius * 0.8, namedRadius * 0.9);
-    this.spin.add(named);
+    if (namedRadius > 0) {
+      const named = new THREE.Mesh(this.bigGeometry, this.material);
+      named.position.copy(this.namedLocal);
+      named.scale.set(namedRadius, namedRadius * 0.8, namedRadius * 0.9);
+      this.spin.add(named);
+    }
 
     this.group.rotation.z = tilt;
     this.group.add(this.spin);
@@ -84,7 +88,7 @@ export class AsteroidBelt {
 
   /** Position dans l'univers du plus gros astéroïde, qui tourne avec la ceinture. */
   namedWorld(out: THREE.Vector3, center: THREE.Vector3) {
-    return out.copy(NAMED_LOCAL).applyAxisAngle(Y_AXIS, this.angle).applyAxisAngle(Z_AXIS, this.tilt).add(center);
+    return out.copy(this.namedLocal).applyAxisAngle(Y_AXIS, this.angle).applyAxisAngle(Z_AXIS, this.tilt).add(center);
   }
 
   dispose() {

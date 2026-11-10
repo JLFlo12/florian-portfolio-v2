@@ -26,7 +26,8 @@ A 3D space exploration game that runs in the browser. Alone aboard a science ves
 ```
 ## Le projet
 Un jeu d'exploration contemplatif et inquiétant, sans combat, intégré à la page Jeux du portfolio.
-Un vaisseau à piloter, cinq planètes et lunes, une ceinture d'astéroïdes, des épaves, des anomalies et un trou noir supermassif.
+Un vaisseau à piloter, un trou noir supermassif à l'échelle réelle (530 fois le diamètre d'une géante gazeuse), des épaves, des anomalies.
+Une galaxie sans bord : chaque système stellaire est généré à partir d'une seed, et on saute de l'un à l'autre.
 Une histoire courte à remonter d'indice en indice, avec une vraie fin.
 Aucun fichier externe : modèles, textures, planètes et sons sont tous générés par le code.
 
@@ -40,6 +41,8 @@ L'effet Doppler rend plus lumineux le côté du disque qui tourne vers l'observa
 Origine flottante : le vaisseau reste au centre de la scène et l'univers se déplace autour, ce qui évite les tremblements dus à la précision des nombres à grande distance.
 Surfaces des planètes calculées par shader (bruit fractal), sans texture.
 Un seul appel de dessin pour les 700 astéroïdes, les étoiles et les poussières.
+Échelle réelle : 1 unité = 10 km, des distances en unités astronomiques, et une croisière dont la vitesse dépend de la distance à l'astre le plus proche.
+Génération déterministe : la même case de la galaxie redonne toujours le même système, sans rien stocker.
 Rendu HDR avec halo lumineux, et exposition qui s'adapte comme une pupille près du disque.
 
 ## Le son et l'ambiance

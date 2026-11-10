@@ -29,7 +29,7 @@ Le son compte beaucoup dans l'ambiance : un casque est conseillé.
 | Flèches haut / bas | Cabrer, piquer |
 | Espace | Freiner |
 | Maj (avec Z) | Surrégime, consomme l'énergie |
-| C | Basculer entre impulsion et croisière |
+| C | Basculer entre impulsion et croisière (la croisière va d'autant plus vite qu'on est loin de toute masse) |
 | Souris (glisser) | Tourner la caméra autour du vaisseau |
 | Molette | Zoom |
 | T | Cible suivante |
@@ -37,6 +37,7 @@ Le son compte beaucoup dans l'ambiance : un casque est conseillé.
 | F | Scanner la cible, ou fermer la fiche |
 | J | Journal des découvertes |
 | U | Améliorations du vaisseau |
+| M | Carte galactique : choisir un système voisin et y sauter |
 | P | Mode photo (Entrée enregistre l'image) |
 | H | Afficher ou masquer les commandes |
 | Échap | Pause |
@@ -45,6 +46,21 @@ Les touches de déplacement suivent la position physique des touches : ZQSD sur 
 AZERTY, WASD sur un QWERTY.
 
 ## Ce que contient le jeu
+
+**Une échelle réelle.** Les tailles et les distances sont celles des fiches scientifiques : 1 unité = 10 km.
+NEMESIS-01 a un horizon de 25,4 millions de km de diamètre, soit 530 fois Morne et 18 fois son étoile.
+Thalis est à 1 unité astronomique de Hélice, Morne à 4,7, Givre à 13. Le trou noir est à 3,8 UA du point
+de départ (45 fois son rayon). Pour que ces distances restent jouables, la vitesse maximale de croisière
+vaut 30 % de la distance à l'astre le plus proche, par seconde : on file en espace profond, et le vaisseau
+ralentit seul à l'approche. Un trajet entre planètes prend 20 à 40 secondes. Les vitesses affichées
+dépassent celle de la lumière : c'est la seule part de fiction de l'échelle.
+
+**Un univers sans bord.** La galaxie est une grille de cases de 6 années-lumière, chacune avec un système
+stellaire. Tout sort d'une seed et de la case : type d'étoile (naine rouge, géante, naine blanche…),
+nombre et orbites des planètes, type de chaque monde selon sa température, lunes, anneaux, ceintures,
+et parfois une sonde, une épave ou une anomalie. La même case redonne toujours le même système, sans rien
+stocker. La carte galactique (M) montre les voisins ; un saut y mène, et de là on en voit d'autres.
+La plupart des systèmes sont vides de toute trace, c'est voulu.
 
 **Le vaisseau.** AETHER-01 est modélisé par code : poutre, anneau d'habitation tournant, laboratoires,
 antennes, radiateurs, réservoirs, six moteurs avec panaches animés. Pilotage avec inertie, assistance
@@ -86,13 +102,14 @@ l'origine de la scène et l'univers se déplace autour de lui.
 
 Par rapport au cahier des charges :
 
-- **Génération procédurale** : le système est écrit à la main dans `universe/bodies.ts`. Les générateurs
-  par seed (UniverseGenerator, SectorGenerator…), les autres systèmes stellaires et la carte galactique
-  restent à faire. La touche M affiche seulement un message.
-- **Streaming spatial et niveaux de détail** : inutiles tant qu'il n'y a qu'un système.
+- **Génération procédurale** : faite pour les systèmes (`universe/generator.ts`), mais le système de départ
+  reste écrit à la main (`universe/bodies.ts`), et il n'y a ni nébuleuses à traverser ni second trou noir.
+  Les surfaces réutilisent les cinq types de planètes existants, variés par seed et par teinte.
+- **Streaming spatial et niveaux de détail** : un seul système est chargé à la fois, remplacé à chaque saut.
+  On ne voyage pas d'une étoile à l'autre en continu.
 - **Sauvegarde** : découvertes, objets détectés, améliorations, qualité et son sont gardés dans le
-  stockage local du navigateur. La position du vaisseau n'est pas sauvegardée, et il n'y a pas encore
-  de sauvegarde IndexedDB avec versions de données.
+  stockage local du navigateur, ainsi que le système où l'on se trouve et ceux déjà visités. La position
+  exacte du vaisseau n'est pas sauvegardée, et il n'y a pas encore de sauvegarde IndexedDB avec versions.
 - **Assets externes** : aucun modèle, texture ni son téléchargé. Voir `ASSET_CREDITS.md`.
 - **Réglages graphiques détaillés** (résolution, distance d'affichage, ombres) : seuls les quatre
   niveaux globaux existent.
@@ -104,6 +121,9 @@ Autres limites connues :
 - Le bord de la zone de lentille gravitationnelle peut se deviner sur le fond étoilé quand on regarde
   le trou noir de loin, et les jets s'arrêtent à ce bord.
 - Les astéroïdes sont volontairement à facettes ; ils manquent de détail vus de très près.
+- L'étoile est un halo lumineux, pas une sphère : de très près, elle éblouit tout l'écran.
+- Sous 3 rayons de l'horizon il n'existe plus d'orbite stable : le jeu le traduit par une dérive vers le
+  centre, pas par une vraie mécanique orbitale.
 - Pas jouable sur écran tactile. Testé dans Chrome uniquement.
 
 ## Organisation du code
@@ -111,7 +131,7 @@ Autres limites connues :
 ```
 core/         boucle de jeu, entrées clavier/souris, état partagé avec l'interface
 engine/       ciel, poussières, niveaux de qualité
-universe/     données du système, histoire, échelle
+universe/     système de départ, histoire, échelle, générateur de systèmes
 astronomy/    trou noir, planètes, anneaux, ceinture, épaves, anomalies, structures
 ship/         modèle 3D, pilotage, caméra
 exploration/  scanner, découvertes, détection

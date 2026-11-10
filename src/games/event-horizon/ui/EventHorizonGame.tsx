@@ -45,6 +45,7 @@ const COMMANDS: [string, string][] = [
   ['F', 'Scanner la cible'],
   ['J · U', 'Journal · améliorations'],
   ['M', 'Carte galactique, saut'],
+  ['E', 'Marcher dans le vaisseau'],
   ['P', 'Mode photo'],
   ['Échap', 'Pause'],
 ];
@@ -296,6 +297,49 @@ const Hud = ({ state }: { state: HudState }) => (
   </div>
 );
 
+const WALK_COMMANDS: [string, string][] = [
+  ['Z Q S D', 'Se déplacer'],
+  ['Souris', 'Regarder (clic pour capturer la souris)'],
+  ['Maj', 'Courir'],
+  ['F', 'Examiner, lire'],
+  ['E', 'Reprendre les commandes'],
+  ['Échap', 'Libérer la souris, pause'],
+];
+
+/** À pied dans le vaisseau : presque rien à l'écran, pour laisser la place au silence. */
+const InteriorHud = ({ state }: { state: HudState }) => (
+  <div className="eh-hud">
+    <div className="eh-corner eh-tl">
+      <div className="eh-label">AETHER-01</div>
+      <div className="eh-sector">{state.interior?.room}</div>
+    </div>
+    <div className="eh-corner eh-bl">
+      {state.falling && <div className="eh-warning eh-mono">Alarme : le vaisseau dérive vers l’horizon. Retournez au poste de pilotage.</div>}
+      {state.radiation > 0.35 && <div className="eh-warning eh-mono">Alarme : radiations, {Math.round(state.radiation * 100)} %</div>}
+    </div>
+    <div className="eh-corner eh-br">
+      {state.helpOpen && (
+        <div className="eh-help">
+          {WALK_COMMANDS.map(([key, label]) => (
+            <div key={key} style={{ display: 'contents' }}><kbd>{key}</kbd><span>{label}</span></div>
+          ))}
+        </div>
+      )}
+      <div className="eh-help-toggle">H : {state.helpOpen ? 'masquer' : 'afficher'} les commandes</div>
+    </div>
+    {!state.note && <div className="eh-aim" aria-hidden="true" />}
+    {!state.note && state.interior?.prompt && <div className="eh-prompt"><kbd>F</kbd> {state.interior.prompt}</div>}
+    {state.note && (
+      <div className="eh-note-card" role="dialog" aria-label={state.note.title}>
+        <span className="eh-label">{state.note.title}</span>
+        {state.note.text.split('\n\n').map((paragraph, i) => <p key={i}>{paragraph}</p>)}
+        <button type="button" className="eh-btn" onClick={() => hud.set({ note: null })}>Fermer (F)</button>
+      </div>
+    )}
+    {state.message && <div className="eh-message" role="status">{state.message}</div>}
+  </div>
+);
+
 /** Temps vu par un observateur lointain pendant la chute : il s'emballe, puis n'a plus de fin. */
 const farLabel = (elapsed: number) => {
   if (elapsed > 8.2) return '∞';
@@ -437,8 +481,16 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
         </div>
       )}
 
-      {playing && !state.photo && (
+      {playing && state.interior && (
         <>
+          <div className="eh-fade" key="in" aria-hidden="true" />
+          <InteriorHud state={state} />
+        </>
+      )}
+
+      {playing && !state.photo && !state.interior && (
+        <>
+          <div className="eh-fade" key="out" aria-hidden="true" />
           <Hud state={state} />
           {state.sheet && <Sheet sheet={state.sheet} onClose={() => hud.set({ sheet: null })} />}
           {!state.sheet && state.panel === 'journal' && (
@@ -500,7 +552,7 @@ const EventHorizonGame: React.FC<Props> = ({ onBack }) => {
             <p className="eh-note">
               {coarse
                 ? 'Ce jeu se pilote au clavier et à la souris : il n’est pas jouable sur écran tactile.'
-                : 'Clavier et souris, de préférence au casque. Z pour accélérer, Q et D pour tourner, C pour la croisière, F pour scanner, M pour la carte.'}
+                : 'Clavier et souris, de préférence au casque. Z pour accélérer, Q et D pour tourner, C pour la croisière, F pour scanner, M pour la carte, E pour marcher dans le vaisseau.'}
             </p>
           </div>
         </div>

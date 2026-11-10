@@ -29,6 +29,7 @@ Un jeu d'exploration contemplatif et inquiétant, sans combat, intégré à la p
 Un vaisseau à piloter, un trou noir supermassif à l'échelle réelle (530 fois le diamètre d'une géante gazeuse), des épaves, des anomalies.
 Une galaxie sans bord : chaque système stellaire est généré à partir d'une seed, et on saute de l'un à l'autre.
 Une histoire courte à remonter d'indice en indice, avec une vraie fin.
+L'intérieur du vaisseau se visite à pied, à la première personne, et ses hublots donnent sur l'espace réel.
 Aucun fichier externe : modèles, textures, planètes et sons sont tous générés par le code.
 
 ## Le trou noir
@@ -78,6 +79,10 @@ Découper en versions jouables m'a évité de tout construire en même temps.
 | `/event-horizon/06-cendre.jpg` | Cendre | Planète volcanique dont les failles luisent |
 | `/event-horizon/05-epave.jpg` | L'épave | Un vaisseau identique à celui du joueur, à la dérive près du disque |
 | `/event-horizon/08-chute.jpg` | La chute | Séquence de fin, vue de sous le vaisseau |
+| `/event-horizon/09-passerelle.jpg` | La passerelle | Vue à pied : le trou noir réel à travers la baie avant |
+| `/event-horizon/10-coursive.jpg` | La coursive | Le pont d'AETHER-01, à parcourir à la première personne |
+| `/event-horizon/11-cryogenie.jpg` | Cryogénie | Six capsules, une seule ouverte |
+| `/event-horizon/12-machines.jpg` | Salle des machines | Le réacteur |
 
 Les chemins commencent par `/event-horizon/` : les images sont servies par le site lui-même une fois
 celui-ci déployé.

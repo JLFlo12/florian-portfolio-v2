@@ -38,12 +38,16 @@ Le son compte beaucoup dans l'ambiance : un casque est conseillé.
 | J | Journal des découvertes |
 | U | Améliorations du vaisseau |
 | M | Carte galactique : choisir un système voisin et y sauter |
+| E | Quitter le poste de pilotage et marcher dans le vaisseau (E pour y revenir) |
 | P | Mode photo (Entrée enregistre l'image) |
 | H | Afficher ou masquer les commandes |
 | Échap | Pause |
 
 Les touches de déplacement suivent la position physique des touches : ZQSD sur un clavier
 AZERTY, WASD sur un QWERTY.
+
+À pied : ZQSD pour marcher, Maj pour courir, la souris pour regarder (un clic la capture, Échap la
+libère), F pour examiner ce qu'on regarde.
 
 ## Ce que contient le jeu
 
@@ -75,6 +79,13 @@ dont les failles luisent côté nuit) et Givre (glacée).
 L'horizon noir, l'anneau de photons, le disque vu par-dessus et par-dessous, les jets relativistes et la
 déformation des étoiles sortent de ce même calcul. Gravité, zone de radiations qui vide l'énergie de bord,
 dilatation temporelle affichée.
+
+**L'intérieur du vaisseau.** La touche E fait quitter le poste de pilotage : on marche à la première
+personne sur le pont d'AETHER-01. Neuf lieux : passerelle, coursive, quartiers, cryogénie, laboratoire,
+salle commune, sas, soute, salle des machines. Douze choses à examiner, dont les textes changent quand
+l'enquête avance. Les hublots sont de vrais trous dans les cloisons : on y voit l'espace réel, le trou
+noir ou la planète devant laquelle le vaisseau se trouve, et la lumière de l'étoile entre par là.
+Pendant ce temps le vaisseau continue sur sa lancée, et une alarme se déclenche s'il dérive vers l'horizon.
 
 **Une histoire à remonter.** Un signal de détresse mène de la balise Écho-1 à l'épave de l'expédition
 ORPHÉE, puis à une anomalie dans la ceinture de Morne, puis à une épave près du trou noir. Chaque analyse
@@ -116,6 +127,8 @@ Par rapport au cahier des charges :
 
 Autres limites connues :
 
+- Intérieur : un seul pont, construit en volumes simples (pas de modèles détaillés ni de portes animées).
+  Il ne correspond pas à la forme extérieure du vaisseau, et on ne peut pas sortir en scaphandre.
 - Collisions : sphères simples pour les planètes, aucune pour les astéroïdes, les épaves et le Témoin,
   qu'on traverse. Rapier n'est pas utilisé.
 - Le bord de la zone de lentille gravitationnelle peut se deviner sur le fond étoilé quand on regarde
@@ -133,7 +146,7 @@ core/         boucle de jeu, entrées clavier/souris, état partagé avec l'inte
 engine/       ciel, poussières, niveaux de qualité
 universe/     système de départ, histoire, échelle, générateur de systèmes
 astronomy/    trou noir, planètes, anneaux, ceinture, épaves, anomalies, structures
-ship/         modèle 3D, pilotage, caméra
+ship/         modèle 3D, pilotage, caméra, intérieur à parcourir à pied
 exploration/  scanner, découvertes, détection
 progression/  points de recherche et améliorations
 audio/        synthèse sonore

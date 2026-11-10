@@ -12,6 +12,7 @@ texture, aucune image, aucun son téléchargé. Tout est généré par le code.
 | Ciel, étoiles, nébuleuse | Shaders procéduraux (`engine/Sky.ts`) | Celle du dépôt |
 | Épaves, balise, sonde, capsule, Témoin | Géométrie construite par code (`astronomy/Derelicts.ts`) | Celle du dépôt |
 | Anomalies | Shader original (`astronomy/Anomaly.ts`) | Celle du dépôt |
+| Intérieur du vaisseau | Géométrie et textures construites par code (`ship/Interior.ts`) | Celle du dépôt |
 | Ceinture d'astéroïdes | Rochers générés par code (`astronomy/AsteroidBelt.ts`) | Celle du dépôt |
 | Tous les sons | Synthèse Web Audio en direct (`audio/AudioEngine.ts`) | Celle du dépôt |
 | Captures d'écran (`public/event-horizon/`) | Prises dans le jeu | Celle du dépôt |

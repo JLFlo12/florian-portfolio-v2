@@ -8,6 +8,8 @@ export interface AudioFrame {
   dread: number;
   /** Vitesse rapportée à la vitesse de croisière maximale. */
   speed: number;
+  /** À l'intérieur du vaisseau : les moteurs s'entendent à travers la structure. 0 dehors, 1 près du réacteur. */
+  inside?: number;
 }
 
 /**
@@ -137,9 +139,12 @@ export class AudioEngine {
     if (!ctx) return;
     const t = ctx.currentTime;
     const power = Math.min(frame.power, 1.5);
-    this.engineGain.gain.setTargetAtTime(0.04 + power * 0.42, t, 0.25);
-    this.engineFilter.frequency.setTargetAtTime(160 + power * 900 + frame.speed * 500, t, 0.3);
-    this.rumbleGain.gain.setTargetAtTime(0.012 + power * 0.085, t, 0.3);
+    const inside = frame.inside;
+    const muffle = inside === undefined ? 1 : 0.28;
+    this.engineGain.gain.setTargetAtTime((0.04 + power * 0.42) * (inside === undefined ? 1 : 0.6), t, 0.25);
+    this.engineFilter.frequency.setTargetAtTime((160 + power * 900 + frame.speed * 500) * muffle, t, 0.3);
+    this.rumbleGain.gain.setTargetAtTime(0.012 + power * 0.085 + (inside ?? 0) * 0.11, t, 0.3);
+    this.windGain.gain.setTargetAtTime(inside === undefined ? 0.05 : 0.1, t, 0.4);
     this.rumble.forEach((osc, i) => osc.frequency.setTargetAtTime([41, 61.7, 82.4][i] * (1 + power * 0.22 + frame.speed * 0.25), t, 0.4));
     const d = frame.dread;
     this.droneGain.gain.setTargetAtTime(d * d * 0.5, t, 0.8);
@@ -215,6 +220,12 @@ export class AudioEngine {
   knock() {
     this.tone(70, 0.3, 0.2, 'sine', false, 34);
     this.burst(300, 2, 0.08, 0.25);
+  }
+
+  /** Un pas sur le plancher métallique. */
+  step() {
+    this.burst(170 + Math.random() * 70, 1.4, 0.07, 0.34);
+    this.tone(62 + Math.random() * 12, 0.09, 0.05, 'sine', false, 40);
   }
 
   /** Un grain du compteur de radiations. */

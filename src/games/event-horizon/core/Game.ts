@@ -16,6 +16,7 @@ import { makeBeacon, makeGhost, makeMegastructure, makePod, makeProbe, makeTwin,
 import { ShipModel } from '../ship/ShipModel';
 import { ShipController, type ShipSnapshot } from '../ship/ShipController';
 import { ChaseCamera } from '../ship/ChaseCamera';
+import { Interior } from '../ship/Interior';
 import { Scanner } from '../exploration/Scanner';
 import { Progression, type UpgradeId } from '../progression/Progression';
 import { AudioEngine } from '../audio/AudioEngine';
@@ -146,6 +147,13 @@ export class Game {
   private tideWarned = false;
   private cruiseExplained = false;
   private jump: { target: SystemInfo; t: number; done: boolean } | null = null;
+  /** À pied dans le vaisseau. */
+  private inside = false;
+  private interior: Interior;
+  private interiorPass: RenderPass;
+  private interiorTimer = 0;
+  private sunLocal = new THREE.Vector3();
+  private shipInverse = new THREE.Quaternion();
   private scanTickAt = 0;
   private creakAt = 0;
   private solitudeAt = 50;
@@ -226,6 +234,13 @@ export class Game {
     const renderTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: preset.msaa });
     this.composer = new EffectComposer(this.renderer, renderTarget);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    // L'intérieur du vaisseau est dessiné par-dessus l'espace : on voit dehors par les hublots
+    this.interior = new Interior(preset, this.environment.texture);
+    this.interiorPass = new RenderPass(this.interior.scene, this.interior.camera);
+    this.interiorPass.clear = false;
+    this.interiorPass.clearDepth = true;
+    this.interiorPass.enabled = false;
+    this.composer.addPass(this.interiorPass);
     this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.7, 0.9);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
@@ -236,7 +251,7 @@ export class Game {
     this.resize();
     this.warmUp();
 
-    hud.set({ quality, muted: this.audio.muted, ...this.progressState() });
+    hud.set({ quality, muted: this.audio.muted, interior: null, note: null, jump: null, photo: false, ...this.progressState() });
     this.raf = requestAnimationFrame(this.tick);
   }
 
@@ -248,11 +263,15 @@ export class Game {
   private warmUp() {
     const culled: THREE.Object3D[] = [];
     const hidden: THREE.Object3D[] = [];
-    this.scene.traverse((o) => {
+    const prepare = (o: THREE.Object3D) => {
       if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); }
       if (!o.visible && !(o instanceof THREE.Light)) { o.visible = true; hidden.push(o); }
-    });
+    };
+    this.scene.traverse(prepare);
+    this.interior.scene.traverse(prepare);
+    this.interiorPass.enabled = true;
     this.composer.render(0);
+    this.interiorPass.enabled = false;
     culled.forEach((o) => { o.frustumCulled = true; });
     hidden.forEach((o) => { o.visible = false; });
   }
@@ -412,8 +431,8 @@ export class Game {
         }
       }
     }
-    if (mode === 'pause') this.audio.setPaused(true);
-    if (mode === 'menu') { this.audio.setPaused(false); this.chase.setDistance(115); this.setPhoto(false); }
+    if (mode === 'pause') { this.audio.setPaused(true); this.input.unlock(); }
+    if (mode === 'menu') { this.audio.setPaused(false); this.chase.setDistance(115); this.setPhoto(false); this.setInside(false); }
     this.mode = mode;
     this.frameView();
     this.dirty = true;
@@ -458,8 +477,32 @@ export class Game {
     hud.set({ muted });
   }
 
+  /** Quitter le poste de pilotage pour marcher dans le vaisseau, ou y revenir. */
+  setInside(on: boolean) {
+    if (this.inside === on || (on && (this.jump || this.photo || this.mode !== 'play'))) return;
+    this.inside = on;
+    this.interiorPass.enabled = on;
+    this.shipModel.group.visible = !on;
+    this.dust.lines.visible = !on;
+    this.input.autoLock = on;
+    this.scanner.cancel();
+    if (on) this.interior.enter();
+    else this.input.unlock();
+    hud.set({ interior: on ? { room: this.interior.room().name, prompt: '' } : null, note: null, sheet: null, panel: null });
+  }
+
+  /** Lire ce que le joueur regarde, ou reprendre les commandes s'il est devant le siège. */
+  private interact() {
+    const spot = this.interior.lookedAt();
+    if (!spot) return;
+    const note = this.interior.read(spot, { knows: (id) => this.scanner.knows(id), discoveries: this.scanner.discovered().length });
+    if (note.action === 'seat') { this.setInside(false); return; }
+    if (note.action === 'knock' && this.scanner.knows(STORY[2])) this.audio.knock();
+    hud.set({ note: { title: note.title, text: note.text } });
+  }
+
   setPhoto(on: boolean) {
-    if (this.photo === on || this.jump) return;
+    if (this.photo === on || this.jump || this.inside) return;
     this.photo = on;
     if (on) this.chase.setLimits(30, 5000);
     else { this.chase.setLimits(); this.chase.setDistance(150); }
@@ -524,6 +567,7 @@ export class Game {
     this.composer.setSize(width, height);
     this.sky.setPixelRatio(ratio);
     this.camera.aspect = width / height;
+    this.interior.setAspect(width / height);
     this.frameView();
     this.dirty = true;
   }
@@ -547,6 +591,13 @@ export class Game {
   private handleKeys() {
     const state = hud.get();
     for (const key of this.input.consume()) {
+      if (this.inside) {
+        if (key === 'Escape') { if (state.note) hud.set({ note: null }); else this.setMode('pause'); }
+        else if (key === 'f') { if (state.note) hud.set({ note: null }); else this.interact(); }
+        else if (key === 'e') this.setInside(false);
+        else if (key === 'h') hud.set({ helpOpen: !state.helpOpen });
+        continue;
+      }
       if (this.photo) {
         if (key === 'p' || key === 'Escape') this.setPhoto(false);
         else if (key === 'Enter') this.capture = true;
@@ -573,6 +624,7 @@ export class Game {
       else if (key === 'u') toggle('upgrades');
       else if (key === 'm') hud.set({ panel: state.panel === 'map' ? null : 'map', sheet: null, map: this.mapEntries() });
       else if (key === 'p') this.setPhoto(true);
+      else if (key === 'e') this.setInside(true);
       else if (key === 'h') hud.set({ helpOpen: !state.helpOpen });
     }
   }
@@ -617,7 +669,8 @@ export class Game {
     }
     const zone = this.progression.radiationZone;
     this.radiation = 1 - THREE.MathUtils.smoothstep(range, zone * 0.55, zone);
-    ship.update(dt, this.input, ZERO, this.radiation * 16);
+    // À pied, personne ne tient les commandes : le vaisseau continue sur sa lancée
+    ship.update(dt, this.inside ? null : this.input, ZERO, this.radiation * 16);
     if (pull > 0) ship.position.addScaledVector(this.toHole, (pull * dt) / r);
     if (pull > 0 && !this.falling) this.say('Sous la dernière orbite stable : le vaisseau dérive vers l’horizon. Poussée maximale pour remonter.', 8);
     this.falling = pull > 0;
@@ -639,7 +692,7 @@ export class Game {
       }
     }
 
-    this.updateScan(dt);
+    if (!this.inside) this.updateScan(dt);
     this.updateDetection();
     this.updateAtmosphere(dt, range);
   }
@@ -733,9 +786,47 @@ export class Game {
     }
   }
 
+  /** Déplacement à pied, et vue sur l'espace réel par les hublots. */
+  private walk(dt: number, lookX: number, lookY: number) {
+    const input = this.input;
+    const reading = !!hud.get().note;
+    const key = (code: string) => (!reading && input.down(code) ? 1 : 0);
+    const alarm = this.falling || this.radiation > 0.35;
+    this.shipInverse.copy(this.ship.quaternion).invert();
+    this.sunLocal.copy(SUN_DIR).applyQuaternion(this.shipInverse);
+    const stepped = this.interior.update(dt, {
+      forward: key('KeyW') - key('KeyS'),
+      strafe: key('KeyD') - key('KeyA'),
+      turn: key('ArrowRight') - key('ArrowLeft'),
+      lookX, lookY,
+      run: input.down('ShiftLeft') || input.down('ShiftRight'),
+    }, this.time, this.sunLocal, alarm, 1.05 / this.renderer.toneMappingExposure);
+    if (stepped) this.audio.step();
+
+    // La caméra de l'espace regarde dans la même direction que le joueur, depuis la passerelle
+    this.camera.position.set(0, 4, -30).applyQuaternion(this.ship.quaternion);
+    this.camera.quaternion.copy(this.ship.quaternion).multiply(this.interior.camera.quaternion);
+    if (this.camera.fov !== this.interior.camera.fov) { this.camera.fov = this.interior.camera.fov; this.camera.updateProjectionMatrix(); }
+
+    this.interiorTimer -= dt;
+    if (this.interiorTimer > 0) return;
+    this.interiorTimer = 0.25;
+    const state = hud.get();
+    const spot = reading ? null : this.interior.lookedAt();
+    hud.set({ interior: { room: this.interior.room().name, prompt: spot ? spot.label : '' } });
+    const kms = this.ship.velocity.length() * KM_PER_UNIT;
+    this.interior.setStatus({
+      system: this.system.info.name,
+      speed: kms >= 299792 ? `${(kms / 299792).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} × c` : `${Math.round(kms).toLocaleString('fr-FR')} km/s`,
+      target: state.targetName || this.nameOf(this.target),
+      distance: this.km(this.distanceTo(this.target)),
+    });
+  }
+
   // ── Fin ──
 
   private beginEnding() {
+    this.setInside(false);
     this.scanner.cancel();
     this.ghostActive = false;
     this.endT = 0;
@@ -832,8 +923,9 @@ export class Game {
     this.updateOrbits();
 
     if (this.mode === 'play') {
-      this.chase.orbit(pointer.x, pointer.y, pointer.wheel);
+      if (!this.inside) this.chase.orbit(pointer.x, pointer.y, pointer.wheel);
       this.simulate(dt);
+      if (this.inside) this.walk(dt, pointer.x, pointer.y);
     } else if (this.mode === 'menu') {
       // Plan d'ensemble lent autour du vaisseau à l'arrêt
       this.chase.azimuth = 0.34 + Math.sin(this.time * 0.05) * 0.2;
@@ -844,13 +936,13 @@ export class Game {
     }
 
     const playing = this.mode === 'play';
-    const piloting = playing && !this.photo && !this.jump;
+    const piloting = playing && !this.photo && !this.jump && !this.inside;
     const speed = ship.velocity.length();
     // Pendant la charge d'un saut, le champ de vision s'étire comme à très haute vitesse
     const charge = this.jump && !this.jump.done ? Math.pow(this.jump.t / JUMP_SECONDS, 2) : 0;
     this.shipModel.group.quaternion.copy(ship.quaternion);
     this.shipModel.update(step, this.time, playing ? Math.max(ship.power, charge * 1.5) : 0.04, ship.yawRate, ship.pitchRate, ship.surge);
-    if (this.mode !== 'ending') this.chase.update(dt, ship.quaternion, Math.max(speed / 3200, charge * 2.5), piloting ? ship.surge : 0, (piloting && ship.boosting) || charge > 0.2, this.time);
+    if (this.mode !== 'ending' && !this.inside) this.chase.update(dt, ship.quaternion, Math.max(speed / 3200, charge * 2.5), piloting ? ship.surge : 0, (piloting && ship.boosting) || charge > 0.2, this.time);
 
     // Origine flottante : le vaisseau reste en (0,0,0), c'est l'univers qui se déplace autour de lui.
     const hole = this.blackHoleBody;
@@ -890,7 +982,10 @@ export class Game {
     this.dirty = false;
     if (this.capture) { this.capture = false; this.downloadFrame(); }
 
-    this.audio.update({ power: piloting ? ship.power : 0.03, dread: this.mode === 'menu' ? 0 : this.dread, speed: Math.min(speed / 3200, 1.5) });
+    this.audio.update({
+      power: piloting ? ship.power : 0.03, dread: this.mode === 'menu' ? 0 : this.dread, speed: Math.min(speed / 3200, 1.5),
+      inside: this.inside ? THREE.MathUtils.clamp(1 - Math.abs(this.interior.z - 21) / 14, 0, 1) : undefined,
+    });
     this.updateHud(dt, speed);
   };
 
@@ -981,6 +1076,7 @@ export class Game {
     this.planets.forEach((p) => p.dispose());
     this.objects.forEach((o) => o.dispose());
     this.belt?.dispose();
+    this.interior.dispose();
     this.shipModel.dispose();
     this.environment.dispose();
     this.bloom.dispose();

@@ -9,6 +9,8 @@ export class Input {
   private dragging = false;
   private lastX = 0;
   private lastY = 0;
+  /** À pied : un clic capture la souris, comme dans un jeu à la première personne. */
+  autoLock = false;
 
   constructor(private el: HTMLElement) {
     window.addEventListener('keydown', this.onKeyDown);
@@ -45,10 +47,19 @@ export class Input {
   };
   private onKeyUp = (e: KeyboardEvent) => { this.codes.delete(e.code); };
   private onBlur = () => { this.codes.clear(); this.dragging = false; };
+  get locked() { return document.pointerLockElement === this.el; }
+
+  unlock() { if (this.locked) document.exitPointerLock(); }
+
   private onPointerDown = (e: PointerEvent) => {
     this.dragging = true; this.lastX = e.clientX; this.lastY = e.clientY;
+    if (this.autoLock && !this.locked) {
+      // Certains navigateurs refusent la capture (onglet en arrière-plan, mode sans tête) : le glisser reste possible
+      try { void (this.el.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => undefined); } catch { /* capture indisponible */ }
+    }
   };
   private onPointerMove = (e: PointerEvent) => {
+    if (this.locked) { this.dragX += e.movementX; this.dragY += e.movementY; return; }
     if (!this.dragging) return;
     this.dragX += e.clientX - this.lastX; this.dragY += e.clientY - this.lastY;
     this.lastX = e.clientX; this.lastY = e.clientY;

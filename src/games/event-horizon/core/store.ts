@@ -81,6 +81,10 @@ export interface HudState {
   jump: { name: string; arrived: boolean } | null;
   /** Sous la dernière orbite stable du trou noir. */
   falling: boolean;
+  /** À pied dans le vaisseau : salle où l'on se trouve et action proposée. */
+  interior: { room: string; prompt: string } | null;
+  /** Note de bord en cours de lecture. */
+  note: { title: string; text: string } | null;
   panel: 'journal' | 'nav' | 'upgrades' | 'map' | null;
   helpOpen: boolean;
   photo: boolean;
@@ -118,6 +122,8 @@ const initial: HudState = {
   map: [],
   jump: null,
   falling: false,
+  interior: null,
+  note: null,
   panel: null,
   helpOpen: true,
   photo: false,

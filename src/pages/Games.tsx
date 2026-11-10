@@ -1,11 +1,12 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Lock, Building2, Construction } from 'lucide-react';
+import { Play, Lock, Building2, Construction, Orbit } from 'lucide-react';
 import DinoRunner from '@/components/games/DinoRunner';
 import FlappyBird from '@/components/games/FlappyBird';
 import SnakeGame from '@/components/games/SnakeGame';
 import GuessBuilding from '@/components/games/GuessBuilding';
 import TowerCrane from '@/components/games/TowerCrane';
+import EventHorizon from '@/components/games/EventHorizon';
 import SectionHeading from '@/components/SectionHeading';
 import Sakura from '@/components/fx/Sakura';
 import { gsap, prefersReducedMotion, useReveal } from '@/lib/motion';
@@ -55,11 +56,11 @@ const games: GameCard[] = [
     available: true,
   },
   {
-    id: 'coming-1',
-    name: 'Bientôt…',
-    description: 'Un nouveau mini-jeu arrive.',
-    icon: <Lock className="h-9 w-9 text-muted-foreground" strokeWidth={1.5} />,
-    available: false,
+    id: 'event-horizon',
+    name: 'Event Horizon',
+    description: 'Exploration spatiale en 3D : pilote le vaisseau AETHER-01 jusqu’au trou noir NEMESIS-01.',
+    icon: <Orbit className="h-9 w-9 text-primary" strokeWidth={1.5} />,
+    available: true,
   },
 ];
 
@@ -84,6 +85,7 @@ const Games = () => {
       snake: <SnakeGame onBack={onBack} />,
       'guess-building': <GuessBuilding onBack={onBack} />,
       'tower-crane': <TowerCrane onBack={onBack} />,
+      'event-horizon': <EventHorizon onBack={onBack} />,
     };
     const game = games.find((g) => g.id === activeGame);
     if (!game || !components[game.id]) return null;

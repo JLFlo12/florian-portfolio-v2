@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { gsap } from '@/lib/motion';
 import { markReady } from '@/lib/ready';
+import { afterLoader, waitIntro } from '@/lib/intro';
 import { GLYPHS, TAU, random, type Pt } from '@/lib/handwriting';
 
 /* Écran de chargement : un croquis de la planète (trait de la couleur du texte, point orange
@@ -99,7 +100,8 @@ const Preloader = () => {
     const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
 
-    Promise.all([wait(quick ? 350 : 1600), Promise.race([fonts, wait(2500)])]).then(() => {
+    // waitIntro : à la première arrivée sur l'accueil, on attend aussi les modèles de l'intro (temps limité)
+    Promise.all([wait(quick ? 350 : 1600), Promise.race([fonts, wait(2500)]), waitIntro(3800)]).then(() => {
       if (cancelled) return;
       const ring = el.querySelector('.loader__ring');
       // Le cercle s'ouvre depuis le centre de la planète dessinée
@@ -114,7 +116,7 @@ const Preloader = () => {
         .set(ring, { opacity: 1 }, 'open')
         .to(el, { '--hole': `${radius}px`, duration: 1.1, ease: 'expo.inOut' }, 'open')
         .to(ring, { opacity: 0, duration: 0.7, ease: 'power1.in' }, 'open+=0.35')
-        .call(markReady, [], 'open+=0.3')
+        .call(afterLoader, [], 'open+=0.3') // le site démarre, ou l'intro prend la main (lib/intro.ts)
         .call(() => root.classList.remove('is-loading'));
       if (quick) tl.timeScale(1.4);
     });

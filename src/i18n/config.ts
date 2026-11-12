@@ -33,7 +33,9 @@ const resources = {
         read: 'Lire',
         footerTitle: 'Construisons quelque chose',
         footerAccent: 'ensemble',
-        homeBeacon: 'La Réunion · point de départ'
+        homeBeacon: 'La Réunion · point de départ',
+        introStart: 'Cliquez pour commencer',
+        introSkip: 'Passer'
       },
       chatbot: {
         subtitle: 'Assistant IA — Posez-moi vos questions sur Florian',
@@ -272,7 +274,9 @@ const resources = {
         read: 'Read',
         footerTitle: 'Let\'s build something',
         footerAccent: 'together',
-        homeBeacon: 'La Réunion · home base'
+        homeBeacon: 'La Réunion · home base',
+        introStart: 'Click to begin',
+        introSkip: 'Skip'
       },
       chatbot: {
         subtitle: 'AI Assistant — Ask me anything about Florian',

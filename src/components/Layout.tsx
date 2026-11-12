@@ -14,6 +14,7 @@ import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Preloader from '@/components/fx/Preloader';
+import Intro from '@/components/fx/Intro';
 import LiquidGlass from '@/components/fx/LiquidGlass';
 import SoundToggle from '@/components/SoundToggle';
 import SpaceControls from '@/components/SpaceControls';
@@ -135,6 +136,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Preloader />
+      <Intro />
       <LiquidGlass />
       <div className="grain" aria-hidden="true" />
 

@@ -15,10 +15,12 @@ import Footer from '@/components/Footer';
 import SmoothScroll, { useLenis } from '@/components/fx/SmoothScroll';
 import Preloader from '@/components/fx/Preloader';
 import Intro from '@/components/fx/Intro';
+import TimeTravel from '@/components/fx/TimeTravel';
 import LiquidGlass from '@/components/fx/LiquidGlass';
 import SoundToggle from '@/components/SoundToggle';
 import SpaceControls from '@/components/SpaceControls';
 import { useNavItems } from '@/lib/nav';
+import { consumeTravel } from '@/lib/timeTravel';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '@/lib/motion';
 
 interface LayoutProps {
@@ -56,6 +58,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
     requestAnimationFrame(() => ScrollTrigger.refresh());
 
     if (firstRoute.current) { firstRoute.current = false; return; }
+    if (consumeTravel()) return;   // la DeLorean a amené cette page : pas de rideau par-dessus
     if (!curtain.current || prefersReducedMotion()) return;
     // y: 0 => ignore le translateY(100%) du CSS de départ
     gsap.fromTo(curtain.current, { y: 0, yPercent: 0 }, { yPercent: -100, duration: 0.95, ease: 'expo.inOut', delay: 0.12 });
@@ -138,6 +141,7 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
       <Preloader />
       <Intro />
       <LiquidGlass />
+      <TimeTravel />
       <div className="grain" aria-hidden="true" />
 
       {/* Rideau de transition entre les pages */}

@@ -1020,6 +1020,16 @@
 .curtain { position: fixed; inset: 0; z-index: 120; pointer-events: none; transform: translateY(100%); background: hsl(var(--primary)); display: grid; place-items: center; }
 .curtain__label { font-family: "Hubot Sans", system-ui, sans-serif; font-stretch: 125%; font-weight: 900; font-size: clamp(2rem, 8vw, 6rem); text-transform: uppercase; letter-spacing: -.04em; color: hsl(var(--primary-foreground)); }
 
+/* La DeLorean du site (fx/TimeTravel.tsx) : un canvas 3D transparent. Au repos, il est derrière le contenu des pages
+   (la voiture vole dans le fond) ; pendant le saut, il passe devant tout (is-front) et bloque les clics jusqu'à ce que
+   la nouvelle page soit découverte (is-on). */
+.timewarp { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .9s ease; }
+.timewarp.is-ready { opacity: 1; }
+.timewarp.is-front { z-index: 125; }
+.timewarp.is-on { pointer-events: auto; }
+.timewarp__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; transition: opacity .5s ease; }
+.timewarp__dim { position: absolute; inset: 0; opacity: 0; background: radial-gradient(120% 100% at 50% 60%, rgba(8, 6, 5, .55) 0%, rgba(4, 3, 2, .92) 100%); }
+
 /* Grain très léger sur tout le site (image fixe, aucune animation) */
 .grain {
   position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: .045; mix-blend-mode: overlay;
@@ -1037,7 +1047,7 @@
   @page { size: A4; margin: 10mm; }
   html, body, #root > div, main { background: #fff !important; }
   /* header:not(.cv-head) : l'en-tête du CV (nom, titre) reste imprimé, seule la navigation du site disparaît */
-  header:not(.cv-head), footer, .no-print, .grain, .curtain, .loader, [data-scroll-hud] { display: none !important; }
+  header:not(.cv-head), footer, .no-print, .grain, .curtain, .timewarp, .loader, [data-scroll-hud] { display: none !important; }
   .cv-page { padding: 0 !important; }
   .cv-page .container-x { max-width: none; padding: 0; }
   .cv-page [data-reveal], .cv-page [data-band] { opacity: 1 !important; visibility: visible !important; transform: none !important; }

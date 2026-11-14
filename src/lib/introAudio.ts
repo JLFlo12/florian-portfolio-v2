@@ -385,6 +385,77 @@ class IntroAudioEngine {
     source.start(t);
   }
 
+  /** L'astronaute tombe dans l'abîme : souffle filtré, note grave qui s'enfonce, un bip radio (la liaison se perd) */
+  astronautFall(duration = 3.8) {
+    if (!this.ctx || !this.master) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+
+    const len = Math.floor(ctx.sampleRate * duration);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 1.4;
+    filter.frequency.setValueAtTime(260, t);
+    filter.frequency.exponentialRampToValueAtTime(900, t + duration * 0.55);
+    filter.frequency.exponentialRampToValueAtTime(220, t + duration);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.16, t + duration * 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+    const out: AudioNode = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
+    if (out instanceof StereoPannerNode) {
+      out.pan.setValueAtTime(0.2, t);
+      out.pan.linearRampToValueAtTime(-0.2, t + duration);
+    }
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(out);
+    out.connect(this.master);
+    if (this.reverbNode) gain.connect(this.reverbNode);
+    src.start(t);
+    src.stop(t + duration);
+
+    // Chute du ciel : une note grave qui s'enfonce lentement d'une octave
+    const low = ctx.createOscillator();
+    const lowG = ctx.createGain();
+    low.type = 'sine';
+    low.frequency.setValueAtTime(98, t);
+    low.frequency.exponentialRampToValueAtTime(49, t + duration);
+    lowG.gain.setValueAtTime(0.0001, t);
+    lowG.gain.exponentialRampToValueAtTime(0.12, t + 1.2);
+    lowG.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    low.connect(lowG);
+    lowG.connect(this.master);
+    if (this.reverbNode) lowG.connect(this.reverbNode);
+    low.start(t);
+    low.stop(t + duration);
+
+    // Bip radio (tonalité de fin de transmission), étouffé, comme une liaison perdue
+    for (const dt of [0.35]) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(2475, t + dt);
+      g.gain.setValueAtTime(0.0001, t + dt);
+      g.gain.linearRampToValueAtTime(0.035, t + dt + 0.01);
+      g.gain.setValueAtTime(0.035, t + dt + 0.2);
+      g.gain.linearRampToValueAtTime(0.0001, t + dt + 0.23);
+      o.connect(g);
+      g.connect(this.master);
+      if (this.reverbNode) g.connect(this.reverbNode);
+      o.start(t + dt);
+      o.stop(t + dt + 0.25);
+    }
+  }
+
   /** Apparition de l'œil de marbre : drone caverneux mystique et pulsation cardiaque lente */
   eyeReveal() {
     if (!this.ctx || !this.master) return;

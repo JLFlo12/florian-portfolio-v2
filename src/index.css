@@ -686,126 +686,199 @@
   .dive-hint-arrow { animation: dive-hint 2.2s var(--ease-out) infinite; }
   @keyframes dive-hint { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
 
-  /* ——— Section Outils : hologramme façon Jarvis et outils en orbite autour du socle ———
-     --orbit-r : rayon de l'orbite (calculé en JS) · --holo : taille de l'hologramme · --node : taille d'une pastille.
-     Socle, orbite et hologramme se placent par rapport à --base-y (centre du socle, depuis le haut de la scène). */
-  .tools-stage {
-    --holo: clamp(190px, 21vw, 300px);
-    --node: clamp(30px, 3.4vw, 50px);
-    --base-y: calc(var(--holo) + var(--orbit-r, 400px) * .1 + 40px);
-    position: relative;
-    height: calc(var(--base-y) + var(--orbit-r, 400px) * .309 + var(--node) + 30px);
-    touch-action: pan-y;
-    cursor: grab;
-    user-select: none;
-    -webkit-user-select: none;
+  /* ——— Section Outils : station spatiale (components/station/*, components/three/station/*) ———
+     La scène est de nuit dans les deux thèmes : palette fixe (noir #080706, orange #FF7518 / #FF8A32, texte #E8E1D9).
+     --p : présence de l'étape (0..1), posée à chaque image par StationExperience ; --i : rang d'un élément. */
+  .station { --st-orange: 255 117 24; --st-hot: 255 138 50; --st-text: 232 225 217; position: relative; color: rgb(var(--st-text)); }
+  /* Fondu d'entrée : l'espace entre le manifeste et la station se fond dans le noir de la scène
+     (même noir que le fond du site, #0b0907 ; la lueur orange du haut de section disparaît en douceur) */
+  .station::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: clamp(5rem, 12vw, 9rem); pointer-events: none;
+    background: linear-gradient(to bottom, rgb(11 9 7 / 0), #0b0907);
   }
-  .tools-stage:active { cursor: grabbing; }
-  /* Pastille d'un outil : position, taille, fondu et z-index posés en JS à chaque image (devant > 1000 > derrière) */
-  .tool-node {
-    position: absolute; left: 50%; top: var(--base-y); width: var(--node); height: var(--node);
-    display: grid; place-items: center; border-radius: 50%;
-    color: hsl(var(--foreground) / .8);
-    background: radial-gradient(circle at 50% 35%, hsl(var(--primary) / .22), hsl(var(--background) / .6) 72%);
-    border: 1px solid hsl(var(--primary) / .45);
-    box-shadow: inset 0 0 12px hsl(var(--primary) / .22), 0 0 16px -6px hsl(var(--primary) / .6);
-    will-change: transform, opacity;
-    transition: color .3s, border-color .3s, box-shadow .3s;
+  /* Thème clair : même fondu à la sortie, vers la bande de projets */
+  :root:not(.dark) .station::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 100%; height: clamp(5rem, 12vw, 9rem); pointer-events: none;
+    background: linear-gradient(to bottom, #0b0907, rgb(11 9 7 / 0));
   }
-  .tool-node svg { width: 46%; height: 46%; }
-  .tool-node .tool-logo { width: 40%; height: 40%; } /* logos pleins : un peu plus petits que les icônes au trait */
-  /* Anneau pointillé intérieur, comme les icônes rondes d'une interface de Jarvis */
-  .tool-node::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 1px dashed hsl(var(--primary) / .32); pointer-events: none; }
-  .tool-node:hover, .tool-node:focus-visible { color: hsl(var(--primary)); border-color: hsl(var(--primary)); }
-  .tool-node:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 4px; }
-  .tool-node[data-dim="true"] { pointer-events: none; }
-  /* Outil de face : plus lumineux, avec un arc qui tourne autour */
-  .tool-node[data-focused="true"] {
-    color: hsl(var(--primary)); border-color: hsl(var(--primary));
-    box-shadow: inset 0 0 16px hsl(var(--primary) / .45), 0 0 28px -2px hsl(var(--primary) / .75);
+  :root:not(.dark) .station::before { height: clamp(7rem, 16vw, 12rem); background: linear-gradient(to bottom, rgb(11 9 7 / 0), #0b0907); }
+  .station__stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #0b0907; isolation: isolate; }
+  .station__stage::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; opacity: .55;
+    background-image: radial-gradient(1px 1px at 12% 22%, #e8e1d9, transparent), radial-gradient(1px 1px at 68% 14%, #e8e1d9, transparent),
+      radial-gradient(1.5px 1.5px at 82% 62%, #ffd9b0, transparent), radial-gradient(1px 1px at 34% 74%, #e8e1d9, transparent),
+      radial-gradient(1px 1px at 52% 40%, #e8e1d9, transparent), radial-gradient(1px 1px at 22% 58%, #ffd9b0, transparent),
+      radial-gradient(1px 1px at 90% 30%, #e8e1d9, transparent), radial-gradient(1px 1px at 6% 86%, #e8e1d9, transparent);
   }
-  .tool-node[data-focused="true"]::after {
-    content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
-    border: 1.5px solid transparent; border-top-color: hsl(var(--primary)); border-bottom-color: hsl(var(--primary) / .45);
-    animation: tools-spin 2.4s linear infinite;
+  .station__canvas { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 1.8s var(--ease-out); }
+  .station__canvas.is-ready { opacity: 1; }
+  .station__veil {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(to bottom, rgb(11 9 7 / .72), transparent 20%, transparent 68%, rgb(11 9 7 / .8));
   }
-  /* Nom de l'outil, au survol ou au clavier */
-  .tool-node__label {
-    position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 4px; white-space: nowrap; pointer-events: none;
-    padding: .3rem .6rem; border-radius: 999px; border: 1px solid hsl(var(--primary) / .35); background: hsl(var(--background) / .85);
-    font-family: "Geist Mono", monospace; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: hsl(var(--foreground));
-    opacity: 0; transition: opacity .25s, translate .25s;
+  .station__stage.is-paused *, .station__stage.is-paused *::before, .station__stage.is-paused *::after { animation-play-state: paused !important; }
+  .station-placeholder { min-height: 100svh; background: #0b0907; }
+  .station-icon { display: inline-grid; place-items: center; }
+  .station-icon svg { width: 100%; height: 100%; }
+
+  /* Titre de l'approche */
+  .station-intro { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 var(--gutter); text-align: center; pointer-events: none; will-change: opacity, transform; }
+  .station-intro__title {
+    margin-top: 1.4rem; font-family: "Hubot Sans", sans-serif; font-weight: 800; font-stretch: 125%;
+    font-size: clamp(2.5rem, 9vw, 8.4rem); line-height: .9; letter-spacing: -.012em; text-transform: uppercase;
+    text-shadow: 0 0 60px rgb(8 7 6 / .9);
   }
-  .tool-node:hover .tool-node__label, .tool-node:focus-visible .tool-node__label { opacity: 1; translate: -50% 0; }
-  /* Socle du projecteur : ellipse aplatie comme l'orbite (même rapport 0,309), s'allume à l'entrée (.is-on) */
-  .tools-base {
-    position: absolute; left: 50%; top: var(--base-y); width: calc(var(--orbit-r, 400px) * 2.15); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
-    transform: translate(-50%, -50%) scale(.2, .062);
-    opacity: 0;
-    transition: transform 1.6s var(--ease-out), opacity .9s;
-    border: 1px solid hsl(var(--primary) / .3);
-    background: radial-gradient(closest-side, hsl(var(--primary) / .26), hsl(var(--primary) / .07) 55%, transparent 72%);
+  .station-intro__sub { margin-top: 1.4rem; font-family: "Geist Mono", monospace; font-size: clamp(.72rem, 1.2vw, .95rem); letter-spacing: .34em; text-transform: uppercase; color: rgb(var(--st-hot)); }
+  .station-intro__loading { margin-top: 2.2rem; font: .68rem "Geist Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--st-text) / .5); animation: st-blink 1.4s steps(2, jump-none) infinite; }
+  @keyframes st-blink { 50% { opacity: .35; } }
+
+  /* Étiquettes des modules (vue d'ensemble) : le point est sur le module */
+  .station-labels { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .station-label {
+    position: absolute; left: 0; top: 0; translate: -4px -50%; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    font: 500 .64rem/1 "Geist Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--st-text) / .9);
+    transition: opacity .4s;
   }
-  .tools-stage.is-on .tools-base { transform: translate(-50%, -50%) scale(1, .309); opacity: 1; }
-  /* Faisceau de lumière qui monte du socle jusqu'à l'hologramme */
-  .tools-beam {
-    position: absolute; left: 50%; z-index: 999; top: calc(var(--base-y) - var(--holo) * 1.05); width: calc(var(--holo) * 1.05); height: calc(var(--holo) * 1.05);
-    pointer-events: none; transform: translateX(-50%) scaleY(0); transform-origin: 50% 100%; opacity: 0;
-    background: linear-gradient(to top, hsl(var(--primary) / .32), hsl(var(--primary) / .08) 60%, transparent);
-    clip-path: polygon(42% 100%, 58% 100%, 100% 0, 0 0);
+  .station-label[data-side="l"] { flex-direction: row-reverse; translate: calc(-100% + 4px) -50%; }
+  .station-label > i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgb(var(--st-hot)); background: rgb(var(--st-orange) / .6); box-shadow: 0 0 12px rgb(var(--st-orange)); }
+  .station-label__name { padding: 5px 8px; background: rgb(10 8 6 / .66); border: 1px solid rgb(var(--st-orange) / .32); }
+  .station-label__count { color: rgb(var(--st-hot)); }
+
+  /* Ligne qui relie le panneau à l'émetteur du module */
+  .station-leader { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .station-leader polyline { fill: none; stroke: rgb(var(--st-orange)); stroke-width: 1; stroke-dasharray: 1400; opacity: 0; filter: drop-shadow(0 0 3px rgb(var(--st-orange) / .9)); }
+  .station-leader circle { fill: rgb(var(--st-hot)); opacity: 0; filter: drop-shadow(0 0 6px rgb(var(--st-orange))); }
+
+  /* Panneau holographique */
+  .station-panel-slot { position: absolute; z-index: 4; top: 50%; right: clamp(16px, 4.5vw, 72px); width: min(440px, 36vw); translate: 0 -44%; pointer-events: none; }
+  .holo-panel {
+    --p: 0;
+    position: relative; padding: 20px 20px 18px; pointer-events: auto; color: rgb(var(--st-text));
+    background: linear-gradient(165deg, rgb(52 26 10 / .78), rgb(16 12 9 / .84) 34%, rgb(11 9 7 / .88));
+    border: 1px solid rgb(var(--st-orange) / .36);
+    box-shadow: 0 0 0 1px rgb(8 7 6 / .4), 0 30px 80px -30px rgb(255 117 24 / .25), inset 0 1px 0 rgb(255 180 120 / .18);
+    opacity: clamp(0, calc(var(--p) * 1.7 - .15), 1);
+    transform: perspective(1200px) rotateY(calc(-6deg - (1 - var(--p)) * 18deg)) translateX(calc((1 - var(--p)) * 46px));
+    transform-origin: 100% 50%;
   }
-  .tools-stage.is-on .tools-beam { animation: tools-beam 2.4s var(--ease-out) .1s forwards; }
-  @keyframes tools-beam {
-    0% { opacity: 0; transform: translateX(-50%) scaleY(0); }
-    25% { opacity: 1; transform: translateX(-50%) scaleY(1); }
-    100% { opacity: .3; transform: translateX(-50%) scaleY(1); }
+  .holo-panel::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+    background: repeating-linear-gradient(to bottom, rgb(255 138 50 / .045) 0 1px, transparent 1px 4px);
+    animation: st-scan 7s linear infinite;
   }
-  /* Hologramme : au-dessus du socle, entre les pastilles de devant (z-index > 1000) et celles de derrière (< 1000) */
-  .tools-holo {
-    position: absolute; left: 50%; z-index: 1000; top: calc(var(--base-y) - var(--orbit-r, 400px) * .1 - var(--holo));
-    width: var(--holo); aspect-ratio: 1; translate: -50% 0; transform-origin: 50% 100%; pointer-events: none; opacity: 0;
-    color: hsl(var(--primary));
+  @keyframes st-scan { to { background-position: 0 56px; } }
+  .holo-panel__frame { position: absolute; inset: -1px; pointer-events: none; }
+  .holo-panel__frame > i { position: absolute; width: 14px; height: 14px; border: 0 solid rgb(var(--st-hot)); }
+  .holo-panel__frame > i:nth-child(1) { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+  .holo-panel__frame > i:nth-child(2) { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+  .holo-panel__frame > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+  .holo-panel__frame > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+  .holo-panel__head { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid rgb(var(--st-orange) / .22); }
+  .holo-panel__index { font-family: Doto, monospace; font-weight: 900; font-size: 1.6rem; line-height: .9; color: rgb(var(--st-orange)); text-shadow: 0 0 14px rgb(var(--st-orange) / .7); }
+  .holo-panel__title { font-family: "Hubot Sans", sans-serif; font-weight: 800; font-stretch: 112%; font-size: clamp(1rem, 1.42vw, 1.4rem); line-height: 1.02; text-transform: uppercase; overflow-wrap: anywhere; }
+  .holo-panel__meta { margin-top: 7px; font: .64rem/1.35 "Geist Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--st-text) / .62); }
+  .holo-panel__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 14px; list-style: none; }
+  .holo-panel__grid > li {
+    --on: clamp(0, calc(var(--p) * 2.6 - var(--i) * .13 - .4), 1);
+    opacity: var(--on); transform: translateY(calc((1 - var(--on)) * 10px));
   }
-  .tools-stage.is-on .tools-holo { animation: holo-boot 1.6s .5s both, holo-flicker 7s 2.3s steps(1, end) infinite; }
-  @keyframes holo-boot { 0% { opacity: 0; scale: .5; } 18% { opacity: .7; } 24% { opacity: .15; } 34% { opacity: .85; } 40% { opacity: .35; } 100% { opacity: 1; scale: 1; } }
-  @keyframes holo-flicker { 0%, 100% { opacity: 1; } 61% { opacity: .78; } 62% { opacity: 1; } 87% { opacity: .9; } 88% { opacity: 1; } }
-  .tools-holo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 3px hsl(var(--primary) / .8)) drop-shadow(0 0 14px hsl(var(--primary) / .35)); }
-  /* Lignes de balayage qui défilent dans l'hologramme */
-  .tools-holo::after {
-    content: ""; position: absolute; inset: 4%; border-radius: 50%; pointer-events: none; opacity: .5;
-    background: repeating-linear-gradient(0deg, hsl(var(--primary) / .16) 0 1px, transparent 1px 4px);
-    -webkit-mask-image: radial-gradient(closest-side, #000 70%, transparent); mask-image: radial-gradient(closest-side, #000 70%, transparent);
-    animation: holo-scan 5s linear infinite;
+  .holo-tile {
+    display: flex; width: 100%; flex-direction: column; align-items: center; gap: 7px; padding: 11px 5px 9px;
+    border: 1px solid rgb(var(--st-text) / .1); background: rgb(8 7 6 / .42); color: rgb(var(--st-text) / .78);
+    transition: color .25s, border-color .25s, background-color .25s, box-shadow .25s;
   }
-  @keyframes holo-scan { to { background-position: 0 40px; } }
-  .holo-line { fill: none; stroke: currentColor; }
-  .holo-fill { fill: currentColor; }
-  /* Chaque anneau tourne autour du centre du SVG, à sa vitesse (--t) */
-  .holo-spin { transform-box: view-box; transform-origin: 50% 50%; animation: tools-spin var(--t, 30s) linear infinite; }
-  .holo-rev { animation-direction: reverse; }
-  /* Icône de l'outil de face, au cœur de l'hologramme */
-  .tools-holo__icon { position: absolute; left: 50%; top: 50%; translate: -50% -50%; filter: drop-shadow(0 0 8px hsl(var(--primary) / .8)); animation: holo-icon .55s cubic-bezier(.2, .8, .2, 1) both; }
-  .tools-holo__icon svg { width: calc(var(--holo) * .2); height: calc(var(--holo) * .2); }
-  .tools-holo__icon .tool-logo { width: calc(var(--holo) * .17); height: calc(var(--holo) * .17); }
-  @keyframes holo-icon { from { opacity: 0; scale: .55; } to { opacity: 1; scale: 1; } }
-  /* Mode clair : icône foncée, sinon l'orange se perd dans la lueur orange du centre */
-  :root:not(.dark) .tools-holo__icon { color: hsl(var(--foreground)); filter: drop-shadow(0 0 6px hsl(var(--background))); }
-  /* Balayage lumineux (entrée et changement de filtre) */
-  .tools-scan {
-    position: absolute; left: 6%; right: 6%; top: 0; z-index: 1200; height: 2px; pointer-events: none; opacity: 0;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
-    box-shadow: 0 0 22px 3px hsl(var(--primary) / .45);
+  .holo-tile:hover { color: rgb(var(--st-text)); border-color: rgb(var(--st-orange) / .45); }
+  .holo-tile[aria-pressed="true"] { color: rgb(var(--st-hot)); border-color: rgb(var(--st-orange) / .8); background: rgb(255 117 24 / .12); box-shadow: inset 0 0 18px rgb(255 117 24 / .2), 0 0 14px -4px rgb(255 117 24 / .6); }
+  .holo-tile svg { filter: drop-shadow(0 0 6px rgb(var(--st-orange) / .35)); }
+  .holo-tile__name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: .6rem/1.15 "Geist Mono", monospace; text-align: center; }
+  .holo-panel__detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(var(--st-orange) / .22); animation: st-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes st-in { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+  .holo-panel__logo { display: grid; flex: none; place-items: center; width: 46px; height: 46px; border: 1px solid rgb(var(--st-orange) / .5); background: rgb(255 117 24 / .08); color: rgb(var(--st-hot)); filter: drop-shadow(0 0 10px rgb(var(--st-orange) / .45)); }
+  .holo-panel__name { font-family: "Hubot Sans", sans-serif; font-weight: 700; font-stretch: 112%; font-size: 1.05rem; line-height: 1.1; }
+  .holo-panel__cat { margin-top: 4px; font: .62rem "Geist Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--st-hot)); }
+  .holo-panel__open { flex: none; margin-left: auto; padding: 2px 0; border-bottom: 1px solid rgb(var(--st-orange) / .6); font: .6rem "Geist Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--st-text) / .7); transition: color .25s; }
+  .holo-panel__open:hover { color: rgb(var(--st-hot)); }
+  .holo-panel__desc { margin-top: 11px; min-height: 4.65em; font-size: .9rem; line-height: 1.55; color: rgb(var(--st-text) / .86); }
+
+  /* Récapitulatif final */
+  .station-summary {
+    --p: 0;
+    position: absolute; z-index: 4; left: 50%; bottom: clamp(92px, 12vh, 120px); width: min(1180px, calc(100% - 2 * var(--gutter)));
+    translate: -50% 0; opacity: var(--p); transform: translateY(calc((1 - var(--p)) * 30px)); pointer-events: none;
   }
-  .tools-stage.is-scan .tools-scan { animation: tools-scan 1.5s cubic-bezier(.45, 0, .2, 1) both; }
-  @keyframes tools-scan {
-    0% { top: 2%; opacity: 0; }
-    12%, 85% { opacity: 1; }
-    100% { top: 96%; opacity: 0; }
+  .station-summary__title { text-align: center; font: .72rem "Geist Mono", monospace; letter-spacing: .26em; text-transform: uppercase; color: rgb(var(--st-hot)); text-shadow: 0 0 12px rgb(8 7 6), 0 0 4px rgb(8 7 6); }
+  .station-summary__grid {
+    display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px 12px; margin-top: 12px; padding: 14px 16px;
+    background: rgb(11 9 7 / .86); border: 1px solid rgb(var(--st-orange) / .3);
   }
-  .tools-base::before, .tools-base::after { content: ""; position: absolute; border-radius: 50%; }
-  .tools-base::before { inset: 11%; border: 1px dashed hsl(var(--primary) / .5); animation: tools-spin 60s linear infinite; }
-  .tools-base::after { inset: 31%; border: 2px solid hsl(var(--primary) / .28); box-shadow: inset 0 0 50px hsl(var(--primary) / .35); }
-  @keyframes tools-spin { to { transform: rotate(360deg); } }
+  .station-summary__module { --on: clamp(0, calc(var(--p) * 2.2 - var(--i) * .09 - .25), 1); opacity: var(--on); min-width: 0; }
+  .station-summary__module ul { list-style: none; }
+  .station-summary__name { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgb(var(--st-orange) / .25); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 .56rem "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--st-orange)); }
+  .station-summary__tool { display: flex; width: 100%; align-items: center; gap: 7px; padding: 2px 0; font-size: .7rem; text-align: left; color: rgb(var(--st-text) / .82); pointer-events: auto; transition: color .2s; }
+  .station-summary__tool span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .station-summary__tool:hover { color: rgb(var(--st-hot)); }
+  .station-summary__hint { margin-top: 10px; text-align: center; font: .64rem "Geist Mono", monospace; color: rgb(var(--st-text) / .5); }
+
+  /* Filtres (aussi utilisés par la grille de secours, aux couleurs du thème) */
+  .station-cats { position: absolute; z-index: 5; top: calc(var(--nav-h) + 12px); left: 0; right: 0; display: flex; justify-content: center; padding: 0 var(--gutter); }
+  .station-cats ul { max-width: 100%; overflow-x: auto; padding: 2px; scrollbar-width: none; }
+  .station-cats ul::-webkit-scrollbar { display: none; }
+  .station-chip {
+    white-space: nowrap; border-radius: 999px; border: 1px solid hsl(var(--border)); padding: 7px 14px;
+    font-family: "Geist Mono", monospace; font-size: .72rem; color: hsl(var(--muted-foreground));
+    transition: color .25s, border-color .25s, background-color .25s;
+  }
+  .station-chip:hover { border-color: hsl(var(--primary) / .6); color: hsl(var(--foreground)); }
+  .station-chip.is-on { border-color: hsl(var(--primary)); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .station .station-chip { background-color: rgb(11 9 7 / .72); border-color: rgb(var(--st-text) / .16); color: rgb(var(--st-text) / .72); }
+  .station .station-chip:hover { border-color: rgb(var(--st-orange) / .6); color: rgb(var(--st-text)); }
+  .station .station-chip.is-on { background: rgb(var(--st-orange)); border-color: rgb(var(--st-orange)); color: #100c09; }
+
+  /* Défile pour explorer */
+  .station-hint { position: absolute; z-index: 4; left: 50%; bottom: clamp(100px, 15vh, 150px); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 10px; font: .68rem "Geist Mono", monospace; letter-spacing: .32em; text-transform: uppercase; color: rgb(var(--st-text) / .78); pointer-events: none; }
+  .station-hint svg { color: rgb(var(--st-orange)); animation: dive-hint 2.2s var(--ease-out) infinite; }
+
+  /* Progression, étape en cours, précédent / suivant, pause */
+  .station-hud-wrap { position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 var(--gutter) max(18px, env(safe-area-inset-bottom)); pointer-events: none; opacity: 0; }
+  .station-hud { width: min(560px, 100%); pointer-events: auto; }
+  .station-hud__row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .station-hud__now { flex: 1; min-width: 0; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font: .72rem "Geist Mono", monospace; letter-spacing: .06em; }
+  .station-hud__label { margin-left: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--st-text)); }
+  .station-btn { display: inline-grid; flex: none; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgb(var(--st-text) / .18); background: rgb(11 9 7 / .72); color: rgb(var(--st-text) / .85); transition: color .25s, border-color .25s, opacity .25s; }
+  .station-btn:hover { border-color: rgb(var(--st-orange) / .7); color: rgb(var(--st-hot)); }
+  .station-btn:disabled { opacity: .3; pointer-events: none; }
+  .station-track { position: relative; height: 16px; margin-top: 10px; }
+  .station-track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(var(--st-text) / .18); }
+  .station-track__fill { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(var(--st-orange)); box-shadow: 0 0 8px rgb(var(--st-orange)); transform: scaleX(0); transform-origin: 0 50%; }
+  .station-track__tick { position: absolute; top: 50%; width: 9px; height: 9px; translate: -50% -50%; border-radius: 50%; border: 1px solid rgb(var(--st-text) / .45); background: #0b0907; transition: background-color .3s, border-color .3s, box-shadow .3s; }
+  .station-track__tick::after { content: ""; position: absolute; inset: -9px; }
+  .station-track__tick:hover { border-color: rgb(var(--st-hot)); }
+  .station-track__tick.is-on { border-color: rgb(var(--st-orange)); background: rgb(var(--st-orange)); box-shadow: 0 0 10px rgb(var(--st-orange)); }
+  .station-skip { position: absolute; right: var(--gutter); bottom: max(22px, env(safe-area-inset-bottom)); padding: 2px 0; border-bottom: 1px solid rgb(var(--st-text) / .3); font: .64rem "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--st-text) / .6); pointer-events: auto; transition: color .25s; }
+  .station-skip:hover { color: rgb(var(--st-hot)); }
+
+  @media (max-width: 767px) {
+    .station-cats { justify-content: flex-start; padding-right: 0; }
+    .station-chip { padding: 6px 11px; font-size: .66rem; }
+    .station-label { font-size: .5rem; gap: 5px; letter-spacing: .08em; }
+    .station-label__count { display: none; }
+    .station-label__name { padding: 4px 6px; }
+    .station-panel-slot { top: auto; right: var(--gutter); left: var(--gutter); bottom: 92px; width: auto; translate: none; }
+    .holo-panel { padding: 14px 14px 12px; transform: translateY(calc((1 - var(--p)) * 34px)); transform-origin: 50% 100%; max-height: calc(100svh - var(--nav-h) - 190px); overflow-y: auto; }
+    .holo-panel__head { padding-bottom: 10px; }
+    .holo-panel__index { font-size: 1.25rem; }
+    .holo-panel__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
+    .holo-tile { padding: 8px 2px 6px; gap: 5px; }
+    .holo-tile__name { font-size: .5rem; }
+    .holo-panel__detail { margin-top: 10px; padding-top: 10px; }
+    .holo-panel__desc { min-height: 0; font-size: .8rem; line-height: 1.45; }
+    .station-summary { bottom: 92px; }
+    .station-summary__grid { display: flex; overflow-x: auto; gap: 18px; padding: 14px; scrollbar-width: none; }
+    .station-summary__module { flex: 0 0 132px; }
+    .station-hud__now { font-size: .64rem; }
+    .station-hud__label { margin-left: 6px; }
+    .station-skip { display: none; }
+  }
 
   /* ——— Accueil : satellites en orbite (OrbitNav) et boutons 3D (SpaceControls), noms écrits à la main ——— */
   /* Scène 3D centrée sous les boutons (taille donnée par le composant), qui remplace les icônes une fois chargée */

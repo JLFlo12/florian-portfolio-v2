@@ -253,6 +253,10 @@ export function armSound() {
   });
 }
 
+/** Contexte audio quand le son du site est actif (bruitages de la station spatiale), sinon null :
+ *  couper la musique coupe aussi les bruitages. */
+export const liveAudio = () => (engine.playing && engine.ctx?.state === 'running' ? engine.ctx : null);
+
 export function useSound() {
   return useSyncExternalStore(
     (fn) => { listeners.add(fn); return () => { listeners.delete(fn); }; },

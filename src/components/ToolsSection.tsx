@@ -1,61 +1,39 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, ChevronLeft, ChevronRight, Hand, Pause, Play } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import SectionHeading from '@/components/SectionHeading';
 import Manifesto from '@/components/Manifesto';
+import CategoryNavigation from '@/components/station/CategoryNavigation';
+import { ToolDisplay, type Logos } from '@/components/station/HolographicInterface';
+import { hasWebGL } from '@/components/three/webgl';
 import { TOOLS, type Tool } from '@/data/tools';
-import { gsap, prefersReducedMotion, scrambleText, useReveal } from '@/lib/motion';
+import { isCompactStation, stationHeight } from '@/components/station/scrollTimeline';
+import { prefersReducedMotion, useReveal } from '@/lib/motion';
 
 /* ───────────────────────────────────────────────────────────────
-   Section Outils : un hologramme façon Jarvis.
-   Le socle orange projette un hologramme (anneaux, graduations et arcs qui tournent,
-   icône de l'outil de face au centre). Les outils, en pastilles rondes, sont en orbite
-   autour du socle : on attrape l'orbite pour la faire tourner (souris, doigt, pavé tactile,
-   flèches du clavier ou boutons).
-   - Entrée : le socle s'allume, un faisceau monte, l'hologramme s'allume en scintillant,
-     puis les pastilles se déploient en orbite en tournant.
-   - Au repos, l'orbite tourne lentement ; relâchée, elle se cale sur l'outil le plus proche.
-   - Un filtre garde l'orbite entière : ses outils restent allumés, les autres
-     s'estompent, et l'orbite passe d'un outil du filtre à l'autre.
-   L'orbite est projetée en JS (ellipse vue d'un peu au-dessus, comme le socle) : les pastilles
-   restent nettes et passent devant ou derrière l'hologramme selon leur profondeur (z-index).
-   Animations réduites : grille simple.
-   Icônes : les vrais logos (data/toolLogos.ts, chargés à part) remplacent les icônes génériques
-   dès qu'ils arrivent ; les outils sans logo libre gardent leur icône.
+   Section Outils de l'accueil.
+   - Manifeste (inchangé) ;
+   - visite d'une station spatiale en 3D pilotée par le défilement (StationExperience,
+     chargée à part) : un module par famille d'outils, panneaux holographiques ;
+   - version de secours (animations réduites, pas de WebGL, contexte WebGL perdu) :
+     filtres de catégories et grille simple, comme avant ;
+   - dans les deux cas, un clic sur un outil ouvre sa fiche (fenêtre de description).
+   Les outils viennent de data/tools.tsx, les logos de data/toolLogos.ts.
    ─────────────────────────────────────────────────────────────── */
 
-const COUNT = TOOLS.length;
-const STEP = 360 / COUNT;  // angle entre deux pastilles (°)
-const TILT = 0.309;        // aplatissement de l'orbite (sin 18° : vue d'un peu au-dessus), le même que le socle (index.css)
-const AUTO_SPEED = 6;      // rotation automatique (°/s)
-const IDLE_DELAY = 2600;   // reprise de la rotation après une interaction (ms)
-const HOP_DELAY = 2800;    // filtre actif : temps passé sur chaque outil avant le suivant (ms)
-const DIM = 0.14;          // opacité des outils hors du filtre
-const ARRIVE_SPIN = 150;   // tour effectué pendant l'entrée (°)
-const FLICK = 0.4;         // élan conservé quand on lance l'orbite (s)
-const DEG = 180 / Math.PI;
+const StationExperience = lazy(() => import('@/components/station/StationExperience'));
 
-const wrap = (a: number) => ((a % 360) + 540) % 360 - 180; // angle ramené dans [-180, 180[
 const pad = (n: number) => String(n).padStart(2, '0');
-// Scintillement d'hologramme pendant l'allumage d'une carte
-const flicker = (p: number) => (p >= 1 ? 1 : p * (Math.random() < 0.35 ? 0.2 : 1));
 
-type Drag = { id: number; x0: number; r0: number; moved: boolean; samples: { x: number; t: number }[] };
-
-/* Logo d'un outil (tracé de 24 × 24, une couleur) */
-const ToolLogo = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 24 24" className="tool-logo h-8 w-8" fill="currentColor" aria-hidden="true"><path d={d} /></svg>
-);
-
-/* Contenu d'une carte (anneau et grille) */
-const CardBody = ({ tool, icon, index, category }: { tool: Tool; icon: React.ReactNode; index: number; category: string }) => (
+/* Carte de la grille de secours */
+const CardBody = ({ tool, logos, index, category }: { tool: Tool; logos: Logos; index: number; category: string }) => (
   <>
     <span className="flex items-start justify-between gap-2">
       <span className="led text-xs text-muted-foreground">{pad(index + 1)}</span>
       <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
     </span>
-    <span className="tool-card__icon text-muted-foreground transition-colors duration-300 group-hover:text-primary">{icon}</span>
+    <span className="tool-card__icon text-muted-foreground transition-colors duration-300 group-hover:text-primary"><ToolDisplay tool={tool} logos={logos} size="h-8 w-8" /></span>
     <span>
       <span className="block font-display text-[.95rem] font-bold leading-tight [font-stretch:110%]">{tool.name}</span>
       <span className="label-mono mt-1 block !text-[.62rem]">{category}</span>
@@ -63,491 +41,43 @@ const CardBody = ({ tool, icon, index, category }: { tool: Tool; icon: React.Rea
   </>
 );
 
-/* ——— Hologramme façon Jarvis (SVG 300 × 300, centre 150 ; angles en degrés, 0 en haut) ——— */
-const polar = (r: number, deg: number) => [150 + r * Math.sin(deg / DEG), 150 - r * Math.cos(deg / DEG)];
-const arc = (r: number, from: number, to: number) => {
-  const [x0, y0] = polar(r, from);
-  const [x1, y1] = polar(r, to);
-  return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-};
-const spin = (seconds: number) => ({ '--t': `${seconds}s` }) as React.CSSProperties;
-
-const Hologram = ({ icon, focusKey }: { icon: React.ReactNode; focusKey: number }) => (
-  <div className="tools-holo" aria-hidden="true">
-    <svg viewBox="0 0 300 300">
-      <defs>
-        <radialGradient id="tools-holo-core">
-          <stop offset="0" stopColor="currentColor" stopOpacity=".5" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      {/* Couronne graduée (un trait long tous les 30°) */}
-      <g className="holo-spin" style={spin(90)}>
-        <circle cx="150" cy="150" r="142" className="holo-line" strokeOpacity=".35" />
-        {Array.from({ length: 72 }, (_, k) => {
-          const long = k % 6 === 0;
-          const [x0, y0] = polar(long ? 128 : 135, k * 5);
-          const [x1, y1] = polar(142, k * 5);
-          return <line key={k} x1={x0} y1={y0} x2={x1} y2={y1} className="holo-line" strokeWidth={long ? 1.6 : 0.8} strokeOpacity={long ? 0.85 : 0.45} />;
-        })}
-      </g>
-      <g className="holo-spin holo-rev" style={spin(50)}>
-        <circle cx="150" cy="150" r="121" className="holo-line" strokeWidth="1.5" strokeDasharray="2 7" strokeOpacity=".7" />
-      </g>
-      {/* Arcs épais */}
-      <g className="holo-spin" style={spin(22)}>
-        {[[0, 64], [150, 190], [236, 262]].map(([from, to]) => <path key={from} d={arc(107, from, to)} className="holo-line" strokeWidth="5" strokeOpacity=".75" />)}
-      </g>
-      <circle cx="150" cy="150" r="95" className="holo-line" strokeWidth=".8" strokeOpacity=".4" />
-      {[0, 90, 180, 270].map((a) => {
-        const [x0, y0] = polar(88, a);
-        const [x1, y1] = polar(101, a);
-        return <line key={a} x1={x0} y1={y0} x2={x1} y2={y1} className="holo-line" strokeWidth="2.5" />;
-      })}
-      {/* Arcs fins, rapides, en sens inverse */}
-      <g className="holo-spin holo-rev" style={spin(12)}>
-        {[[20, 110], [200, 290]].map(([from, to]) => <path key={from} d={arc(83, from, to)} className="holo-line" strokeWidth="1.6" strokeOpacity=".85" />)}
-      </g>
-      {/* Bobine */}
-      <g className="holo-spin" style={spin(36)}>
-        {Array.from({ length: 30 }, (_, k) => (
-          <rect key={k} x="148.5" y="74" width="3" height="8" rx=".8" transform={`rotate(${k * 12} 150 150)`} className="holo-fill" fillOpacity=".5" />
-        ))}
-      </g>
-      <circle cx="150" cy="150" r="58" className="holo-line" strokeOpacity=".55" />
-      <circle cx="150" cy="150" r="50" fill="url(#tools-holo-core)" />
-    </svg>
-    {/* Icône de l'outil de face : remontée à chaque changement d'outil (animation d'apparition) */}
-    <span key={focusKey} className="tools-holo__icon">{icon}</span>
-  </div>
-);
-
 const ToolsSection = () => {
   const { t } = useTranslation();
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [filter, setFilter] = useState<string>('all');
-  const [focused, setFocused] = useState(0);
-  const [autoplay, setAutoplay] = useState(true);
-  const [reduced] = useState(prefersReducedMotion);
-  const wheel = !reduced;
+  // La station demande WebGL et des animations ; sinon, grille simple
+  const [station, setStation] = useState(() => !prefersReducedMotion() && hasWebGL());
   const section = useRef<HTMLElement>(null);
-  useReveal(section);
+  useReveal(section, [station]);
 
-  // Catégories présentes, dans l'ordre d'apparition ; outils retenus par le filtre (indices dans TOOLS)
-  const categories = useMemo(() => Array.from(new Set(TOOLS.map((tool) => tool.category))), []);
-  const targets = useMemo(() => TOOLS.flatMap((tool, i) => (filter === 'all' || tool.category === filter ? [i] : [])), [filter]);
-  const inFilter = useMemo(() => new Set(targets), [targets]);
-  const current = TOOLS[focused];
-  // Vrais logos (~50 Ko de tracés, chargés à part : la section n'arrive qu'après la plongée)
-  const [logos, setLogos] = useState<Record<string, string> | null>(null);
+  const [logos, setLogos] = useState<Logos>(null);
   useEffect(() => {
     let alive = true;
     import('@/data/toolLogos').then((m) => { if (alive) setLogos(m.LOGOS); }).catch(() => { /* icônes génériques */ });
     return () => { alive = false; };
   }, []);
-  const iconOf = (tool: Tool) => (logos?.[tool.name] ? <ToolLogo d={logos[tool.name]} /> : tool.icon);
-  const position = Math.max(0, targets.indexOf(focused));
-
-  // ——— État de l'orbite, hors React (modifié à chaque image) ———
-  const stage = useRef<HTMLDivElement>(null);
-  const controls = useRef<HTMLDivElement>(null);
-  const nodes = useRef<(HTMLButtonElement | null)[]>([]);
-  const nameEl = useRef<HTMLSpanElement>(null);
-  const live = useRef({ rot: 0, arrive: 0, pulse: 0, radius: 400 }).current;
-  const fx = useRef({ dim: TOOLS.map(() => ({ v: 1 })), appear: TOOLS.map(() => ({ v: 0 })) }).current;
-  const hold = useRef({ hover: false, focus: false, inView: false, booted: false, ready: false, until: 0, hop: 0 }).current;
-  const targetsRef = useRef(targets);
-  targetsRef.current = targets;
-  const focusedRef = useRef(-1);
-  const drag = useRef<Drag | null>(null);
-  const tween = useRef<ReturnType<typeof gsap.to> | null>(null);
-  const suppressClick = useRef(false);
-  const autoplayRef = useRef(autoplay);
-  autoplayRef.current = autoplay;
-  const dialogRef = useRef(false);
-  dialogRef.current = !!selectedTool;
-
-  /* Applique la rotation : position sur l'orbite, taille et fondu selon la profondeur, outil de face */
-  const render = useCallback(() => {
-    const rot = live.rot + (1 - live.arrive) * ARRIVE_SPIN;
-    // Pendant l'entrée, l'orbite se déploie depuis le centre ; un changement de filtre la fait respirer
-    const radius = live.radius * (0.3 + 0.7 * live.arrive) * (1 + 0.06 * live.pulse);
-    // Outil de face : l'outil du filtre le plus proche de l'avant de l'orbite
-    let best = targetsRef.current[0] ?? 0;
-    let bestDist = 360;
-    for (const i of targetsRef.current) {
-      const dist = Math.abs(wrap(rot + i * STEP));
-      if (dist < bestDist) { bestDist = dist; best = i; }
-    }
-    for (let i = 0; i < COUNT; i++) {
-      const node = nodes.current[i];
-      if (!node) continue;
-      const a = wrap(rot + i * STEP) / DEG;
-      const z = Math.cos(a); // 1 devant, -1 derrière
-      const depth = (z + 1) / 2;
-      const on = fx.appear[i].v;
-      const hidden = on <= 0.001;
-      const scale = (0.55 + 0.5 * depth) * (0.5 + 0.5 * Math.min(1, on)) * (i === best ? 1.14 : 1);
-      // Devant : plus bas, plus grand, plus net ; derrière : plus haut, plus petit, estompé, caché par l'hologramme
-      node.style.transform = `translate(-50%, -50%) translate3d(${(radius * Math.sin(a)).toFixed(1)}px, ${(radius * TILT * z).toFixed(1)}px, 0) scale(${scale.toFixed(3)})`;
-      node.style.zIndex = String(1000 + Math.round(z * 100));
-      node.style.opacity = hidden ? '0' : (on * fx.dim[i].v * (0.3 + 0.7 * depth)).toFixed(3);
-      const visibility = hidden ? 'hidden' : '';
-      if (node.style.visibility !== visibility) node.style.visibility = visibility;
-    }
-    if (best !== focusedRef.current) { focusedRef.current = best; setFocused(best); }
-  }, [live, fx]);
-
-  /* Rayon de l'orbite : celui du socle (au plus 410 px) ; un peu plus large sur mobile, où les pastilles se serrent */
-  const measure = useCallback(() => {
-    const w = window.innerWidth;
-    live.radius = Math.round(Math.min(410, Math.max(170, w * (w < 640 ? 0.5 : 0.36))));
-    stage.current?.style.setProperty('--orbit-r', `${live.radius}px`);
-  }, [live]);
-
-  const spinTo = useCallback((target: number, duration = 0.7, ease = 'power3.out') => {
-    tween.current?.kill();
-    tween.current = gsap.to(live, { rot: target, duration, ease, onUpdate: render });
-  }, [live, render]);
-
-  /* Amène la carte i face à soi : par le plus court (0), en avançant (1) ou en reculant (-1) */
-  const spinToCard = useCallback((i: number, dir: -1 | 0 | 1 = 0, duration = 0.7, ease?: string) => {
-    const base = -i * STEP;
-    const turns = (live.rot - base) / 360;
-    const k = dir > 0 ? Math.floor(turns + 1e-6) : dir < 0 ? Math.ceil(turns - 1e-6) : Math.round(turns);
-    spinTo(base + 360 * k, duration, ease);
-  }, [live, spinTo]);
-
-  // Toute interaction suspend la rotation automatique un moment
-  const interact = useCallback(() => { hold.until = performance.now() + IDLE_DELAY; hold.hop = 0; }, [hold]);
-
-  const goTo = useCallback((i: number, dir: -1 | 0 | 1 = 0) => { interact(); spinToCard(i, dir); }, [interact, spinToCard]);
-
-  /* Se cale sur l'outil du filtre le plus proche */
-  const snap = useCallback((rot: number, duration = 0.9) => {
-    let target = rot;
-    let bestDist = Infinity;
-    for (const i of targetsRef.current) {
-      const d = wrap(rot + i * STEP);
-      if (Math.abs(d) < bestDist) { bestDist = Math.abs(d); target = rot - d; }
-    }
-    spinTo(target, duration);
-  }, [spinTo]);
-
-  // Relance le balayage lumineux sur l'anneau
-  const scan = useCallback(() => {
-    const el = stage.current;
-    if (!el) return;
-    el.classList.remove('is-scan');
-    void el.offsetWidth;
-    el.classList.add('is-scan');
-  }, []);
-
-  /* ——— Entrée : allumage de l'hologramme (une seule fois) ——— */
-  const boot = useCallback(() => {
-    if (hold.booted || !stage.current) return;
-    hold.booted = true;
-    // 1. le socle s'allume, le faisceau monte et l'hologramme s'allume en scintillant (CSS, .is-on)
-    stage.current.classList.add('is-on');
-    // 2. les pastilles s'allument de l'avant vers l'arrière en scintillant,
-    //    pendant que l'orbite se déploie depuis le centre en tournant ; puis les commandes arrivent
-    const rank: number[] = [];
-    TOOLS.map((_, i) => i)
-      .sort((a, b) => Math.abs(wrap(live.rot + a * STEP)) - Math.abs(wrap(live.rot + b * STEP)))
-      .forEach((i, r) => { rank[i] = r; });
-    gsap.timeline({ onUpdate: render, onComplete: () => { hold.ready = true; hold.until = performance.now() + 800; } })
-      .to(live, { arrive: 1, duration: 2.6, ease: 'power3.out' }, 0.8)
-      .call(scan, [], 0.6)
-      .to(fx.appear, { v: 1, duration: 0.6, ease: flicker, stagger: (i: number) => 0.9 + rank[i] * 0.035 }, 0)
-      .fromTo(controls.current, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out' }, 2);
-  }, [hold, live, fx, render, scan]);
-
-  // Mise en place : rayon, anneau éteint en attendant l'entrée
-  useLayoutEffect(() => {
-    if (!wheel) return;
-    measure();
-    render();
-    if (!hold.booted) gsap.set(controls.current, { autoAlpha: 0 });
-    const onResize = () => { measure(); render(); };
-    window.addEventListener('resize', onResize);
-    return () => { window.removeEventListener('resize', onResize); tween.current?.kill(); };
-  }, [wheel, measure, render, hold]);
-
-  // L'entrée démarre quand le haut de l'anneau passe aux trois quarts de l'écran
-  useEffect(() => {
-    const el = stage.current;
-    if (!wheel || !el) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) boot(); }, { rootMargin: '0px 0px -22% 0px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [wheel, boot]);
-
-  useEffect(() => {
-    const el = stage.current;
-    if (!wheel || !el) return;
-    const io = new IntersectionObserver(([entry]) => { hold.inView = entry.isIntersecting; });
-    io.observe(el);
-    return () => { io.disconnect(); hold.inView = false; };
-  }, [wheel, hold]);
-
-  /* Changement de filtre : les outils du filtre restent allumés, les autres s'estompent,
-     l'anneau recule d'un coup, un balayage passe et la roue pivote vers le premier outil */
-  const firstFilter = useRef(true);
-  useEffect(() => {
-    if (firstFilter.current) { firstFilter.current = false; return; }
-    if (!wheel) return;
-    const dimTo = (i: number) => (inFilter.has(i) ? 1 : DIM);
-    if (!hold.booted) {
-      fx.dim.forEach((d, i) => { d.v = dimTo(i); });
-      if (filter !== 'all') live.rot = -targets[0] * STEP;
-      render();
-      boot();
-      return;
-    }
-    interact();
-    gsap.to(fx.dim, { v: (i: number) => dimTo(i), duration: 0.6, ease: 'power2.out', overwrite: true, onUpdate: render });
-    gsap.timeline({ onUpdate: render })
-      .to(live, { pulse: 1, duration: 0.35, ease: 'power2.out' })
-      .to(live, { pulse: 0, duration: 1, ease: 'expo.out' });
-    if (filter === 'all') snap(live.rot, 0.8);
-    else spinToCard(targets[0], 0, 1.3, 'power3.inOut');
-    scan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
-
-  // Rotation automatique au repos (en pause hors écran, au survol d'une carte, au clavier, fenêtre ouverte).
-  // Avec un filtre : la roue passe d'un outil du filtre au suivant.
-  useEffect(() => {
-    if (!wheel) return;
-    const tick = (_time: number, deltaMs: number) => {
-      if (!hold.ready || !autoplayRef.current || !hold.inView || hold.hover || hold.focus || drag.current || dialogRef.current) return;
-      if (performance.now() < hold.until || tween.current?.isActive()) return;
-      const list = targetsRef.current;
-      if (list.length === COUNT) {
-        live.rot -= (AUTO_SPEED * Math.min(deltaMs, 64)) / 1000;
-        render();
-        return;
-      }
-      if (list.length < 2) return;
-      hold.hop += deltaMs;
-      if (hold.hop < HOP_DELAY) return;
-      hold.hop = 0;
-      spinToCard(list[(list.indexOf(focusedRef.current) + 1) % list.length], 1, 1.2, 'power3.inOut');
-    };
-    gsap.ticker.add(tick);
-    return () => gsap.ticker.remove(tick);
-  }, [wheel, render, spinToCard, hold, live]);
-
-  // Pavé tactile : glisser deux doigts à l'horizontale fait tourner l'anneau
-  useEffect(() => {
-    const el = stage.current;
-    if (!wheel || !el) return;
-    let timer = 0;
-    const onWheel = (e: WheelEvent) => {
-      if (!hold.ready || Math.abs(e.deltaX) < 2 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      tween.current?.kill();
-      live.rot -= (e.deltaX * DEG) / live.radius;
-      interact();
-      render();
-      clearTimeout(timer);
-      timer = window.setTimeout(() => snap(live.rot, 0.6), 140);
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => { el.removeEventListener('wheel', onWheel); clearTimeout(timer); };
-  }, [wheel, render, snap, interact, hold, live]);
-
-  // Nom de l'outil de face, "décodé" façon terminal
-  useEffect(() => {
-    if (nameEl.current) scrambleText(nameEl.current, current.name, 420);
-  }, [current]);
-
-  /* ——— Glisser pour faire tourner (souris et doigt) ———
-     Le glissement ne démarre qu'après quelques pixels : un simple clic ouvre toujours la carte. */
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!hold.ready || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    drag.current = { id: e.pointerId, x0: e.clientX, r0: live.rot, moved: false, samples: [] };
-  };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    if (!d.moved) {
-      if (Math.abs(e.clientX - d.x0) < 6) return;
-      d.moved = true;
-      d.x0 = e.clientX;
-      tween.current?.kill();
-      d.r0 = live.rot;
-      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
-    }
-    // La carte de face suit le pointeur
-    live.rot = d.r0 + ((e.clientX - d.x0) * DEG) / live.radius;
-    render();
-    d.samples.push({ x: e.clientX, t: performance.now() });
-    if (d.samples.length > 6) d.samples.shift();
-  };
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    drag.current = null;
-    if (!d.moved) return;
-    interact();
-    suppressClick.current = true; // le clic qui suit un glissement n'ouvre pas de carte
-    window.setTimeout(() => { suppressClick.current = false; }, 0);
-    // Élan : vitesse des derniers mouvements (nulle si on s'est arrêté avant de relâcher)
-    const a = d.samples[0];
-    const b = d.samples[d.samples.length - 1];
-    const dt = b && a ? (b.t - a.t) / 1000 : 0;
-    const speed = dt > 0.008 && performance.now() - b.t < 90 ? (b.x - a.x) / dt : 0;
-    snap(live.rot + ((speed * DEG) / live.radius) * FLICK);
-  };
-  const onClickCapture = (e: React.MouseEvent) => {
-    if (!suppressClick.current) return;
-    suppressClick.current = false;
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  // Clavier : la carte qui reçoit le focus vient de face ; flèches gauche/droite parmi les outils du filtre
-  const step = (dir: 1 | -1) => {
-    const list = targetsRef.current;
-    if (list.length < 2) return -1;
-    const next = list[(list.indexOf(focusedRef.current) + dir + list.length) % list.length];
-    goTo(next, dir);
-    return next;
-  };
-  const onFocus = (e: React.FocusEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (!target.matches(':focus-visible')) return;
-    hold.focus = true;
-    const i = nodes.current.indexOf(target as HTMLButtonElement);
-    if (i >= 0 && inFilter.has(i)) goTo(i);
-  };
-  const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) hold.focus = false;
-  };
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    e.preventDefault();
-    const next = step(e.key === 'ArrowRight' ? 1 : -1);
-    if (next >= 0) nodes.current[next]?.focus({ preventScroll: true });
-  };
-
-  const control = 'liquid inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-[transform,color,opacity] duration-500 hover:-translate-y-0.5 hover:text-primary disabled:pointer-events-none disabled:opacity-40';
-  const pauseButton = (
-    <button type="button" onClick={() => setAutoplay((on) => !on)} aria-label={autoplay ? t('home.toolsPause') : t('home.toolsPlay')} aria-pressed={!autoplay} className={control}>
-      {autoplay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-    </button>
-  );
+  const targets = useMemo(() => TOOLS.flatMap((tool, i) => (filter === 'all' || tool.category === filter ? [i] : [])), [filter]);
 
   return (
     <section ref={section} className="section-y relative">
       {/* Lueur d'arrivée : prolonge le voile orange de la fin de plongée */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[90vh] bg-[radial-gradient(70%_45%_at_50%_42%,hsl(var(--primary)/.12),transparent_70%)] [mask-image:linear-gradient(to_bottom,transparent,#000_35%)]" aria-hidden="true" />
       <Manifesto />
-      <div className="container-x relative mt-[clamp(6rem,14vw,11rem)]">
-        <SectionHeading index="01" label="tools" title={t('home.toolsTitle')} lede={t('home.toolsHint')} />
 
-        {/* Filtres par catégorie */}
-        <div className="mt-12 flex flex-wrap gap-2" data-reveal>
-          {['all', ...categories].map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setFilter(cat)}
-              aria-pressed={filter === cat}
-              className={`rounded-full border px-4 py-2 font-mono text-xs transition-colors ${
-                filter === cat ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'
-              }`}
-            >
-              {cat === 'all' ? t('home.allTools') : t(`home.categories.${cat}`)}
-              <span className="ml-2 opacity-60">{cat === 'all' ? TOOLS.length : TOOLS.filter((tool) => tool.category === cat).length}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {wheel ? (
-        <div className="relative mt-10 overflow-x-clip">
-          {/* Halo du projecteur */}
-          <div className="pointer-events-none absolute inset-x-0 top-[10%] h-[80%] bg-[radial-gradient(45%_55%_at_50%_70%,hsl(var(--primary)/.14),transparent_70%)]" aria-hidden="true" />
-
-          <div
-            ref={stage}
-            className="tools-stage"
-            role="group"
-            aria-roledescription="carousel"
-            aria-label={t('home.toolsCarousel')}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onClickCapture={onClickCapture}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onKeyDown={onKeyDown}
-          >
-            <div className="tools-base" aria-hidden="true" />
-            <div className="tools-beam" aria-hidden="true" />
-            {/* Pastilles en orbite autour du socle (position, taille et profondeur calculées dans render) */}
-            {TOOLS.map((tool, i) => {
-              const on = inFilter.has(i);
-              return (
-                <button
-                  key={tool.name}
-                  ref={(el) => { nodes.current[i] = el; }}
-                  type="button"
-                  onClick={() => { goTo(i); setSelectedTool(tool); }}
-                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') hold.hover = true; }}
-                  onPointerLeave={(e) => { if (e.pointerType === 'mouse') hold.hover = false; }}
-                  tabIndex={on ? undefined : -1}
-                  aria-hidden={on ? undefined : true}
-                  aria-label={tool.name}
-                  data-dim={!on}
-                  data-focused={i === focused}
-                  style={{ opacity: 0, visibility: 'hidden' }}
-                  className="tool-node"
-                >
-                  {iconOf(tool)}
-                  <span className="tool-node__label" aria-hidden="true">{tool.name}</span>
-                </button>
-              );
-            })}
-            <Hologram icon={iconOf(current)} focusKey={focused} />
-            <div className="tools-scan" aria-hidden="true" />
-          </div>
-
-          {/* Commandes : précédent / outil de face / suivant / pause */}
-          <div ref={controls} className="container-x relative z-[2] mt-2 flex flex-col items-center gap-4">
-            {/* Précédent / outil de face / suivant : le panneau reste centré sous la carte de face.
-                Le bouton pause est posé à droite, hors du flux (dans la consigne sur mobile, faute de place). */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button type="button" onClick={() => step(-1)} disabled={targets.length < 2} aria-label={t('home.toolsPrev')} className={control}>
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <div className="hud-panel w-[min(58vw,300px)] text-center">
-                <p className="led text-sm text-primary">{pad(position + 1)} <span className="text-muted-foreground">/ {pad(targets.length)}</span></p>
-                <p className="mt-1 truncate font-display text-lg font-bold uppercase leading-tight text-foreground [font-stretch:118%]">
-                  <span ref={nameEl} aria-hidden="true" />
-                  <span className="sr-only">{current.name}</span>
-                </p>
-                <p className="label-mono mt-1 !text-[.62rem]">{t(`home.categories.${current.category}`)}</p>
-              </div>
-              <div className="relative">
-                <button type="button" onClick={() => step(1)} disabled={targets.length < 2} aria-label={t('home.toolsNext')} className={control}>
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-                <span className="absolute left-full top-0 ml-3 hidden sm:block">{pauseButton}</span>
-              </div>
-            </div>
-            <p className="label-mono flex items-center gap-2 text-center">
-              <Hand className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" /> {t('home.toolsWheelHint')}
-              <span className="ml-1 sm:hidden">{pauseButton}</span>
-            </p>
-          </div>
+      {station ? (
+        <div className="mt-[clamp(5rem,12vw,9rem)]">
+          {/* En attendant le code de la station : un bloc de la même hauteur (la page ne saute pas) */}
+          <Suspense fallback={<div className="station-placeholder" style={{ height: stationHeight(isCompactStation()) }} aria-hidden="true" />}>
+            <StationExperience onOpen={setSelectedTool} onLost={() => setStation(false)} />
+          </Suspense>
         </div>
       ) : (
-        /* Animations réduites : grille simple */
-        <div className="container-x">
+        <div className="container-x relative mt-[clamp(6rem,14vw,11rem)]">
+          <SectionHeading index="01" label="tools" title={t('home.toolsTitle')} lede={t('home.toolsHint')} />
+          {/* Filtres par catégorie */}
+          <div className="mt-12" data-reveal>
+            <CategoryNavigation active={[filter]} onSelect={setFilter} filter className="[&_ul]:flex-wrap" />
+          </div>
           <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(140px,180px))] justify-center gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,220px))]">
             {targets.map((i) => (
               <button
@@ -556,7 +86,7 @@ const ToolsSection = () => {
                 onClick={() => setSelectedTool(TOOLS[i])}
                 className="panel group flex h-full min-h-[150px] w-full flex-col justify-between p-4 text-left"
               >
-                <CardBody tool={TOOLS[i]} icon={iconOf(TOOLS[i])} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />
+                <CardBody tool={TOOLS[i]} logos={logos} index={i} category={t(`home.categories.${TOOLS[i].category}`)} />
               </button>
             ))}
           </div>
@@ -572,7 +102,7 @@ const ToolsSection = () => {
               <DialogHeader className="space-y-4 text-left">
                 <p className="label-mono">{t(`home.categories.${selectedTool.category}`)}</p>
                 <DialogTitle className="flex items-center gap-3 font-display text-2xl font-extrabold uppercase [font-stretch:118%]">
-                  <span className="text-primary">{iconOf(selectedTool)}</span>
+                  <span className="text-primary"><ToolDisplay tool={selectedTool} logos={logos} size="h-8 w-8" /></span>
                   {selectedTool.name}
                 </DialogTitle>
                 <DialogDescription className="text-base leading-relaxed text-muted-foreground">

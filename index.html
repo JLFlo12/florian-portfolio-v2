@@ -3,21 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Florian G.L</title>
-    <meta name="description" content="Portfolio de Florian GIRARDOT LAHOGUE - Étudiant en 3e année de BUT Réseaux & Télécommunications">
+    <title>Florian Girardot Lahogue · Portfolio réseaux, cybersécurité et jeux vidéo</title>
+    <meta name="description" content="Portfolio de Florian Girardot Lahogue, étudiant en 3e année de BUT Réseaux & Télécommunications à La Réunion : réseaux, systèmes, cybersécurité et jeux vidéo.">
     <meta name="author" content="Florian GIRARDOT LAHOGUE" />
     <meta name="theme-color" content="#0b0907" />
 
-    <meta property="og:title" content="My Portfolio - Florian" />
-    <meta property="og:description" content="Portfolio de Florian GIRARDOT LAHOGUE - Étudiant en 3e année de BUT Réseaux & Télécommunications" />
+    <!-- Aperçu des liens (LinkedIn, Discord, Slack, X…) : écrit en dur, ces robots n'exécutent pas le JavaScript -->
+    <meta property="og:site_name" content="Florian G.L" />
+    <meta property="og:title" content="Florian Girardot Lahogue · Portfolio" />
+    <meta property="og:description" content="Étudiant en 3e année de BUT Réseaux & Télécommunications à La Réunion : réseaux, systèmes, cybersécurité et jeux vidéo." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.florianlh.fr/" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:image" content="https://www.florianlh.fr/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Page d'accueil du portfolio : « FLORIAN » devant une planète orange en 3D" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Florian Girardot Lahogue · Portfolio" />
+    <meta name="twitter:description" content="Étudiant en 3e année de BUT Réseaux & Télécommunications à La Réunion : réseaux, systèmes, cybersécurité et jeux vidéo." />
+    <meta name="twitter:image" content="https://www.florianlh.fr/og-image.jpg" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Fiche « personne » pour les moteurs de recherche -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Florian Girardot Lahogue",
+        "url": "https://www.florianlh.fr/",
+        "jobTitle": "Étudiant en BUT Réseaux & Télécommunications (cybersécurité)",
+        "address": { "@type": "PostalAddress", "addressRegion": "La Réunion", "addressCountry": "FR" },
+        "sameAs": ["https://github.com/JLFlo12", "https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/"]
+      }
+    </script>
 
     <!-- Polices hébergées sur le site (voir src/index.css) : les deux principales sont préchargées -->
     <link rel="preload" href="/fonts/hubot-sans.woff2" as="font" type="font/woff2" crossorigin>
@@ -27,15 +47,46 @@
     <script>
       (function () {
         var r = document.documentElement;
+        r.classList.add('js');
         try { if (localStorage.getItem('theme') === 'light') r.classList.remove('dark'); } catch (e) {}
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) r.classList.add('is-loading');
         setTimeout(function () { r.classList.remove('is-loading'); }, 6000);
       })();
     </script>
+
+    <!-- Contenu de secours (lu par les robots ; visible sans JavaScript, ou si le site n'a pas démarré au bout de 5 s) -->
+    <style>
+      .seo-fallback { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 1.2rem; max-width: 46rem; margin: 0 auto; padding: 2rem 1.5rem; font-family: "Mona Sans", system-ui, sans-serif; color: #ede7df; background: #0b0907; line-height: 1.6; }
+      .seo-fallback h1 { font-family: "Hubot Sans", system-ui, sans-serif; font-weight: 800; font-stretch: 115%; font-size: clamp(2.2rem, 7vw, 4rem); line-height: 1; text-transform: uppercase; margin: 0; }
+      .seo-fallback p { margin: 0; color: #b5aca2; }
+      .seo-fallback strong { color: #ff7518; font-weight: 600; }
+      .seo-fallback a { color: #ff8a32; }
+      .seo-fallback nav { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; }
+      .js .seo-fallback { opacity: 0; animation: seo-in .5s 5s forwards; }
+      @keyframes seo-in { to { opacity: 1; } }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="seo-fallback">
+        <h1>Florian Girardot Lahogue</h1>
+        <p><strong>Étudiant en 3e année de BUT Réseaux &amp; Télécommunications</strong>, parcours cybersécurité, à La Réunion.</p>
+        <p>Je construis des réseaux, je sécurise des systèmes, je casse ce qui peut l'être pour mieux le protéger, et je crée des jeux vidéo.</p>
+        <nav aria-label="Pages du portfolio">
+          <a href="/projects">Projets</a>
+          <a href="/about">À propos</a>
+          <a href="/cv">CV</a>
+          <a href="/contact">Contact</a>
+          <a href="/games">Mini-jeux</a>
+        </nav>
+        <nav aria-label="Réseaux">
+          <a href="https://github.com/JLFlo12" rel="me noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/florian-girardot-lahogue-4aa367341/" rel="me noopener">LinkedIn</a>
+        </nav>
+        <noscript><p>Ce portfolio est interactif (3D, animations) : active JavaScript pour la version complète.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

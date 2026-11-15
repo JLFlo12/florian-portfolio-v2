@@ -113,6 +113,11 @@ Pour pousser : `git push v2 refonte-moderne:main`.
 - `src/components/Footer.tsx` : grand appel à l'action, menu, contacts, heure de La Réunion (`useReunionTime`).
 - `src/App.tsx` : l'accueil est chargé tout de suite, les autres pages à la demande (`React.lazy`). Les notifications Sonner sont chargées après le premier affichage.
 
+### Référencement et aperçus de liens (15/11/2026)
+- `index.html` : titre et description réécrits, balises Open Graph / Twitter vers `public/og-image.jpg` (capture 1200 × 630 de l'accueil ; avant : image et compte par défaut de Lovable), fiche JSON-LD `Person`, contenu de secours dans `#root` (lu par les robots, visible sans JavaScript ou si le site n'a pas démarré au bout de 5 s ; React le remplace au démarrage).
+- `public/sitemap.xml` (pages principales) déclaré dans `public/robots.txt`. À faire par Florian : ajouter le site dans Google Search Console et y soumettre le sitemap.
+- Écarté : pré-rendu complet / passage à Astro ou Next (gros chantier, Google exécute déjà le JavaScript).
+
 ### Accueil
 Fichiers : `src/pages/Home.tsx` et `src/components/three/*`.
 - **Planète 3D** (`Planet.tsx`, chargée à part, environ 235 Ko compressés) :

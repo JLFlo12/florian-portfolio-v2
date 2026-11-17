@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { prefersReducedMotion, useReveal } from '@/lib/motion';
 import { hasWebGL } from '@/components/three/webgl';
 import type { Ribbon } from '@/components/three/ribbon';
+import { thumbSmall } from '@/data/thumbnails';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -29,7 +30,7 @@ const ProjectBandBody = () => {
   const [use3d] = useState(() => hasWebGL() && !prefersReducedMotion());
   useReveal(root, [projects.length]);
 
-  const cards = useMemo(() => projects.map((p) => ({ title: p.title, tags: p.tags ?? [], image: p.thumbnail_url })), [projects]);
+  const cards = useMemo(() => projects.map((p) => ({ title: p.title, tags: p.tags ?? [], image: thumbSmall(p.thumbnail_url) })), [projects]);
   const href = (i: number) => `/projects/dynamic-${projects[i]?.id}`;
 
   useEffect(() => {
@@ -91,7 +92,7 @@ const ProjectBandBody = () => {
             <li key={p.id}>
               <Link to={href(i)} className="project-band__card">
                 {p.thumbnail_url
-                  ? <img src={p.thumbnail_url} alt="" loading="lazy" decoding="async" />
+                  ? <img src={thumbSmall(p.thumbnail_url) ?? undefined} alt="" loading="lazy" decoding="async" />
                   : <span className="project-band__cover">{p.tags[0] ?? p.title.split(' ')[0]}</span>}
                 <span className="project-band__title"><span className="led text-primary">{pad(i + 1)}</span> {p.title}</span>
               </Link>

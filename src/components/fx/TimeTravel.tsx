@@ -15,7 +15,7 @@ import type { TimeMachine } from '@/components/three/delorean';
    Puis elle réapparaît dans le fond et reprend sa ronde.
    Ce composant intercepte les clics sur les liens internes qui font entrer sur la page ou en sortir ;
    tous les autres changements de page gardent le rideau orange du layout.
-   Sans WebGL, avec les animations réduites, ou tant que la voiture n'est pas revenue : le lien fonctionne normalement.
+   Sans WebGL, sur téléphone, avec les animations réduites, ou tant que la voiture n'est pas revenue : le lien fonctionne normalement.
    ─────────────────────────────────────────────────────────────── */
 
 const SECTION = '/chatbot';   // Jarvis
@@ -43,7 +43,9 @@ const TimeTravel = () => {
   const dim = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (prefersReducedMotion() || !hasWebGL()) return;
+    // Téléphone : pas de DeLorean (sur un petit écran, sa ronde passe forcément sur le texte) ;
+    // les liens vers Jarvis gardent le rideau orange, et le modèle (515 Ko) n'est pas téléchargé.
+    if (prefersReducedMotion() || !hasWebGL() || window.matchMedia('(max-width: 767px)').matches) return;
     let dead = false;
     let busy = false;
     let timer = 0;

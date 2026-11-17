@@ -1,6 +1,6 @@
 # Contexte du projet : portfolio v2 (Florian GIRARDOT LAHOGUE)
 
-Ce fichier résume tout le travail fait sur la refonte du portfolio, les décisions prises et ce qu'il faut savoir pour continuer. Dernière mise à jour : 18 septembre 2026.
+Ce fichier résume tout le travail fait sur la refonte du portfolio, les décisions prises et ce qu'il faut savoir pour continuer. Dernière mise à jour : 16 novembre 2026.
 
 ---
 
@@ -54,6 +54,8 @@ Pour pousser : `git push v2 refonte-moderne:main`.
 - Projet `esphltubteoswpkqbszo`, **géré par Lovable Cloud**. Le connecteur Supabase de Claude n'y a **pas accès** (il ne voit que le projet `parko`).
 - On ne peut donc ni déployer de fonction, ni créer de table sans passer par Lovable.
 - Fonctions existantes : `cyberbot-chat` (Jarvis, via Lovable AI Gateway) et `admin-projects` (mode admin, mot de passe). Table `projects`, bucket `project-thumbnails`.
+- **Sécurité (16/11/2026)** : migration `20261116090000_securite-stockage-et-limites.sql` (le bucket n'accepte plus d'écriture ni de suppression avec la clé publique ; table `rate_limits` + fonctions `hit_rate_limit` / `rate_limit_blocked`, réservées à `service_role`). `admin-projects` : comparaison à temps constant, 5 mauvais mots de passe par IP / 15 min et 30 par heure au total, champs filtrés, action `upload-url` (URL d'envoi signée). `cyberbot-chat` : sites autorisés, 20 questions par IP / 10 min et 400 par jour, 10 derniers messages, 1 000 caractères par question, sujet recentré. **À déployer via Lovable avant le site** (sinon l'envoi d'images du mode admin échoue).
+- **Mode admin** : plus de bouton visible. Ouvrir `/projects?admin` (retenu pour l'onglet) ; le mot de passe reste en mémoire le temps de la visite.
 
 ---
 
@@ -201,7 +203,7 @@ Fichiers : `src/pages/Cv.tsx` et `src/data/cv.ts`.
 - Bouton « Imprimer / enregistrer en PDF » : une page A4 blanche et propre (règles `@media print` en fin de `index.css`).
   - Depuis le 06/10/2026, le bloc « Outils » (8 lignes) est dans la colonne principale, et l'impression est réduite de 10 % (`zoom: .9` sur `.cv-sheet`) : tout tient sur une page.
   - ⚠️ La règle d'impression masque `header:not(.cv-head)` : un simple `header` masquait aussi l'en-tête du CV, et le nom n'était plus imprimé.
-  - Le PDF original (`public/mon-cv.pdf`) n'a pas les nouveaux outils : à refaire par Florian.
+  - Le PDF original (`public/mon-cv.pdf`) n'a pas les nouveaux outils : à refaire par Florian. Son adresse e-mail a été remise dans le bon ordre le 16/11/2026 (mêmes lettres, mise en page inchangée) ; l'ancien `mon-cv2.pdf` est supprimé.
 - Le téléphone est volontairement absent de la page web, pour éviter les robots. Il reste dans le PDF.
 - Liens vers `/cv` : page À propos (« Voir mon CV ») et page Contact (mot « CV »).
 
@@ -335,9 +337,9 @@ Pour modifier une compétence, un outil ou un contact, il suffit de le faire à 
 
 - [ ] **Florian** : activer FormSubmit (lien « Activate Form » reçu par e-mail).
 - [ ] **Florian** : activer Vercel Web Analytics.
-- [ ] **Florian** : corriger le **PDF** du CV. L'adresse y est inversée (`f.lahogue--girardot@…` au lieu de `f.girardot--lahogue@…`) et la ligne « Analyse de la surface d'attaque… » y est en double.
+- [x] Adresse e-mail du **PDF** du CV corrigée (16/11/2026). Reste pour **Florian** : la ligne « Analyse de la surface d'attaque… » en double.
 - [ ] Faire relire, puis commiter et pousser les derniers changements sur `v2`.
-- [ ] Optionnel : redéployer la fonction `cyberbot-chat` via Lovable.
+- [ ] Déployer via Lovable la migration du 16/11/2026 et les deux fonctions (`cyberbot-chat`, `admin-projects`), **avant** le site.
 - [ ] Optionnel : relier le projet Vercel v2 au dépôt GitHub v2 (déploiement automatique).
 - [ ] Idées non faites :
   - vraie image de partage (`og:image`, qui pointe encore vers Lovable), `og:url`, `canonical`, `sitemap.xml` ;

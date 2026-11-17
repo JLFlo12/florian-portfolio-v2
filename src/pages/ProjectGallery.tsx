@@ -6,7 +6,7 @@ import { getProjectGallery, ProjectFile } from '@/data/projectGalleries';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { useDynamicProjects, useUpdateProject, DynamicProject, GalleryImage } from '@/hooks/useDynamicProjects';
+import { useDynamicProjects, useUpdateProject, withLocalThumb, DynamicProject, GalleryImage } from '@/hooks/useDynamicProjects';
 import GalleryEditor from '@/components/admin/GalleryEditor';
 import AdminLoginDialog from '@/components/admin/AdminLoginDialog';
 import { AccentTitle, gsap, prefersReducedMotion, useReveal } from '@/lib/motion';
@@ -30,9 +30,13 @@ interface Neighbour { href: string; title: string }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// Rubriques et listes commencent parfois par un emoji (« 📡 contexte ») : on le retire
-// (le tiret orange sert déjà de puce) et les titres prennent une majuscule.
-const stripEmoji = (s: string) => s.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '').trim();
+// Le contenu de la base contient parfois des emoji (« 📡 contexte ») : on les retire tous
+// (le tiret orange sert déjà de puce) et les titres prennent une majuscule. © ® ™ sont gardés.
+const stripEmoji = (s: string) => s
+  .replace(/(\d)\uFE0F?\u20E3/gu, '$1.')
+  .replace(/(?![\u00A9\u00AE\u2122])[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/gu, '')
+  .replace(/\s{2,}/g, ' ')
+  .trim();
 const cleanSection = (s: string) => {
   const text = stripEmoji(s);
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -52,10 +56,18 @@ const slidesOf = (url: string | null | undefined) => {
 
 // Taille du titre selon sa longueur : les titres longs restent sur quelques lignes
 const titleSize = (title: string) => (
-  title.length <= 24 ? 'text-[clamp(2.8rem,8.6vw,7.8rem)]'
-    : title.length <= 42 ? 'text-[clamp(2.4rem,6.2vw,5.6rem)]'
-      : 'text-[clamp(2rem,4.6vw,4.2rem)]'
+  title.length <= 24 ? 'clamp(2.8rem,8.6vw,7.8rem)'
+    : title.length <= 42 ? 'clamp(2.4rem,6.2vw,5.6rem)'
+      : 'clamp(2rem,4.6vw,4.2rem)'
 );
+
+// Plafonne une taille de titre pour que son mot le plus long tienne dans la largeur de l'écran
+// (sur téléphone, « CYBERSÉCURITÉ » en 44 px faisait déborder la page : 476 px au lieu de 390).
+// 0,84 em par lettre : largeur moyenne d'une capitale de Hubot Sans à 118 %, avec une marge.
+const fitWord = (text: string, size: string, reserve = '0px') => {
+  const longest = Math.max(...text.split(/\s+/).map((w) => w.length));
+  return `min(${size}, calc((100vw - 2 * var(--gutter) - ${reserve}) / ${(longest * 0.84).toFixed(2)}))`;
+};
 
 const fileIcon = (type: string) => {
   switch (type) {
@@ -193,7 +205,7 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
           <span className="eyebrow__rule" data-rule aria-hidden="true" />
           <span className="eyebrow__label">{status ?? 'projets'}</span>
         </p>
-        <AccentTitle as="h1" text={title} serifWords={0} band={0.12} className={`case-title mt-6 ${titleSize(title)}`} />
+        <AccentTitle as="h1" text={title} serifWords={0} band={0.12} className="case-title mt-6" style={{ fontSize: fitWord(title, titleSize(title)) }} />
         {meta.length > 0 && (
           <dl className="case-meta" data-stagger>
             {meta.map(({ label, value }) => (
@@ -266,7 +278,7 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
                     <p className="led text-sm text-primary">{pad(i + 1)}</p>
                     <h3 className="case-detail__title">{cleanSection(item.section)}</h3>
                     <div className="case-reflect">
-                      {item.content.map((text, j) => <p key={j}>{text}</p>)}
+                      {item.content.map((text, j) => <p key={j}>{stripEmoji(text)}</p>)}
                     </div>
                   </article>
                 ))}
@@ -326,8 +338,8 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
         <nav className="case-next container-x" aria-label={t('gallery.next')}>
           <Link to={counter.next.href} className="case-next__link">
             <span className="label-mono">{t('gallery.next')} — {pad(counter.index % counter.total + 1)}</span>
-            <span className="case-next__title">
-              <span>{counter.next.title}</span>
+            <span className="case-next__title" style={{ fontSize: fitWord(counter.next.title, 'clamp(2rem, 5.6vw, 5.2rem)', 'clamp(2.5rem, 5vw, 4.5rem) - 2rem') }}>
+              <span className="min-w-0">{counter.next.title}</span>
               <ArrowUpRight className="case-next__arrow" aria-hidden="true" />
             </span>
           </Link>
@@ -340,7 +352,7 @@ const CaseStudy = ({ title, status, done, description, tags, cover, slides, deta
 const ProjectGallery = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { t, i18n } = useTranslation();
-  const { isAdmin, adminPassword, login, logout } = useAdminAuth();
+  const { isAdmin, adminPassword, entry, login, logout } = useAdminAuth();
   const updateProject = useUpdateProject(adminPassword);
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -360,7 +372,7 @@ const ProjectGallery = () => {
         .eq('id', dynamicId as string)
         .single();
       if (error) throw error;
-      return data as unknown as DynamicProject;
+      return withLocalThumb(data as unknown as DynamicProject);
     },
   });
   // Liste des projets : position « 04 / 12 », projet précédent et suivant
@@ -400,7 +412,7 @@ const ProjectGallery = () => {
       : undefined;
     const done = dynamicProject.status === 'completed';
 
-    const toolbar = !isAdmin ? (
+    const toolbar = !entry ? undefined : !isAdmin ? (
       <button type="button" onClick={() => setShowLoginDialog(true)} aria-label={t('gallery.admin')} className="liquid ml-1 inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary">
         <Lock className="h-4 w-4" />
       </button>

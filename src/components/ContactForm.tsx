@@ -71,8 +71,8 @@ const ContactForm = () => {
   const mailto = `mailto:${CONTACT.email}?subject=${encodeURIComponent(`Portfolio : message de ${last.name}`)}&body=${encodeURIComponent(last.message)}`;
 
   return (
-    <form onSubmit={submit} className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
         <label className="field">
           <span className="label-mono">{t('contact.form.name')}</span>
           <input name="name" required maxLength={80} autoComplete="name" placeholder={t('contact.form.namePh')} className="field__input" />

@@ -1,5 +1,26 @@
 {
   "rewrites": [
     { "source": "/((?!_vercel/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/(fonts|intro|station|transition|draco|buildings|event-horizon|thumbs)/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), geolocation=(), payment=(), usb=(), microphone=(self)" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-huw47cSgwYCcIrdnAGDG5ul+pn0SGrisauph2Lw9tqg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://esphltubteoswpkqbszo.supabase.co https://images.unsplash.com; font-src 'self'; connect-src 'self' blob: data: https://esphltubteoswpkqbszo.supabase.co https://formsubmit.co; media-src 'self' blob: data:; frame-src https://gamma.app https://www.canva.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'; upgrade-insecure-requests" }
+      ]
+    }
   ]
 }

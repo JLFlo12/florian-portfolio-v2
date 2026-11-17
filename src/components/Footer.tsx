@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, Github, Linkedin, Mail } from 'lucide-react';
 import { useReveal, AccentTitle } from '@/lib/motion';
@@ -27,6 +27,7 @@ const Footer = () => {
   const ref = useRef<HTMLElement>(null);
   const lenis = useLenis();
   const time = useReunionTime();
+  const { pathname } = useLocation();
   useReveal(ref);
 
   const nav = [
@@ -44,20 +45,21 @@ const Footer = () => {
     <footer ref={ref} className="relative overflow-hidden border-t border-border">
       <div className="pointer-events-none absolute -bottom-40 left-1/2 h-80 w-[70vw] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" aria-hidden="true" />
       <div className="container-x relative py-20 lg:py-28">
-        <Link to="/contact" className="group block">
+        {/* Appel vers la page Contact : inutile sur la page Contact elle-même */}
+        {pathname !== '/contact' && <Link to="/contact" className="group block mb-16">
           <AccentTitle
             as="p"
             text={`${t('ui.footerTitle')}`}
             serifWords={0}
-            className="display-xl text-[clamp(2.4rem,8.4vw,8rem)]"
+            className="display-xl text-[clamp(1.6rem,7.6vw,8rem)]"
           />
           <span className="mt-2 flex items-center gap-4">
-            <span className="serif-accent text-[clamp(2.6rem,8vw,7.5rem)] leading-none">{t('ui.footerAccent')}</span>
+            <span className="serif-accent text-[clamp(2.2rem,8vw,7.5rem)] leading-none">{t('ui.footerAccent')}</span>
             <ArrowUpRight className="h-[clamp(2rem,6vw,5rem)] w-[clamp(2rem,6vw,5rem)] text-primary transition-transform duration-700 group-hover:translate-x-2 group-hover:-translate-y-2" strokeWidth={1.4} />
           </span>
-        </Link>
+        </Link>}
 
-        <div className="mt-16 grid gap-10 border-t border-border pt-10 md:grid-cols-3">
+        <div className={`grid gap-10 md:grid-cols-3 ${pathname !== '/contact' ? 'border-t border-border pt-10' : ''}`}>
           <div>
             <p className="label-mono mb-4">{t('ui.menu')}</p>
             <ul className="grid grid-cols-2 gap-y-2 text-sm">
@@ -87,7 +89,7 @@ const Footer = () => {
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6 text-sm text-muted-foreground">
           <p>
-            © {new Date().getFullYear()} GIRARDOT LAHOGUE Florian. {t('ui.rights')}{' '}
+            © {new Date().getFullYear()} Florian GIRARDOT LAHOGUE. {t('ui.rights')}{' '}
             <span aria-hidden="true">·</span>{' '}
             <Link to="/mentions-legales" className="underline-offset-4 transition-colors hover:text-foreground hover:underline">{t('ui.legal')}</Link>
           </p>

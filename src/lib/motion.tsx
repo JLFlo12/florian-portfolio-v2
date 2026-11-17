@@ -20,15 +20,15 @@ export const hasFinePointer = () =>
    Il apparaît avec la bande de couleur ; `band` = délai (s).
    ─────────────────────────────────────────────────────────────── */
 export const AccentTitle = ({
-  text, serifWords = 1, className = 'title-xl', as = 'h2', id, band = 0,
-}: { text: string; serifWords?: number; className?: string; as?: 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div'; id?: string; band?: number }) => {
+  text, serifWords = 1, className = 'title-xl', as = 'h2', id, band = 0, style,
+}: { text: string; serifWords?: number; className?: string; as?: 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div'; id?: string; band?: number; style?: React.CSSProperties }) => {
   const Tag = as as React.ElementType;
   const words = text.trim().split(/\s+/);
   const n = words.length > 1 ? Math.min(serifWords, words.length - 1) : 0;
   const serif = words.slice(0, n).join(' ');
   const rest = words.slice(n).join(' ');
   return (
-    <Tag className={className} id={id} data-band={band || ''} aria-label={text}>
+    <Tag className={className} id={id} data-band={band || ''} aria-label={text} style={style}>
       {serif && <span className="serif-accent" aria-hidden="true">{serif}</span>}
       {serif && ' '}
       <span aria-hidden="true">{rest}</span>

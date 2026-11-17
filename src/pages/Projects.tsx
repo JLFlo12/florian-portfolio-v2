@@ -10,6 +10,7 @@ import AdminLoginDialog from '@/components/admin/AdminLoginDialog';
 import ProjectFormDialog from '@/components/admin/ProjectFormDialog';
 import SectionHeading from '@/components/SectionHeading';
 import { useReveal } from '@/lib/motion';
+import { thumbSmall, thumbSrcSet } from '@/data/thumbnails';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +24,7 @@ import {
 
 const Projects = () => {
   const { t, i18n } = useTranslation();
-  const { isAdmin, adminPassword, login, logout } = useAdminAuth();
+  const { isAdmin, adminPassword, entry, login, logout } = useAdminAuth();
   const { data: dynamicProjects = [], isLoading } = useDynamicProjects();
   const createProject = useCreateProject(adminPassword);
   const updateProject = useUpdateProject(adminPassword);
@@ -40,6 +41,7 @@ const Projects = () => {
   const inProgressProjects = dynamicProjects.filter(p => p.status === 'inProgress');
   const completedProjects = dynamicProjects.filter(p => p.status === 'completed');
   const description = (p: DynamicProject) => (i18n.language === 'en' && p.description_en ? p.description_en : p.description_fr);
+  const cover = (p: DynamicProject) => p.tags[0] ?? p.title.split(' ')[0];
 
   /* ——— Carte projet ——— */
   const ProjectCard = ({ project, number }: { project: DynamicProject; number: number }) => {
@@ -50,24 +52,32 @@ const Projects = () => {
         <div className="relative aspect-[16/10] overflow-hidden border-b border-border">
           {project.thumbnail_url ? (
             <img
-              src={project.thumbnail_url}
+              src={thumbSmall(project.thumbnail_url) ?? undefined}
+              srcSet={thumbSrcSet(project.thumbnail_url)}
+              sizes="(min-width: 768px) 50vw, 100vw"
               alt={project.title}
-              loading="lazy"
+              // Les deux premières cartes sont visibles tout de suite : chargées en priorité
+              loading={number <= 2 ? 'eager' : 'lazy'}
+              {...{ fetchpriority: number <= 2 ? 'high' : 'auto' } as Record<string, string>}
               decoding="async"
               className="h-full w-full object-cover transition-transform duration-[1.2s] [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
             />
           ) : (
-            <div className="relative flex h-full w-full items-end overflow-hidden bg-[radial-gradient(80%_90%_at_80%_10%,hsl(var(--primary)/.35),transparent_60%),hsl(var(--card))] p-6">
+            <div className="relative flex h-full w-full items-end overflow-hidden bg-[radial-gradient(80%_90%_at_80%_10%,hsl(var(--primary)/.35),transparent_60%),hsl(var(--card))] p-6 [container-type:inline-size]">
               <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/.08) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/.08) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-              <span className="relative font-display text-[clamp(2.2rem,5vw,3.6rem)] font-black uppercase leading-[.85] tracking-tight text-foreground/90 [font-stretch:125%] transition-transform duration-700 group-hover:-translate-y-1">
-                {project.tags[0] ?? project.title.split(' ')[0]}
+              {/* Taille calculée sur la largeur de la carte : un mot long (« Cybersécurité ») tient sur une ligne */}
+              <span
+                className="relative whitespace-nowrap font-display font-black uppercase leading-[.85] tracking-tight text-foreground/90 [font-stretch:125%] transition-transform duration-700 group-hover:-translate-y-1"
+                style={{ fontSize: `min(3.6rem, calc((100cqw - 3rem) / ${(cover(project).length * 0.95).toFixed(2)}))` }}
+              >
+                {cover(project)}
               </span>
             </div>
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
           <span className="led liquid liquid-strong absolute left-4 top-4 rounded-lg px-2 py-1 text-sm text-primary">{String(number).padStart(2, '0')}</span>
           <span className={`absolute right-4 top-4 inline-flex items-center gap-2 liquid liquid-strong rounded-full px-3 py-1 font-mono text-[.68rem] uppercase tracking-wider ${done ? 'border-[hsl(var(--online)/.4)] text-[hsl(var(--online))]' : 'border-primary/50 text-primary'}`}>
-            {done ? '✓' : <span className="status-dot !bg-primary" />} {done ? t('projects.completed') : t('projects.inProgress')}
+            {done ? '✓' : <span className="status-dot !bg-primary" />} {done ? t('gallery.done') : t('gallery.ongoing')}
           </span>
         </div>
 
@@ -154,8 +164,8 @@ const Projects = () => {
           title={t('projects.title')}
           lede={<span><span className="led text-3xl text-foreground">{String(dynamicProjects.length).padStart(2, '0')}</span> <span className="label-mono">{t('projects.count')}</span></span>}
         >
-          {/* Contrôles administrateur */}
-          <div className="mt-5 flex flex-wrap gap-3">
+          {/* Contrôles administrateur : cachés aux visiteurs (entrée par /projects?admin) */}
+          {entry && <div className="mt-5 flex flex-wrap gap-3">
             {!isAdmin ? (
               <Button variant="outline" size="sm" onClick={() => setShowLoginDialog(true)} className="gap-2 rounded-full">
                 <Lock className="h-4 w-4" /> {t('projects.adminMode')}
@@ -170,7 +180,7 @@ const Projects = () => {
                 </Button>
               </>
             )}
-          </div>
+          </div>}
         </SectionHeading>
       </div>
 

@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { currentAdminPassword } from '@/hooks/useAdminAuth';
+import { optimizeThumb } from '@/data/thumbnails';
 
 export interface GalleryImage {
   url: string;
@@ -23,6 +25,9 @@ export interface DynamicProject {
   created_at: string;
 }
 
+// Miniature optimisée servie par le site quand elle existe (voir data/thumbnails.ts)
+export const withLocalThumb = (p: DynamicProject): DynamicProject => ({ ...p, thumbnail_url: optimizeThumb(p.thumbnail_url) });
+
 export const useDynamicProjects = () => {
   return useQuery({
     queryKey: ['dynamic-projects'],
@@ -32,7 +37,7 @@ export const useDynamicProjects = () => {
         .select('*')
         .order('display_order', { ascending: true });
       if (error) throw error;
-      return (data || []) as unknown as DynamicProject[];
+      return ((data || []) as unknown as DynamicProject[]).map(withLocalThumb);
     },
   });
 };
@@ -82,14 +87,17 @@ export const useDeleteProject = (adminPassword: string) => {
   });
 };
 
+/* Envoi d'une image : la fonction admin-projects vérifie le mot de passe et renvoie une URL
+   d'envoi signée (le bucket n'accepte plus d'écriture avec la clé publique). */
 export const uploadThumbnail = async (file: File): Promise<string> => {
-  const fileName = `${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage
-    .from('project-thumbnails')
-    .upload(fileName, file);
+  const { data, error } = await supabase.functions.invoke('admin-projects', {
+    headers: { 'x-admin-password': currentAdminPassword() },
+    body: { action: 'upload-url', fileName: file.name, contentType: file.type },
+  });
   if (error) throw error;
-  const { data } = supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('project-thumbnails')
-    .getPublicUrl(fileName);
-  return data.publicUrl;
+    .uploadToSignedUrl(data.path, data.token, file, { contentType: file.type });
+  if (uploadError) throw uploadError;
+  return data.publicUrl as string;
 };

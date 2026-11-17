@@ -37,12 +37,12 @@ const HolographicInterface = forwardRef<HTMLDivElement, Props>(({ module, index,
   const tool = module.tools[Math.min(focus, module.tools.length - 1)];
   const categories = module.categories.map((c) => t(`home.categories.${c}`)).join(' · ');
   return (
-    <div ref={ref} className="holo-panel" data-module={module.id} role="region" aria-label={module.name}>
+    <div ref={ref} className="holo-panel" data-module={module.id} role="region" aria-label={t(`home.station.modules.${module.id}`)}>
       <div className="holo-panel__frame" aria-hidden="true"><i /><i /><i /><i /></div>
       <header className="holo-panel__head">
         <span className="holo-panel__index">{pad(index)}</span>
         <div className="min-w-0">
-          <h3 className="holo-panel__title">{module.name}</h3>
+          <h3 className="holo-panel__title">{t(`home.station.modules.${module.id}`)}</h3>
           <p className="holo-panel__meta">{categories} · {t('home.station.tools', { count: module.tools.length })}</p>
         </div>
       </header>

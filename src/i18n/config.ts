@@ -12,7 +12,7 @@ const resources = {
         about: 'À propos',
         contact: 'Contact',
         chatbot: 'Jarvis',
-        games: 'Games'
+        games: 'Jeux'
       },
       // Interface générale (menu, pied de page, effets)
       ui: {
@@ -35,7 +35,9 @@ const resources = {
         footerAccent: 'ensemble',
         homeBeacon: 'La Réunion · point de départ',
         introStart: 'Cliquez pour commencer',
-        introSkip: 'Passer'
+        introSkip: 'Passer',
+        mainNav: 'Navigation principale',
+        homeLink: 'Florian GIRARDOT LAHOGUE, accueil'
       },
       chatbot: {
         subtitle: 'Assistant IA — Posez-moi vos questions sur Florian',
@@ -67,8 +69,8 @@ const resources = {
           words: ['Réseaux', 'Systèmes', 'Cybersécurité'],
           line1: 'Voici avec quoi',
           line2: 'je travaille',
-          jarvis: 'Accès autorisé. {{tools}} outils chargés, {{categories}} catégories. Fais défiler pour prendre les commandes.',
-          scroll: 'Défile'
+          jarvis: 'Accès autorisé. {{tools}} outils chargés, {{categories}} catégories. Faites défiler pour prendre les commandes.',
+          scroll: 'Défilez'
         },
         manifesto: 'Je *construis* des réseaux, je *sécurise* des systèmes, je *casse* ce qui peut l\'être pour mieux le *protéger*, et je crée des *jeux* *vidéo*.',
         manifestoLabel: 'BUT R&T · Cyber · depuis {{year}}',
@@ -76,17 +78,17 @@ const resources = {
         bio: 'Étudiant passionné par l\'informatique, le développement et la cyber.',
         location: 'La Réunion, France',
         cta: 'Découvrir mes projets',
-        band: { title: 'Projets', all: 'Voir tous les projets', hint: 'Glisse pour parcourir' },
+        band: { title: 'Projets', all: 'Voir tous les projets', hint: 'Faites glisser pour parcourir' },
         skillsHeading: 'Mes compétences',
         skillsTitle: 'Compétences techniques',
-        softSkillsTitle: 'Soft Skills',
-        toolsTitle: 'Outils que j\'utilise',
-        toolsHint: 'Clique sur un outil pour voir à quoi il me sert.',
+        softSkillsTitle: 'Savoir-être',
+        toolsTitle: 'Mes outils',
+        toolsHint: 'Cliquez sur un outil pour voir à quoi il me sert.',
         allTools: 'Tous',
         station: {
           title: 'Mes outils',
           subtitle: '{{count}} outils. Une station.',
-          scroll: 'Défile pour explorer',
+          scroll: 'Défilez pour explorer',
           label: 'Station spatiale en 3D : chaque module regroupe une famille d\'outils',
           approach: 'Approche orbitale',
           overview: 'Vue d\'ensemble',
@@ -102,12 +104,17 @@ const resources = {
           tools_other: '{{count}} outils',
           progress: 'Progression de la visite',
           open: 'Voir la fiche',
-          hint: 'Clique sur un outil pour lire sa fiche.'
+          hint: 'Cliquez sur un outil pour lire sa fiche.',
+          modules: {
+            security: 'Laboratoire de sécurité', network: 'Centre réseau', telecom: 'Antennes télécom',
+            datacenter: 'Centre de données', archive: 'Archives techniques', virtualization: 'Module de virtualisation',
+            development: 'Laboratoire de développement', gamedev: 'Hangar jeu vidéo', engineering: 'Module d\'ingénierie'
+          }
         },
         levels: { maitrise: 'Maîtrisé', avance: 'Avancé', base: 'Base', fragile: 'Fragile' },
         categories: {
-          security: 'Cybersécurité', network: 'Réseau', gamedev: 'Game Dev', virtualization: 'Virtualisation',
-          development: 'Développement', server: 'Serveurs', telecom: 'Télécom', hardware: 'Hardware', os: 'OS', tools: 'Outils'
+          security: 'Cybersécurité', network: 'Réseau', gamedev: 'Jeu vidéo', virtualization: 'Virtualisation',
+          development: 'Développement', server: 'Serveurs', telecom: 'Télécom', hardware: 'Matériel', os: 'Systèmes', tools: 'Outils'
         }
       },
       // Projects page
@@ -227,29 +234,37 @@ const resources = {
         copied: 'Adresse copiée',
         stackEmail: 'E-mail',
         cvValue: 'version web imprimable + PDF',
-        orDirect: 'Ou écris-moi directement',
+        orDirect: 'Ou écrivez-moi directement',
         form: {
           name: 'Nom',
           email: 'E-mail',
           message: 'Message',
-          namePh: 'Ton nom',
-          emailPh: 'ton@email.com',
-          messagePh: "Parle-moi de ton projet, d'un stage, d'une question…",
+          namePh: 'Votre nom',
+          emailPh: 'vous@email.com',
+          messagePh: "Parlez-moi de votre projet, d'un stage, d'une question…",
           send: 'Envoyer le message',
           sending: 'Envoi…',
           sentTitle: 'Message envoyé',
-          sentText: 'Merci ! Je te réponds dès que possible.',
+          sentText: 'Merci ! Je vous réponds dès que possible.',
           again: 'Envoyer un autre message',
           error: "Le message n'a pas pu être envoyé.",
-          errorText: "L'envoi a échoué. Tu peux m'écrire directement :",
-          privacy: 'Ton message est transmis par FormSubmit et arrive directement dans ma boîte mail.'
+          errorText: "L'envoi a échoué. Vous pouvez m'écrire directement :",
+          privacy: 'Votre message est transmis par FormSubmit et arrive directement dans ma boîte mail.'
         }
       },
       // Games page
       games: {
-        title: 'Mini Games',
-        subtitle: 'Quelques mini-jeux cachés dans mon portfolio.',
-        play: 'Play',
+        title: 'Mini-jeux',
+        subtitle: 'Quelques mini-jeux faits pour ce portfolio, à lancer depuis cette page.',
+        play: 'Jouer',
+        list: {
+          dino: { name: 'Dino Runner', text: 'Évitez les obstacles et battez votre record.' },
+          flappy: { name: 'Flappy Bird', text: 'Passez entre les tuyaux : un clic, un battement d\'ailes.' },
+          snake: { name: 'Snake', text: 'Mangez, grandissez, sans vous mordre la queue.' },
+          'guess-building': { name: 'Quel est ce bâtiment ?', text: 'Reconnaissez 39 bâtiments célèbres du monde entier.' },
+          'tower-crane': { name: 'Défi de la grue', text: 'Montez la tour la plus haute possible, étage par étage, sans en faire tomber trois.' },
+          'event-horizon': { name: 'Event Horizon', text: 'Exploration spatiale en 3D. Seul à bord d\'AETHER-01, remontez un signal de détresse jusqu\'au trou noir NEMESIS-01.' }
+        },
         soon: 'Bientôt',
         back: 'Retour aux jeux'
       },
@@ -291,7 +306,9 @@ const resources = {
         footerAccent: 'together',
         homeBeacon: 'La Réunion · home base',
         introStart: 'Click to begin',
-        introSkip: 'Skip'
+        introSkip: 'Skip',
+        mainNav: 'Main navigation',
+        homeLink: 'Florian GIRARDOT LAHOGUE, home'
       },
       chatbot: {
         subtitle: 'AI Assistant — Ask me anything about Florian',
@@ -336,11 +353,11 @@ const resources = {
         skillsHeading: 'My skills',
         skillsTitle: 'Technical Skills',
         softSkillsTitle: 'Soft Skills',
-        toolsTitle: 'My Tools',
+        toolsTitle: 'My tools',
         toolsHint: 'Click a tool to see what I use it for.',
         allTools: 'All',
         station: {
-          title: 'My tech stack',
+          title: 'My tools',
           subtitle: '{{count}} tools. One station.',
           scroll: 'Scroll to explore',
           label: '3D space station: each module holds one family of tools',
@@ -358,7 +375,12 @@ const resources = {
           tools_other: '{{count}} tools',
           progress: 'Tour progress',
           open: 'Open the card',
-          hint: 'Click a tool to read its card.'
+          hint: 'Click a tool to read its card.',
+          modules: {
+            security: 'Security Lab', network: 'Network Hub', telecom: 'Telecommunications Array',
+            datacenter: 'Data Center', archive: 'Technical Archive', virtualization: 'Virtualization Module',
+            development: 'Development Lab', gamedev: 'Game Dev Hangar', engineering: 'Engineering Module'
+          }
         },
         levels: { maitrise: 'Mastered', avance: 'Advanced', base: 'Basic', fragile: 'Fragile' },
         categories: {
@@ -502,8 +524,16 @@ const resources = {
       },
       games: {
         title: 'Mini Games',
-        subtitle: 'A few mini games hidden in my portfolio.',
+        subtitle: 'A few mini games made for this portfolio, ready to play from this page.',
         play: 'Play',
+        list: {
+          dino: { name: 'Dino Runner', text: 'Dodge the obstacles and beat your high score.' },
+          flappy: { name: 'Flappy Bird', text: 'Fly between the pipes: one click, one flap.' },
+          snake: { name: 'Snake', text: 'Eat, grow, and don\'t bite your own tail.' },
+          'guess-building': { name: 'Guess the Building', text: 'Recognise 39 famous buildings from around the world.' },
+          'tower-crane': { name: 'Tower Crane Challenge', text: 'Build the tallest tower you can, floor by floor, without dropping three.' },
+          'event-horizon': { name: 'Event Horizon', text: '3D space exploration. Alone aboard AETHER-01, track a distress signal to the NEMESIS-01 black hole.' }
+        },
         soon: 'Soon',
         back: 'Back to games'
       },
@@ -516,11 +546,31 @@ const resources = {
   }
 };
 
+// Langue choisie par le visiteur (localStorage), sinon le français
+function savedLanguage() {
+  try {
+    const lng = localStorage.getItem('florian-lang');
+    if (lng === 'fr' || lng === 'en') return lng;
+  } catch { /* stockage indisponible */ }
+  return 'fr';
+}
+
+i18n.on('languageChanged', (lng) => {
+  try { localStorage.setItem('florian-lang', lng); } catch { /* stockage indisponible */ }
+  document.documentElement.lang = lng;
+  // Titre de l'onglet dans la langue du site (la page CV pose le sien)
+  if (!window.location.pathname.startsWith('/cv')) {
+    document.title = lng === 'en'
+      ? 'Florian GIRARDOT LAHOGUE · Networks, cybersecurity and video games portfolio'
+      : 'Florian GIRARDOT LAHOGUE · Portfolio réseaux, cybersécurité et jeux vidéo';
+  }
+});
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'fr',
+    lng: savedLanguage(),
     fallbackLng: 'fr',
     interpolation: {
       escapeValue: false

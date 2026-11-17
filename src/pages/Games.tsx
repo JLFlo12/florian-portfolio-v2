@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Lock, Building2, Construction, Orbit } from 'lucide-react';
+import { Play, Lock, Bird, Building2, Construction, Footprints, Orbit, Worm } from 'lucide-react';
 import DinoRunner from '@/components/games/DinoRunner';
 import FlappyBird from '@/components/games/FlappyBird';
 import SnakeGame from '@/components/games/SnakeGame';
@@ -13,55 +13,19 @@ import { gsap, prefersReducedMotion, useReveal } from '@/lib/motion';
 
 interface GameCard {
   id: string;
-  name: string;
-  description: string;
   icon: React.ReactNode;
   available: boolean;
 }
 
+// Noms et descriptions traduits dans i18n (games.list.<id>) ; icônes dans la palette du site
+const iconClass = 'h-9 w-9 text-primary';
 const games: GameCard[] = [
-  {
-    id: 'dino',
-    name: 'Dino Runner',
-    description: 'Évite les obstacles et bats ton record !',
-    icon: <span className="text-4xl">🦕</span>,
-    available: true,
-  },
-  {
-    id: 'flappy',
-    name: 'Flappy Bird',
-    description: 'Passe entre les tuyaux. Un clic = un flap.',
-    icon: <span className="text-4xl">🐦</span>,
-    available: true,
-  },
-  {
-    id: 'snake',
-    name: 'Snake',
-    description: 'Mange, grandis, évite-toi.',
-    icon: <span className="text-4xl">🐍</span>,
-    available: true,
-  },
-  {
-    id: 'guess-building',
-    name: 'Guess the Building',
-    description: 'Reconnais 39 bâtiments iconiques du monde.',
-    icon: <Building2 className="h-9 w-9 text-primary" strokeWidth={1.5} />,
-    available: true,
-  },
-  {
-    id: 'tower-crane',
-    name: 'Tower Crane Challenge',
-    description: 'Monte la tour la plus haute possible, étage par étage, sans en faire tomber trois.',
-    icon: <Construction className="h-9 w-9 text-primary" strokeWidth={1.5} />,
-    available: true,
-  },
-  {
-    id: 'event-horizon',
-    name: 'Event Horizon',
-    description: 'Exploration spatiale en 3D. Seul à bord d’AETHER-01, remonte un signal de détresse jusqu’au trou noir NEMESIS-01.',
-    icon: <Orbit className="h-9 w-9 text-primary" strokeWidth={1.5} />,
-    available: true,
-  },
+  { id: 'dino', icon: <Footprints className={iconClass} strokeWidth={1.5} />, available: true },
+  { id: 'flappy', icon: <Bird className={iconClass} strokeWidth={1.5} />, available: true },
+  { id: 'snake', icon: <Worm className={iconClass} strokeWidth={1.5} />, available: true },
+  { id: 'guess-building', icon: <Building2 className={iconClass} strokeWidth={1.5} />, available: true },
+  { id: 'tower-crane', icon: <Construction className={iconClass} strokeWidth={1.5} />, available: true },
+  { id: 'event-horizon', icon: <Orbit className={iconClass} strokeWidth={1.5} />, available: true },
 ];
 
 const Games = () => {
@@ -97,7 +61,7 @@ const Games = () => {
           <span className="eyebrow__label">games</span>
         </p>
         <h2 className="mb-10 mt-4 text-center font-display text-[clamp(2rem,5vw,3.6rem)] font-black uppercase leading-none tracking-[-.04em] [font-stretch:125%]">
-          {game.name}
+          {t(`games.list.${game.id}.name`)}
         </h2>
         {components[game.id]}
       </div>
@@ -129,8 +93,8 @@ const Games = () => {
                       <span className="led text-sm text-muted-foreground">{String(index + 1).padStart(2, '0')}</span>
                     </div>
                     <div>
-                      <h3 className="font-display text-2xl font-extrabold uppercase leading-tight tracking-tight [font-stretch:115%]">{game.name}</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">{game.description}</p>
+                      <h3 className="font-display text-2xl font-extrabold uppercase leading-tight tracking-tight [font-stretch:115%]">{t(`games.list.${game.id}.name`)}</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{t(`games.list.${game.id}.text`)}</p>
                       {game.available ? (
                         <button
                           type="button"

@@ -111,6 +111,8 @@ const Home = () => {
           aria-hidden="true"
         />
         <HeroPlanet section={hero} orbit={orbit} />
+        {/* Téléphone : voile sous le texte du hero, pour qu'il reste lisible devant la planète */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[64%] bg-gradient-to-t from-background via-background/80 to-transparent md:hidden" aria-hidden="true" data-dive-ui />
         <div className="hud-frame inset-x-[max(8px,calc(var(--gutter)-20px))] bottom-6 top-[calc(var(--nav-h)+8px)]" aria-hidden="true" data-dive-ui><i /><i /><i /><i /></div>
         {/* Voile de fin de plongée : même lueur que le haut de la section Outils */}
         <div className="pointer-events-none invisible absolute inset-0 z-[3] bg-background bg-[radial-gradient(70%_48%_at_50%_48%,hsl(var(--primary)/.24),transparent_70%)] opacity-0" aria-hidden="true" data-dive-flash />
@@ -133,7 +135,7 @@ const Home = () => {
                 {'FLORIAN'.split('').map((c, i) => <span key={i} className="split-char">{c}</span>)}
               </span>
             </h1>
-            <p className="mt-3 font-display text-[clamp(1rem,2.4vw,1.9rem)] font-light uppercase tracking-[.32em] text-muted-foreground [font-stretch:125%]" data-intro>
+            <p className="mt-3 font-display text-[clamp(1rem,2.4vw,1.9rem)] font-normal uppercase tracking-[.32em] text-foreground/80 [font-stretch:125%] md:font-light md:text-muted-foreground" data-intro>
               Girardot Lahogue
             </p>
             <p className="mt-3 text-[clamp(1.1rem,2vw,1.6rem)] font-semibold text-primary" data-intro>

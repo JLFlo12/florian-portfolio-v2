@@ -13,6 +13,9 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 type ApiMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cyberbot-chat`;
+// Mêmes limites que la fonction serveur (cyberbot-chat)
+const MAX_QUESTION = 1000;
+const MAX_HISTORY = 10;
 
 async function streamChat({
   messages,
@@ -151,7 +154,7 @@ const Chatbot = () => {
   };
 
   const send = async (override?: string, spoken = false) => {
-    const text = (override ?? input).trim();
+    const text = (override ?? input).trim().slice(0, MAX_QUESTION);
     if (!text || busy.current) return;
     busy.current = true;
 
@@ -191,7 +194,8 @@ const Chatbot = () => {
     try {
       await streamChat({
         // Le contexte à jour (date, projets, profil) précède la conversation, sans être affiché
-        messages: [{ role: 'system', content: buildJarvisContext({ projects, lang: i18n.language }) }, ...history, userMsg],
+        // (le serveur ne garde que les 10 derniers messages : on n'envoie pas plus)
+        messages: [{ role: 'system', content: buildJarvisContext({ projects, lang: i18n.language }) }, ...history.slice(-(MAX_HISTORY - 1)), userMsg],
         onDelta: (chunk) => { upsertAssistant(chunk); voice?.push(chunk); },
         onDone: () => { busy.current = false; setIsLoading(false); voice?.end(); },
         errors: { tooMany: t('chatbot.tooMany'), noCredits: t('chatbot.noCredits') },
@@ -382,6 +386,7 @@ const Chatbot = () => {
                 // Taper au clavier termine la conversation vocale
                 onChange={e => { setInput(e.target.value); conversation.current = false; }}
                 onKeyDown={handleKeyDown}
+                maxLength={MAX_QUESTION}
                 placeholder={listening ? t('chatbot.listening') : t('chatbot.placeholder')}
                 disabled={isLoading}
                 aria-label={t('chatbot.placeholder')}

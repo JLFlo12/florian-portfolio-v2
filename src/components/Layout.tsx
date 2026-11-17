@@ -154,8 +154,8 @@ const Shell: React.FC<LayoutProps> = ({ children }) => {
         className={`fixed inset-x-0 top-0 z-50 transition-transform duration-700 [transition-timing-function:var(--ease-out)] ${hidden && !menuOpen ? '-translate-y-full' : ''}`}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <nav className="container-x relative flex h-[var(--nav-h)] max-w-[1800px] items-center justify-between gap-4" aria-label="Navigation principale">
-          <Link to="/" className="liquid relative z-[2] flex items-center gap-2.5 rounded-full p-1 text-primary sm:pr-4" aria-label="Florian G.L — accueil">
+        <nav className="container-x relative flex h-[var(--nav-h)] max-w-[1800px] items-center justify-between gap-4" aria-label={t('ui.mainNav')}>
+          <Link to="/" className="liquid relative z-[2] flex items-center gap-2.5 rounded-full p-1 text-primary sm:pr-4" aria-label={t('ui.homeLink')}>
             <Logo size={40} />
             <span className="hidden font-display text-[.95rem] font-extrabold uppercase tracking-tight text-foreground sm:inline [font-stretch:125%]">
               Florian<span className="text-primary">.</span>G.L

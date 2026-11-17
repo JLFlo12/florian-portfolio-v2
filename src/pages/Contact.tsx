@@ -115,12 +115,12 @@ const Contact = () => {
 
       {/* ——— Appel à collaborer ——— */}
       <section className="container-x mt-8">
-        <div className="panel relative overflow-hidden p-8 lg:p-14" data-reveal>
+        <div className="panel relative overflow-hidden p-5 sm:p-8 lg:p-14" data-reveal>
           <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-[60%] rounded-full bg-primary/20 blur-[110px]" aria-hidden="true" />
           <div className="hud-frame inset-4" aria-hidden="true"><i /><i /><i /><i /></div>
-          <div className="relative grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:gap-14">
-            <div>
-              <h2 className="font-display text-[clamp(2.2rem,5.4vw,4.6rem)] font-black uppercase leading-[.92] tracking-[-.04em] [font-stretch:125%]">
+          <div className="relative grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-14">
+            <div className="min-w-0">
+              <h2 className="font-display text-[clamp(1.75rem,7.4vw,4.6rem)] font-black uppercase leading-[.92] tracking-[-.04em] [font-stretch:125%] [overflow-wrap:anywhere] lg:text-[clamp(2.2rem,4.2vw,4.6rem)]">
                 {t('contact.collabTitle')}
               </h2>
               <p className="mt-5 max-w-lg text-lg text-muted-foreground">{t('contact.collabText')}</p>

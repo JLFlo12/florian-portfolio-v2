@@ -282,7 +282,7 @@ const StationExperience = ({ onOpen, onLost }: Props) => {
   const stopLabel = (i: number) => {
     const s = stops[i];
     const m = moduleOf(s.id);
-    if (m) return m.name;
+    if (m) return t(`home.station.modules.${m.id}`);
     return t(`home.station.${s.id}`);
   };
   const activeCats = stop.id === 'final' ? ['all'] : mod ? mod.categories : [];
@@ -315,7 +315,7 @@ const StationExperience = ({ onOpen, onLost }: Props) => {
           {STATION_MODULES.map((m) => (
             <span key={m.id} className="station-label">
               <i />
-              <span className="station-label__name">{m.name}</span>
+              <span className="station-label__name">{t(`home.station.modules.${m.id}`)}</span>
               <span className="station-label__count">{m.tools.length}</span>
             </span>
           ))}
@@ -348,7 +348,7 @@ const StationExperience = ({ onOpen, onLost }: Props) => {
           <div className="station-summary__grid">
             {STATION_MODULES.filter((m) => m.tools.length).map((m, k) => (
               <div key={m.id} className="station-summary__module" style={{ '--i': k } as React.CSSProperties}>
-                <p className="station-summary__name">{m.name}</p>
+                <p className="station-summary__name">{t(`home.station.modules.${m.id}`)}</p>
                 <ul>
                   {m.tools.map((tool) => (
                     <li key={tool.name}>
@@ -393,7 +393,7 @@ const StationExperience = ({ onOpen, onLost }: Props) => {
         <div className="sr-only">
           {STATION_MODULES.map((m) => (
             <div key={m.id}>
-              <h3>{m.name}</h3>
+              <h3>{t(`home.station.modules.${m.id}`)}</h3>
               <ul>{m.tools.map((tool) => <li key={tool.name}>{tool.name} ({t(`home.categories.${tool.category}`)}) : {tool.description}</li>)}</ul>
             </div>
           ))}

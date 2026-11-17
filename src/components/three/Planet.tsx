@@ -539,7 +539,8 @@ function System({ system, label, reduced, palette }: { system: React.RefObject<T
     system.current.rotation.y = damp(system.current.rotation.y, (planetState.px * 0.35 - (1 - i) * 1.2) * free, 3 + center * 5, dt);
     system.current.rotation.z = -0.32 * free;
     system.current.position.x = (aspect > 1 ? 1.25 * fit : 0) * free;
-    system.current.position.y = (aspect < 0.9 ? 0.55 : 0) * free;
+    // écran en hauteur (téléphone) : planète remontée, pour que son anneau ne passe pas derrière le nom
+    system.current.position.y = (aspect < 0.9 ? 0.55 + (0.9 - aspect) * 1.35 : 0) * free;
     const base = (0.55 + i * 0.45) * fit;
     system.current.scale.setScalar(Math.max(0.001, lerp(base, DIVE_SCALE, zoom)));
   });
